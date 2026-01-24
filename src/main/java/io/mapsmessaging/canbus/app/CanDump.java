@@ -19,6 +19,8 @@
 
 package io.mapsmessaging.canbus.app;
 
+import io.mapsmessaging.canbus.device.CanCapabilities;
+import io.mapsmessaging.canbus.device.CanInterfaceStatus;
 import io.mapsmessaging.canbus.device.frames.CanFrame;
 import io.mapsmessaging.canbus.device.SocketCanDevice;
 
@@ -82,6 +84,10 @@ public final class CanDump {
     boolean startSend = args.length > 1;
 
     try (SocketCanDevice reader = new SocketCanDevice(interfaceName)) {
+      CanCapabilities canCapabilities =  reader.getCanCapabilities();
+      CanInterfaceStatus status =reader.readInterfaceStatus();
+      System.err.println("CAN Capabilities: " + canCapabilities);
+      System.err.println("CAN InterfaceStatus: " + status);
       while (true) {
         if (startSend) {
           System.err.println("Sending packet");
