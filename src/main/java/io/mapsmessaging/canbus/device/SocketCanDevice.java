@@ -16,48 +16,7 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-/*
- *
- *  Copyright [ 2020 - 2024 ] Matthew Buckton
- *  Copyright [ 2024 - 2026 ] MapsMessaging B.V.
- *
- *  Licensed under the Apache License, Version 2.0 with the Commons Clause
- *  (the "License"); you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at:
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *      https://commonsclause.com/
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
 package io.mapsmessaging.canbus.device;
-
-
-/**
- * SocketCAN device wrapper backed by Linux {@code AF_CAN} raw sockets.
- *
- * <p>This class provides low-level access to a CAN or CAN-FD network interface
- * using native Linux SocketCAN APIs via JNA. It supports:</p>
- *
- * <ul>
- *   <li>Classic CAN frames (up to 8 bytes payload)</li>
- *   <li>CAN FD frames (up to 64 bytes payload), when enabled at both interface
- *       and socket level</li>
- *   <li>Blocking read and write of frames</li>
- *   <li>Basic interface status inspection via {@code ip -json link show}</li>
- * </ul>
- *
- * <p>Error handling is explicit and native error codes ({@code errno}) are
- * included in exception messages where available.</p>
- *
- * <p>This class is intended for Linux environments with SocketCAN support.
- * Unit tests bypass constructor execution and native calls; integration tests
- * should be run against {@code vcan} or real CAN hardware.</p>
- */
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -79,7 +38,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 
-
 public final class SocketCanDevice implements Closeable {
 
   private final LibCFacade libC;
@@ -87,8 +45,6 @@ public final class SocketCanDevice implements Closeable {
   private static final int AF_CAN = 29;
   private static final int SOCK_RAW = 3;
   private static final int CAN_RAW = 1;
-
-  private static final int SIOCGIFINDEX = 0x8933;
 
   private static final int SOL_CAN_RAW = 101;
   private static final int CAN_RAW_FD_FRAMES = 5;
@@ -104,30 +60,10 @@ public final class SocketCanDevice implements Closeable {
   @Getter
   private final CanCapabilities canCapabilities;
 
-  /**
-   * Creates a SocketCAN device bound to the specified interface using
-   * the default native libc implementation.
-   *
-   * @param interfaceName the SocketCAN interface name (e.g. {@code can0}, {@code vcan0})
-   * @throws IOException if the socket cannot be created, bound, or configured
-   */
   public SocketCanDevice(String interfaceName) throws IOException {
     this(interfaceName, new JnaLibCFacade(), null);
   }
 
-  /**
-   * Creates a SocketCAN device bound to the specified interface using
-   * injected native and interface resolution components.
-   *
-   * <p>This constructor exists primarily to support testing and controlled
-   * environments.</p>
-   *
-   * @param interfaceName the SocketCAN interface name
-   * @param libC native libc facade used for system calls
-   * @param resolver interface index resolver; if {@code null}, a default
-   *                 JNA-based resolver is used
-   * @throws IOException if the socket cannot be created, bound, or configured
-   */
   public SocketCanDevice(String interfaceName, LibCFacade libC, InterfaceIndexResolver resolver) throws IOException {
     this.interfaceName = interfaceName;
     this.libC = libC;
@@ -141,10 +77,11 @@ public final class SocketCanDevice implements Closeable {
     int interfaceIndex = interfaceIndexResolver.resolveInterfaceIndex(fileDescriptor, interfaceName);
 
     SockAddrCan socketAddress = new SockAddrCan();
-    socketAddress.canFamily = (short) AF_CAN;
-    socketAddress.canInterfaceIndex = interfaceIndex;
-    socketAddress.address = new byte[8];
+    socketAddress.canFamily = ((short) AF_CAN);
+    socketAddress.canInterfaceIndex = (interfaceIndex);
+    socketAddress.address = (new byte[8]);
     socketAddress.write();
+
     int bindResult = libC.bind(fileDescriptor, socketAddress, socketAddress.size());
     if (bindResult != 0) {
       int errno = Native.getLastError();
@@ -156,16 +93,6 @@ public final class SocketCanDevice implements Closeable {
     this.canCapabilities = loadCapabilities();
   }
 
-  /**
-   * Reads a single CAN or CAN FD frame from the socket.
-   *
-   * <p>The method automatically detects whether the incoming frame is
-   * a classic CAN frame or a CAN FD frame based on the number of bytes read.</p>
-   *
-   * @return the decoded {@link CanFrame}
-   * @throws IOException if the read fails, an invalid frame is received,
-   *                     or an unexpected frame size is encountered
-   */
   public CanFrame readFrame() throws IOException {
     NativeCanFrame classicProbe = new NativeCanFrame();
     NativeCanFdFrame fdProbe = new NativeCanFdFrame();
@@ -213,36 +140,10 @@ public final class SocketCanDevice implements Closeable {
     throw new IOException("Unexpected read size: " + bytesRead + " bytes (expected " + classicSize + " or " + fdSize + ")");
   }
 
-  /**
-   * Writes a CAN or CAN FD frame to the socket.
-   *
-   * <p>The frame type (classic vs FD) is determined by the frame's
-   * data length code.</p>
-   *
-   * @param frame the frame to write
-   * @throws IOException if the native write fails or writes fewer bytes
-   *                     than expected
-   * @throws IllegalArgumentException if the frame is invalid or violates
-   *                                  CAN/CAN-FD constraints
-   */
   public void writeFrame(CanFrame frame) throws IOException {
     writeFrame(frame.canIdentifier(), frame.dataLengthCode(), frame.data());
   }
 
-  /**
-   * Writes a CAN or CAN FD frame to the socket using raw parameters.
-   *
-   * <p>Classic CAN frames are used for payloads up to 8 bytes. CAN FD frames
-   * require both interface-level and socket-level FD support.</p>
-   *
-   * @param canIdentifier CAN identifier (standard or extended, as provided)
-   * @param dataLengthCode number of payload bytes
-   * @param data payload data; must contain at least {@code dataLengthCode} bytes
-   * @throws IOException if the native write fails or writes fewer bytes
-   *                     than expected
-   * @throws IllegalArgumentException if parameters are invalid or CAN FD
-   *                                  is not enabled when required
-   */
   public void writeFrame(int canIdentifier, int dataLengthCode, byte[] data) throws IOException {
     if (data == null) {
       throw new IllegalArgumentException("data must not be null");
@@ -300,15 +201,6 @@ public final class SocketCanDevice implements Closeable {
     }
   }
 
-  /**
-   * Reads the current operational status of the CAN interface.
-   *
-   * <p>This method executes {@code ip -details -statistics -json link show}
-   * for the configured interface and parses the result.</p>
-   *
-   * @return the parsed {@link CanInterfaceStatus}
-   * @throws IOException if the command fails or the output cannot be parsed
-   */
   public CanInterfaceStatus readInterfaceStatus() throws IOException {
     String jsonText = runIpJsonLinkShow(this.interfaceName);
 
@@ -340,11 +232,6 @@ public final class SocketCanDevice implements Closeable {
     return status;
   }
 
-  /**
-   * Closes the underlying SocketCAN file descriptor.
-   *
-   * @throws IOException if the close operation fails
-   */
   @Override
   public void close() throws IOException {
     int result = libC.close(this.socketFileDescriptor);
@@ -354,12 +241,6 @@ public final class SocketCanDevice implements Closeable {
     }
   }
 
-  /**
-   * Determines CAN and CAN FD capabilities of the interface and socket.
-   *
-   * @return resolved CAN capability information
-   * @throws IOException if capability detection fails
-   */
   private CanCapabilities loadCapabilities() throws IOException {
     boolean interfaceFdEnabled = isInterfaceFdEnabled();
     boolean socketFdEnabled = isSocketFdEnabled();
@@ -381,14 +262,6 @@ public final class SocketCanDevice implements Closeable {
     );
   }
 
-  /**
-   * Determines whether CAN FD is enabled at the interface level.
-   *
-   * <p>This is inferred from the interface MTU value.</p>
-   *
-   * @return {@code true} if CAN FD is enabled on the interface
-   * @throws IOException if the MTU cannot be read or parsed
-   */
   private boolean isInterfaceFdEnabled() throws IOException {
     Path mtuPath = Path.of("/sys/class/net", interfaceName, "mtu");
     String mtuText = Files.readString(mtuPath, StandardCharsets.US_ASCII).trim();
@@ -403,12 +276,6 @@ public final class SocketCanDevice implements Closeable {
     return mtu == CANFD_MTU;
   }
 
-  /**
-   * Determines whether CAN FD is enabled at the socket level.
-   *
-   * @return {@code true} if CAN FD is enabled for the socket
-   * @throws IOException if the socket option query fails
-   */
   private boolean isSocketFdEnabled() throws IOException {
     IntByReference value = new IntByReference(0);
     IntByReference length = new IntByReference(Integer.BYTES);
@@ -502,5 +369,13 @@ public final class SocketCanDevice implements Closeable {
     } catch (Exception e) {
       return null;
     }
+  }
+
+  // Package-private constructor for tests: no native calls, no probing, no drama.
+  SocketCanDevice(LibCFacade libC, CanCapabilities canCapabilities, int socketFileDescriptor, String interfaceName) {
+    this.libC = libC;
+    this.canCapabilities = canCapabilities;
+    this.socketFileDescriptor = socketFileDescriptor;
+    this.interfaceName = interfaceName;
   }
 }

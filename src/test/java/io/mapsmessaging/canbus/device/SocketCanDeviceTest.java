@@ -24,10 +24,8 @@ import io.mapsmessaging.canbus.device.frames.NativeCanFdFrame;
 import io.mapsmessaging.canbus.device.frames.NativeCanFrame;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import sun.misc.Unsafe;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -479,38 +477,13 @@ public class SocketCanDeviceTest {
     Assertions.assertTrue(ex.getMessage().contains("Short write"), ex.getMessage());
   }
 
-
   private static SocketCanDevice newDevice(
       LibCFacade libC,
       CanCapabilities canCapabilities,
       int socketFileDescriptor,
       String interfaceName
-  ) throws Exception {
-
-    Unsafe unsafe = getUnsafe();
-    SocketCanDevice device = (SocketCanDevice) unsafe.allocateInstance(SocketCanDevice.class);
-
-    setField(device, "libC", libC);
-    setField(device, "canCapabilities", canCapabilities);
-    setField(device, "socketFileDescriptor", socketFileDescriptor);
-    setField(device, "interfaceName", interfaceName);
-
-    // New seam: present in your refactor, harmless here
-    setField(device, "interfaceIndexResolver", (InterfaceIndexResolver) (fd, name) -> 1);
-
-    return device;
-  }
-
-  private static Unsafe getUnsafe() throws Exception {
-    Field field = Unsafe.class.getDeclaredField("theUnsafe");
-    field.setAccessible(true);
-    return (Unsafe) field.get(null);
-  }
-
-  private static void setField(Object target, String fieldName, Object value) throws Exception {
-    Field field = target.getClass().getDeclaredField(fieldName);
-    field.setAccessible(true);
-    field.set(target, value);
+  ) {
+    return new SocketCanDevice(libC, canCapabilities, socketFileDescriptor, interfaceName);
   }
 
   private static Pointer captureFirstWritePointer(LibCFacade libC) {
