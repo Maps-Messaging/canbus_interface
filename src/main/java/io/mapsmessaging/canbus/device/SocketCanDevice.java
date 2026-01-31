@@ -36,6 +36,29 @@
  */
 package io.mapsmessaging.canbus.device;
 
+
+/**
+ * SocketCAN device wrapper backed by Linux {@code AF_CAN} raw sockets.
+ *
+ * <p>This class provides low-level access to a CAN or CAN-FD network interface
+ * using native Linux SocketCAN APIs via JNA. It supports:</p>
+ *
+ * <ul>
+ *   <li>Classic CAN frames (up to 8 bytes payload)</li>
+ *   <li>CAN FD frames (up to 64 bytes payload), when enabled at both interface
+ *       and socket level</li>
+ *   <li>Blocking read and write of frames</li>
+ *   <li>Basic interface status inspection via {@code ip -json link show}</li>
+ * </ul>
+ *
+ * <p>Error handling is explicit and native error codes ({@code errno}) are
+ * included in exception messages where available.</p>
+ *
+ * <p>This class is intended for Linux environments with SocketCAN support.
+ * Unit tests bypass constructor execution and native calls; integration tests
+ * should be run against {@code vcan} or real CAN hardware.</p>
+ */
+
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -56,11 +79,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 
-import static io.mapsmessaging.canbus.device.IfReq.IFNAMSIZ;
 
 public final class SocketCanDevice implements Closeable {
 
-  private static final LibC LIB_C = Native.load("c", LibC.class);
+  private final LibCFacade libC;
 
   private static final int AF_CAN = 29;
   private static final int SOCK_RAW = 3;
@@ -82,26 +104,51 @@ public final class SocketCanDevice implements Closeable {
   @Getter
   private final CanCapabilities canCapabilities;
 
+  /**
+   * Creates a SocketCAN device bound to the specified interface using
+   * the default native libc implementation.
+   *
+   * @param interfaceName the SocketCAN interface name (e.g. {@code can0}, {@code vcan0})
+   * @throws IOException if the socket cannot be created, bound, or configured
+   */
   public SocketCanDevice(String interfaceName) throws IOException {
-    this.interfaceName = interfaceName;
+    this(interfaceName, new JnaLibCFacade(), null);
+  }
 
-    int fileDescriptor = LIB_C.socket(AF_CAN, SOCK_RAW, CAN_RAW);
+  /**
+   * Creates a SocketCAN device bound to the specified interface using
+   * injected native and interface resolution components.
+   *
+   * <p>This constructor exists primarily to support testing and controlled
+   * environments.</p>
+   *
+   * @param interfaceName the SocketCAN interface name
+   * @param libC native libc facade used for system calls
+   * @param resolver interface index resolver; if {@code null}, a default
+   *                 JNA-based resolver is used
+   * @throws IOException if the socket cannot be created, bound, or configured
+   */
+  public SocketCanDevice(String interfaceName, LibCFacade libC, InterfaceIndexResolver resolver) throws IOException {
+    this.interfaceName = interfaceName;
+    this.libC = libC;
+    InterfaceIndexResolver interfaceIndexResolver = resolver != null ? resolver : new JnaInterfaceIndexResolver(libC);
+
+    int fileDescriptor = libC.socket(AF_CAN, SOCK_RAW, CAN_RAW);
     if (fileDescriptor < 0) {
-      throw new IOException("socket(AF_CAN,SOCK_RAW,CAN_RAW) failed errno=" + Native.getLastError());
+      throw new IOException("socket(AF_CAN,SOCK_RAW,CAN_RAW) failed errno=" + libC.getLastError());
     }
 
-    int interfaceIndex = resolveInterfaceIndex(fileDescriptor, interfaceName);
+    int interfaceIndex = interfaceIndexResolver.resolveInterfaceIndex(fileDescriptor, interfaceName);
 
     SockAddrCan socketAddress = new SockAddrCan();
     socketAddress.canFamily = (short) AF_CAN;
     socketAddress.canInterfaceIndex = interfaceIndex;
     socketAddress.address = new byte[8];
     socketAddress.write();
-
-    int bindResult = LIB_C.bind(fileDescriptor, socketAddress, socketAddress.size());
+    int bindResult = libC.bind(fileDescriptor, socketAddress, socketAddress.size());
     if (bindResult != 0) {
       int errno = Native.getLastError();
-      LIB_C.close(fileDescriptor);
+      libC.close(fileDescriptor);
       throw new IOException("bind(" + interfaceName + ") failed errno=" + errno);
     }
 
@@ -109,6 +156,16 @@ public final class SocketCanDevice implements Closeable {
     this.canCapabilities = loadCapabilities();
   }
 
+  /**
+   * Reads a single CAN or CAN FD frame from the socket.
+   *
+   * <p>The method automatically detects whether the incoming frame is
+   * a classic CAN frame or a CAN FD frame based on the number of bytes read.</p>
+   *
+   * @return the decoded {@link CanFrame}
+   * @throws IOException if the read fails, an invalid frame is received,
+   *                     or an unexpected frame size is encountered
+   */
   public CanFrame readFrame() throws IOException {
     NativeCanFrame classicProbe = new NativeCanFrame();
     NativeCanFdFrame fdProbe = new NativeCanFdFrame();
@@ -118,9 +175,9 @@ public final class SocketCanDevice implements Closeable {
 
     Pointer buffer = new Memory(fdSize);
 
-    int bytesRead = LIB_C.read(this.socketFileDescriptor, buffer, fdSize);
+    int bytesRead = libC.read(this.socketFileDescriptor, buffer, fdSize);
     if (bytesRead < 0) {
-      throw new IOException("read(can_frame/canfd_frame) failed errno=" + Native.getLastError());
+      throw new IOException("read(can_frame/canfd_frame) failed errno=" + libC.getLastError());
     }
 
     if (bytesRead == classicSize) {
@@ -156,10 +213,36 @@ public final class SocketCanDevice implements Closeable {
     throw new IOException("Unexpected read size: " + bytesRead + " bytes (expected " + classicSize + " or " + fdSize + ")");
   }
 
+  /**
+   * Writes a CAN or CAN FD frame to the socket.
+   *
+   * <p>The frame type (classic vs FD) is determined by the frame's
+   * data length code.</p>
+   *
+   * @param frame the frame to write
+   * @throws IOException if the native write fails or writes fewer bytes
+   *                     than expected
+   * @throws IllegalArgumentException if the frame is invalid or violates
+   *                                  CAN/CAN-FD constraints
+   */
   public void writeFrame(CanFrame frame) throws IOException {
     writeFrame(frame.canIdentifier(), frame.dataLengthCode(), frame.data());
   }
 
+  /**
+   * Writes a CAN or CAN FD frame to the socket using raw parameters.
+   *
+   * <p>Classic CAN frames are used for payloads up to 8 bytes. CAN FD frames
+   * require both interface-level and socket-level FD support.</p>
+   *
+   * @param canIdentifier CAN identifier (standard or extended, as provided)
+   * @param dataLengthCode number of payload bytes
+   * @param data payload data; must contain at least {@code dataLengthCode} bytes
+   * @throws IOException if the native write fails or writes fewer bytes
+   *                     than expected
+   * @throws IllegalArgumentException if parameters are invalid or CAN FD
+   *                                  is not enabled when required
+   */
   public void writeFrame(int canIdentifier, int dataLengthCode, byte[] data) throws IOException {
     if (data == null) {
       throw new IllegalArgumentException("data must not be null");
@@ -184,9 +267,9 @@ public final class SocketCanDevice implements Closeable {
 
       classic.write();
 
-      int bytesWritten = LIB_C.write(this.socketFileDescriptor, classic.getPointer(), classic.size());
+      int bytesWritten = libC.write(this.socketFileDescriptor, classic.getPointer(), classic.size());
       if (bytesWritten < 0) {
-        throw new IOException("write(can_frame) failed errno=" + Native.getLastError());
+        throw new IOException("write(can_frame) failed errno=" + libC.getLastError());
       }
       if (bytesWritten != classic.size()) {
         throw new IOException("Short write: " + bytesWritten + " bytes (expected " + classic.size() + ")");
@@ -208,15 +291,24 @@ public final class SocketCanDevice implements Closeable {
 
     fd.write();
 
-    int bytesWritten = LIB_C.write(this.socketFileDescriptor, fd.getPointer(), fd.size());
+    int bytesWritten = libC.write(this.socketFileDescriptor, fd.getPointer(), fd.size());
     if (bytesWritten < 0) {
-      throw new IOException("write(canfd_frame) failed errno=" + Native.getLastError());
+      throw new IOException("write(canfd_frame) failed errno=" + libC.getLastError());
     }
     if (bytesWritten != fd.size()) {
       throw new IOException("Short write: " + bytesWritten + " bytes (expected " + fd.size() + ")");
     }
   }
 
+  /**
+   * Reads the current operational status of the CAN interface.
+   *
+   * <p>This method executes {@code ip -details -statistics -json link show}
+   * for the configured interface and parses the result.</p>
+   *
+   * @return the parsed {@link CanInterfaceStatus}
+   * @throws IOException if the command fails or the output cannot be parsed
+   */
   public CanInterfaceStatus readInterfaceStatus() throws IOException {
     String jsonText = runIpJsonLinkShow(this.interfaceName);
 
@@ -248,39 +340,26 @@ public final class SocketCanDevice implements Closeable {
     return status;
   }
 
+  /**
+   * Closes the underlying SocketCAN file descriptor.
+   *
+   * @throws IOException if the close operation fails
+   */
   @Override
   public void close() throws IOException {
-    int result = LIB_C.close(this.socketFileDescriptor);
+    int result = libC.close(this.socketFileDescriptor);
     if (result != 0) {
-      throw new IOException("close() failed errno=" + Native.getLastError());
+      int errno = libC.getLastError();
+      throw new IOException("close() failed errno=" + errno);
     }
   }
 
-  private static int resolveInterfaceIndex(int socketFileDescriptor, String interfaceName) throws IOException {
-    IfReq ifRequest = new IfReq();
-    Arrays.fill(ifRequest.interfaceName, (byte) 0);
-
-    byte[] nameBytes = interfaceName.getBytes(StandardCharsets.US_ASCII);
-    int copyLength = Math.min(nameBytes.length, IFNAMSIZ - 1);
-    System.arraycopy(nameBytes, 0, ifRequest.interfaceName, 0, copyLength);
-
-    ifRequest.interfaceIndex = 0;
-    Arrays.fill(ifRequest.padding, (byte) 0);
-    ifRequest.write();
-
-    int ioctlResult = LIB_C.ioctl(socketFileDescriptor, SIOCGIFINDEX, ifRequest.getPointer());
-    if (ioctlResult != 0) {
-      throw new IOException("ioctl(SIOCGIFINDEX," + interfaceName + ") failed errno=" + Native.getLastError());
-    }
-
-    ifRequest.read();
-    if (ifRequest.interfaceIndex <= 0) {
-      throw new IOException("Interface index not resolved for " + interfaceName);
-    }
-
-    return ifRequest.interfaceIndex;
-  }
-
+  /**
+   * Determines CAN and CAN FD capabilities of the interface and socket.
+   *
+   * @return resolved CAN capability information
+   * @throws IOException if capability detection fails
+   */
   private CanCapabilities loadCapabilities() throws IOException {
     boolean interfaceFdEnabled = isInterfaceFdEnabled();
     boolean socketFdEnabled = isSocketFdEnabled();
@@ -302,6 +381,14 @@ public final class SocketCanDevice implements Closeable {
     );
   }
 
+  /**
+   * Determines whether CAN FD is enabled at the interface level.
+   *
+   * <p>This is inferred from the interface MTU value.</p>
+   *
+   * @return {@code true} if CAN FD is enabled on the interface
+   * @throws IOException if the MTU cannot be read or parsed
+   */
   private boolean isInterfaceFdEnabled() throws IOException {
     Path mtuPath = Path.of("/sys/class/net", interfaceName, "mtu");
     String mtuText = Files.readString(mtuPath, StandardCharsets.US_ASCII).trim();
@@ -316,13 +403,19 @@ public final class SocketCanDevice implements Closeable {
     return mtu == CANFD_MTU;
   }
 
+  /**
+   * Determines whether CAN FD is enabled at the socket level.
+   *
+   * @return {@code true} if CAN FD is enabled for the socket
+   * @throws IOException if the socket option query fails
+   */
   private boolean isSocketFdEnabled() throws IOException {
     IntByReference value = new IntByReference(0);
     IntByReference length = new IntByReference(Integer.BYTES);
 
-    int result = LIB_C.getsockopt(this.socketFileDescriptor, SOL_CAN_RAW, CAN_RAW_FD_FRAMES, value, length);
+    int result = libC.getsockopt(this.socketFileDescriptor, SOL_CAN_RAW, CAN_RAW_FD_FRAMES, value, length);
     if (result != 0) {
-      throw new IOException("getsockopt(CAN_RAW_FD_FRAMES) failed errno=" + Native.getLastError());
+      throw new IOException("getsockopt(CAN_RAW_FD_FRAMES) failed errno=" + libC.getLastError());
     }
 
     return value.getValue() != 0;
