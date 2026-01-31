@@ -46,37 +46,7 @@ public final class CanDump {
   }
 
   private static void read(SocketCanDevice reader, String interfaceName) throws IOException {
-    CanFrame frame = reader.readFrame();
-
-    long nowNanos = System.nanoTime();
-    String timestamp = Instant.now().toString();
-
-    int rawId = frame.canIdentifier();
-    boolean extended = (rawId & CAN_EFF_FLAG) != 0;
-    int id = extended ? (rawId & CAN_EFF_MASK) : (rawId & 0x7FF);
-
-    StringBuilder line = new StringBuilder(128);
-    line.append(timestamp);
-    line.append(" ");
-    line.append(interfaceName);
-    line.append(" ");
-    line.append(extended ? String.format("%08X", id) : String.format("%03X", id));
-    line.append(" [");
-    line.append(frame.dataLengthCode());
-    line.append("]");
-
-    byte[] data = frame.data();
-    int length = frame.dataLengthCode();
-    for (int i = 0; i < length && i < 8; i++) {
-      line.append(" ");
-      line.append(String.format("%02X", data[i]));
-    }
-
-    line.append("  (t=");
-    line.append(nowNanos);
-    line.append("ns)");
-
-    System.out.println(line);
+    reader.readFrame();
   }
 
   public static void main(String[] args) throws Exception {
@@ -88,16 +58,20 @@ public final class CanDump {
       CanInterfaceStatus status =reader.readInterfaceStatus();
       System.err.println("CAN Capabilities: " + canCapabilities);
       System.err.println("CAN InterfaceStatus: " + status);
+      long reportTime = System.currentTimeMillis()+1000;
+      long count = 0;
       while (true) {
+        count++;
         if (startSend) {
-          System.err.println("Sending packet");
           write(reader, 0x123, false);
-          Thread.sleep(50);
         }
-        System.err.println("Reading packet");
         read(reader, interfaceName);
-        Thread.sleep(50);
         startSend = true;
+        if(System.currentTimeMillis() > reportTime){
+          reportTime = System.currentTimeMillis()+1000;
+          System.err.println("Sent:"+count);
+          count = 0;
+        }
       }
     } catch (Exception e) {
       e.printStackTrace();
