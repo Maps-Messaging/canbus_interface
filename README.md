@@ -1,124 +1,150 @@
-# SocketCAN Interface Layer (Java / JNA)
+# Canbus Interface
 
-This repository provides a **thin, honest Java interface** over Linux
-**SocketCAN** using **JNA**.
+This repository provides a modular Java implementation for working with **CAN bus–based protocols**,
+including **native CAN socket device support**, with current, production-ready support for
+**J1939** and **NMEA 2000 (N2K)**.
 
-It deliberately does **one thing**: - Open a CAN interface - Read and
-write raw CAN frames - Detect Classic CAN vs CAN FD capability - Expose
-*capabilities*, not opinions
+The project is structured as a **multi-module Maven build**, allowing protocol layers to evolve
+independently while sharing a common CAN framing and device-access core.
 
-It does **not**: - Fragment messages - Implement NMEA2000, J1939,
-ISO-TP, or any other protocol - Invent transport semantics - Hide kernel
-reality
+---
 
-If you want those things, they belong **above** this layer.
+## What This Project Is
 
-------------------------------------------------------------------------
+- A **CAN bus protocol stack**, not just parsers
+- Includes **SocketCAN-based device access**
+- Designed to sit inside larger systems (gateways, brokers, analytics pipelines)
+- Transport-aware but not UI- or application-level
 
-## Design Goals
+This is not a CAN driver replacement. It builds on OS-level CAN support and focuses on
+**protocol correctness, structure, and extensibility**.
 
--   **Thin**: minimal abstraction over the OS
--   **Truthful**: never claims support for something it cannot do
--   **Deterministic**: no guessing, no heuristics
--   **Protocol-agnostic**: frames in, frames out
+---
 
-This layer is intended to sit at the same conceptual level as TCP/UDP
-socket adapters in larger systems, except CAN does not pretend to be a
-stream.
+## Module Overview
 
-------------------------------------------------------------------------
+### `canbus-core`
+Core CAN and protocol framing layer.
 
-## Supported Features
+Responsibilities:
+- Native **CAN socket (SocketCAN) device support**
+- Construction and parsing of **29-bit extended CAN identifiers**
+- Shared framing utilities for J1939 and N2K
+- Transport-facing abstractions used by higher-level protocols
 
--   Linux **SocketCAN** (`can0`, `can1`, etc.)
--   Classic CAN frames (0--8 byte payload)
--   CAN FD frames (0--64 byte payload), when:
-    -   the interface is configured for FD
-    -   the socket allows FD frames
--   Runtime capability detection
--   Blocking read/write semantics
--   No fragmentation or reassembly
+This module owns the boundary between the operating system CAN interface and protocol logic.
 
-------------------------------------------------------------------------
+---
 
-## Classic CAN vs CAN FD
+### `canbus-j1939`
+J1939 protocol implementation.
 
-This layer detects capabilities at runtime:
+Responsibilities:
+- J1939 identifier construction and decoding
+- PDU1 vs PDU2 handling
+- PGN, priority, source, and destination resolution
+- Protocol-correct framing independent of transport
 
-Capability             How it is detected
-  ---------------------- -------------------------------------
-Interface FD support   `/sys/class/net/<if>/mtu` (72 → FD)
-Socket FD enabled      `getsockopt(CAN_RAW_FD_FRAMES)`
-I/O max payload        Derived from interface + socket
+This module implements **core SAE J1939 semantics**, not vendor-specific extensions.
 
-The result is exposed via `CanCapabilities`, which is the **single
-source of truth**.
+#### Dialect Support (Planned)
+J1939 is commonly extended by OEMs and industries. Planned work includes:
 
-------------------------------------------------------------------------
+- Industry-specific PGN catalogs
+- OEM extensions
+- Runtime-selectable J1939 dialects
 
-## CanCapabilities
+The intent is to support dialects via **pluggable definitions**, avoiding hard-coded logic.
 
-``` java
-public record CanCapabilities(
-    boolean interfaceFdEnabled,
-    boolean socketFdEnabled,
-    int interfaceMaxPayloadBytes,
-    int ioMaxPayloadBytes
-)
+---
+
+### `canbus-nmea2000`
+NMEA 2000 (N2K) protocol implementation.
+
+Responsibilities:
+- Loading and interpreting NMEA 2000 XML definitions
+- Mapping PGNs to structured field models
+- Converting N2K messages to and from JSON
+- Schema generation and validation support
+
+Dependencies:
+- `canbus-core`
+- `canbus-j1939`
+
+NMEA 2000 is treated as a **specialised J1939 profile**, preserving correct layering and reuse.
+
+---
+
+## Current Capabilities
+
+- SocketCAN device access
+- J1939 frame construction and decoding
+- NMEA 2000 message parsing and formatting
+- JSON conversion and schema-driven validation
+- Multi-module Maven build with clear protocol separation
+
+---
+
+## Planned Work
+
+### CANopen Support
+A future module is planned:
+
+```
+canbus-canopen
 ```
 
-Interpretation: - `interfaceMaxPayloadBytes`: what the OS + hardware
-support (8 or 64) - `ioMaxPayloadBytes`: what this implementation can
-actually read/write - FD is usable **only if** all relevant flags align
+Expected scope:
+- CANopen object dictionary handling
+- PDO / SDO framing
+- Network management (NMT) states
+- Profile support (CiA 301, CiA 402)
 
-No additional `canSend()`, `canRead()`, or helper methods are provided.
-Higher layers can derive behaviour directly from this record.
+CANopen is intentionally separate due to its significantly different protocol model.
 
-------------------------------------------------------------------------
+---
 
-## What This Layer Does *Not* Do
+### J1939 Dialect Expansion
+Future development will focus on:
 
-This is intentional:
+- Multiple concurrent dialects
+- Vendor- and industry-specific PGN mappings
+- Use in gateways, sniffers, and normalisation pipelines
 
--   ❌ No message fragmentation
--   ❌ No multi-frame reassembly
--   ❌ No PGN parsing
--   ❌ No address semantics
--   ❌ No retry logic
--   ❌ No protocol awareness
+---
 
-CAN is a **broadcast frame bus**. Anything above that is someone else's
-problem.
+## Build
 
-------------------------------------------------------------------------
+Standard Maven multi-module build.
 
-## Intended Usage
+```
+mvn clean install
+```
 
-Typical usage pattern:
+Snapshots:
+```
+mvn clean deploy
+```
 
-1.  Open `SocketCanDevice`
-2.  Query `CanCapabilities`
-3.  Read and write `CanFrame`
-4.  Let higher layers handle meaning, framing, and protocol rules
+Releases (Maven Central):
+```
+mvn clean deploy -Prelease
+```
 
-This layer is suitable as a foundation for: - NMEA 2000 - J1939 -
-ISO-TP - Custom CAN-based protocols - Diagnostic or monitoring tools
+---
 
-------------------------------------------------------------------------
+## Design Principles
 
-## Platform Requirements
+- **Explicit layering**: CAN socket → framing → protocol → profile
+- **Protocol correctness first**
+- **No vendor lock-in**
+- **Transport-aware, application-agnostic**
+- **Extensible by construction**
 
--   Linux
--   SocketCAN enabled kernel
--   CAN or CAN FD capable interface
--   Java + JNA
+---
 
-This is **Linux-only by design**.
+## License
 
-------------------------------------------------------------------------
+Licensed under the **Apache License, Version 2.0**, with the **Commons Clause**.
 
-## Philosophy
-
-If this layer ever starts to feel "helpful", it has gone too far.
-
-It exists to expose the bus as it is, not as we wish it were.
+See the LICENSE file for details.
