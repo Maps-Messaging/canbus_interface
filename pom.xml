@@ -1,34 +1,42 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~
-  ~     Copyright [ 2020 - 2025 ] [Matthew Buckton]
-  ~
-  ~     Licensed under the Apache License, Version 2.0 (the "License");
-  ~     you may not use this file except in compliance with the License.
-  ~     You may obtain a copy of the License at
-  ~
-  ~         http://www.apache.org/licenses/LICENSE-2.0
-  ~
-  ~     Unless required by applicable law or agreed to in writing, software
-  ~     distributed under the License is distributed on an "AS IS" BASIS,
-  ~     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  ~     See the License for the specific language governing permissions and
-  ~     limitations under the License.
+ ~
+ ~  Copyright [ 2024 - 2026 ] MapsMessaging B.V.
+ ~
+ ~  Licensed under the Apache License, Version 2.0 with the Commons Clause
+ ~  (the "License"); you may not use this file except in compliance with the License.
+ ~  You may obtain a copy of the License at:
+ ~
+ ~      http://www.apache.org/licenses/LICENSE-2.0
+ ~      https://commonsclause.com/
+ ~
+ ~  Unless required by applicable law or agreed to in writing, software
+ ~  distributed under the License is distributed on an "AS IS" BASIS,
+ ~  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ ~  See the License for the specific language governing permissions and
+ ~  limitations under the License.
   -->
 
-<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xmlns="http://maven.apache.org/POM/4.0.0"
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
+
     <groupId>io.mapsmessaging</groupId>
     <artifactId>canbus</artifactId>
     <version>1.0.0-SNAPSHOT</version>
-    <packaging>jar</packaging>
+    <packaging>pom</packaging>
 
-    <name>CanBus interface</name>
-    <description>Interface allowing read/write of canbus and canbus fd packets</description>
+    <name>CanBus</name>
+    <description>CAN bus protocol stack and device interfaces</description>
     <url>http://www.mapsmessaging.io</url>
+
+    <modules>
+        <module>canbus-core</module>
+        <module>canbus-J1939</module>
+        <module>canbus-nmea2000</module>
+    </modules>
 
     <developers>
         <developer>
@@ -67,20 +75,310 @@
         <tag>HEAD</tag>
     </scm>
 
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
+        <maven.compiler.release>17</maven.compiler.release>
+
+        <nvd.api.key>${env.NVD_API_KEY}</nvd.api.key>
+        <gpg.keyname>matthew.buckton@mapsmessaging.io</gpg.keyname>
+
+        <runSuite>**/*Suite.class</runSuite>
+
+        <sonar.host.url>https://sonarcloud.io</sonar.host.url>
+        <sonar.organization>maps-messaging</sonar.organization>
+        <sonar.sources>src/main</sonar.sources>
+        <sonar.test.exclusions>**/*Test.*,**/*IT.*,**.*JMH.*</sonar.test.exclusions>
+
+        <version.lombok>1.18.42</version.lombok>
+        <version.gson>2.13.2</version.gson>
+        <version.jna>5.18.1</version.jna>
+        <version.junit>6.0.1</version.junit>
+        <version.mockito>5.21.0</version.mockito>
+        <version.jsonSchemaValidator>1.5.1</version.jsonSchemaValidator>
+
+        <version.mavenCompilerPlugin>3.14.1</version.mavenCompilerPlugin>
+        <version.mavenSurefirePlugin>3.5.4</version.mavenSurefirePlugin>
+        <version.mavenDeployPlugin>3.1.1</version.mavenDeployPlugin>
+        <version.mavenGpgPlugin>3.2.8</version.mavenGpgPlugin>
+        <version.mavenJavadocPlugin>3.12.0</version.mavenJavadocPlugin>
+        <version.mavenSourcePlugin>3.3.1</version.mavenSourcePlugin>
+        <version.jacoco>0.8.14</version.jacoco>
+        <version.cyclonedx>2.9.1</version.cyclonedx>
+        <version.buildHelper>3.6.1</version.buildHelper>
+        <version.dependencyCheck>12.1.8</version.dependencyCheck>
+        <version.centralPublishing>0.9.0</version.centralPublishing>
+    </properties>
+
+    <distributionManagement>
+        <snapshotRepository>
+            <id>maps_snapshots</id>
+            <name>maps_snapshot_repository</name>
+            <url>https://repository.mapsmessaging.io/repository/maps_snapshots/</url>
+        </snapshotRepository>
+    </distributionManagement>
+
+    <dependencyManagement>
+        <dependencies>
+
+            <!-- Reactor modules -->
+            <dependency>
+                <groupId>io.mapsmessaging</groupId>
+                <artifactId>canbus-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.mapsmessaging</groupId>
+                <artifactId>canbus-J1939</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.mapsmessaging</groupId>
+                <artifactId>canbus-nmea2000</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <!-- External deps (optional but recommended if you want versions centralized) -->
+            <dependency>
+                <groupId>com.google.code.gson</groupId>
+                <artifactId>gson</artifactId>
+                <version>2.13.2</version>
+            </dependency>
+
+            <dependency>
+                <groupId>net.java.dev.jna</groupId>
+                <artifactId>jna</artifactId>
+                <version>5.18.1</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.networknt</groupId>
+                <artifactId>json-schema-validator</artifactId>
+                <version>1.5.1</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-core</artifactId>
+                <version>5.21.0</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-api</artifactId>
+                <version>6.0.1</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-engine</artifactId>
+                <version>6.0.1</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok</artifactId>
+                <version>1.18.38</version>
+            </dependency>
+
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-deploy-plugin</artifactId>
+                    <version>${version.mavenDeployPlugin}</version>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>${version.mavenCompilerPlugin}</version>
+                    <configuration>
+                        <release>${maven.compiler.release}</release>
+                        <annotationProcessorPaths>
+                            <path>
+                                <groupId>org.projectlombok</groupId>
+                                <artifactId>lombok</artifactId>
+                                <version>${version.lombok}</version>
+                            </path>
+                        </annotationProcessorPaths>
+                    </configuration>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>3.5.4</version>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.jacoco</groupId>
+                    <artifactId>jacoco-maven-plugin</artifactId>
+                    <version>${version.jacoco}</version>
+                    <configuration>
+                        <excludes>
+                            <exclude>**/*Test.*</exclude>
+                            <exclude>**/Test*.*</exclude>
+                        </excludes>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <id>prepare-agent</id>
+                            <goals>
+                                <goal>prepare-agent</goal>
+                            </goals>
+                        </execution>
+                        <execution>
+                            <id>report</id>
+                            <phase>test</phase>
+                            <goals>
+                                <goal>report</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-source-plugin</artifactId>
+                    <version>${version.mavenSourcePlugin}</version>
+                    <executions>
+                        <execution>
+                            <id>attach-sources</id>
+                            <goals>
+                                <goal>jar-no-fork</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-javadoc-plugin</artifactId>
+                    <version>${version.mavenJavadocPlugin}</version>
+                    <configuration>
+                        <charset>UTF-8</charset>
+                        <encoding>UTF-8</encoding>
+                        <javadocExecutable>${java.home}/bin/javadoc</javadocExecutable>
+                        <outputDirectory>${project.build.directory}/site/docs</outputDirectory>
+                        <show>public</show>
+                        <sourceFileExcludes>
+                            <sourceFileExclude>**/*Test.java</sourceFileExclude>
+                            <sourceFileExclude>**/Test*.java</sourceFileExclude>
+                            <sourceFileExclude>**/*IT.java</sourceFileExclude>
+                        </sourceFileExcludes>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <id>attach-javadocs</id>
+                            <goals>
+                                <goal>jar</goal>
+                            </goals>
+                            <configuration>
+                                <failOnError>false</failOnError>
+                                <additionalJOptions>
+                                    <additionalJOption>-Xdoclint:none</additionalJOption>
+                                </additionalJOptions>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-gpg-plugin</artifactId>
+                    <version>${version.mavenGpgPlugin}</version>
+                    <executions>
+                        <execution>
+                            <id>sign-artifacts</id>
+                            <phase>verify</phase>
+                            <goals>
+                                <goal>sign</goal>
+                            </goals>
+                            <configuration>
+                                <keyname>${gpg.keyname}</keyname>
+                                <passphraseServerId>${gpg.keyname}</passphraseServerId>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.cyclonedx</groupId>
+                    <artifactId>cyclonedx-maven-plugin</artifactId>
+                    <version>${version.cyclonedx}</version>
+                    <executions>
+                        <execution>
+                            <phase>package</phase>
+                            <goals>
+                                <goal>makeAggregateBom</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>build-helper-maven-plugin</artifactId>
+                    <version>${version.buildHelper}</version>
+                    <executions>
+                        <execution>
+                            <id>add-test-sources</id>
+                            <phase>generate-sources</phase>
+                            <goals>
+                                <goal>add-test-source</goal>
+                            </goals>
+                            <configuration>
+                                <sources>
+                                    <source>${basedir}/target/generated-test-sources</source>
+                                </sources>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.owasp</groupId>
+                    <artifactId>dependency-check-maven</artifactId>
+                    <version>${version.dependencyCheck}</version>
+                    <configuration>
+                        <nvdApiKey>${nvd.api.key}</nvdApiKey>
+                        <failBuildOnCVSS>10</failBuildOnCVSS>
+                        <failOnError>false</failOnError>
+                        <skipArtifactType>test-jar</skipArtifactType>
+                        <skipTestScope>true</skipTestScope>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>check</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+
     <profiles>
         <profile>
-            <!-- Default profile for regular releases -->
             <id>release</id>
             <properties>
                 <maven.deploy.skip>true</maven.deploy.skip>
             </properties>
             <build>
                 <plugins>
-                    <!-- Central publisher -->
                     <plugin>
                         <groupId>org.sonatype.central</groupId>
                         <artifactId>central-publishing-maven-plugin</artifactId>
-                        <version>0.9.0</version>
+                        <version>${version.centralPublishing}</version>
                         <extensions>true</extensions>
                         <configuration>
                             <publishingServerId>central</publishingServerId>
@@ -88,11 +386,10 @@
                         </configuration>
                     </plugin>
 
-                    <!-- Disable default deploy for releases -->
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-deploy-plugin</artifactId>
-                        <version>3.1.1</version>
+                        <version>${version.mavenDeployPlugin}</version>
                         <configuration>
                             <skip>true</skip>
                         </configuration>
@@ -118,298 +415,5 @@
             </repositories>
         </profile>
     </profiles>
-
-
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <nvd.api.key>${env.NVD_API_KEY}</nvd.api.key>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <gpg.keyname>matthew.buckton@mapsmessaging.io</gpg.keyname>
-
-        <runSuite>**/*Suite.class</runSuite>
-        <!-- Below property indicates the pattern of the test suite -->
-        <sonar.c.file.suffixes>-</sonar.c.file.suffixes>
-        <sonar.coverage.jacoco.xmlReportPaths>target/site/jacoco</sonar.coverage.jacoco.xmlReportPaths>
-
-        <!-- Sonar-JaCoCo properties -->
-        <sonar.cpp.file.suffixes>-</sonar.cpp.file.suffixes>
-        <sonar.dynamicAnalysis>reuseReports</sonar.dynamicAnalysis>
-        <sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
-
-        <sonar.language>java</sonar.language>
-        <sonar.objc.file.suffixes>-</sonar.objc.file.suffixes>
-
-        <sonar.host.url>https://sonarcloud.io</sonar.host.url>
-        <sonar.organization>maps-messaging</sonar.organization>
-        <sonar.projectKey>canbus</sonar.projectKey>
-
-        <sonar.sources>src/main</sonar.sources>
-        <sonar.test.exclusions>
-            **/*Test.*,**/*IT.*, **.*JMH.*
-        </sonar.test.exclusions>
-    </properties>
-
-    <distributionManagement>
-        <snapshotRepository>
-            <id>maps_snapshots</id>
-            <name>maps_snapshot_repository</name>
-            <url>https://repository.mapsmessaging.io/repository/maps_snapshots/</url>
-        </snapshotRepository>
-    </distributionManagement>
-
-    <build>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-deploy-plugin</artifactId>
-                    <version>3.1.1</version>
-                </plugin>
-            </plugins>
-        </pluginManagement>
-
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-gpg-plugin</artifactId>
-                <version>3.2.8</version>
-                <executions>
-                    <execution>
-                        <id>sign-artifacts</id>
-                        <phase>verify</phase>
-                        <goals>
-                            <goal>sign</goal>
-                        </goals>
-                        <configuration>
-                            <keyname>${gpg.keyname}</keyname>
-                            <passphraseServerId>${gpg.keyname}</passphraseServerId>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <!-- JavaDoc -->
-            <plugin>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <configuration>
-                    <charset>UTF-8</charset>
-                    <encoding>UTF-8</encoding>
-                    <javadocExecutable>${java.home}/bin/javadoc</javadocExecutable>
-                    <outputDirectory>${project.build.directory}/site/docs</outputDirectory>
-                    <show>public</show>
-                    <sourceFileExcludes>
-                        <sourceFileExclude>**/*Test.java</sourceFileExclude>
-                        <sourceFileExclude>**/Test*.java</sourceFileExclude>
-                        <sourceFileExclude>**/*IT.java</sourceFileExclude>
-                    </sourceFileExcludes>
-                </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                        <configuration>
-                            <failOnError>false</failOnError>
-                            <additionalJOptions>
-                                <additionalJOption>-Xdoclint:none</additionalJOption>
-                            </additionalJOptions>
-                        </configuration>
-                        <id>attach-javadocs</id>
-                    </execution>
-                </executions>
-                <groupId>org.apache.maven.plugins</groupId>
-                <version>3.12.0</version>
-            </plugin>
-
-            <!-- Allow JDKs greater than 1.8 to be used by maven -->
-            <!-- build the source jar as well -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-source-plugin</artifactId>
-                <version>3.3.1</version>
-                <executions>
-                    <execution>
-                        <id>attach-sources</id>
-                        <goals>
-                            <goal>jar-no-fork</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <!-- Setup code coverage by jacoco for our tests -->
-            <plugin>
-                <artifactId>jacoco-maven-plugin</artifactId>
-                <configuration>
-                    <excludes>
-                        <!-- test code, lets not track the testing -->
-                        <exclude>**/*Test.*</exclude>
-                        <exclude>**/Test*.*</exclude>
-                    </excludes>
-                </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>prepare-agent</goal>
-                        </goals>
-                    </execution>
-                    <!-- attached to Maven test phase -->
-                    <execution>
-                        <goals>
-                            <goal>report</goal>
-                        </goals>
-                        <id>report</id>
-                        <phase>test</phase>
-                    </execution>
-                </executions>
-                <groupId>org.jacoco</groupId>
-                <version>0.8.14</version>
-            </plugin>
-
-            <!-- sBOM  generator -->
-            <plugin>
-                <groupId>org.cyclonedx</groupId>
-                <artifactId>cyclonedx-maven-plugin</artifactId>
-                <version>2.9.1</version>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>makeAggregateBom</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>build-helper-maven-plugin</artifactId>
-                <version>3.6.1</version>
-                <executions>
-                    <execution>
-                        <id>add-test-sources</id>
-                        <phase>generate-sources</phase>
-                        <goals>
-                            <goal>add-test-source</goal>
-                        </goals>
-                        <configuration>
-                            <sources>
-                                <source>${basedir}/target/generated-test-sources</source>
-                            </sources>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.14.1</version>
-                <configuration>
-                    <source>17</source>
-                    <target>17</target>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>org.projectlombok</groupId>
-                            <artifactId>lombok</artifactId>
-                            <version>1.18.42</version>
-                        </path>
-                    </annotationProcessorPaths>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.owasp</groupId>
-                <artifactId>dependency-check-maven</artifactId>
-                <version>12.1.8</version>
-                <configuration>
-                    <nvdApiKey>${nvd.api.key}</nvdApiKey>
-                    <failBuildOnCVSS>10</failBuildOnCVSS>
-                    <failOnError>false</failOnError>
-                    <skipArtifactType>test-jar</skipArtifactType>
-                    <skipTestScope>true</skipTestScope>
-                </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <version>3.6.0</version>
-                <executions>
-                    <execution>
-                        <id>shade</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <!-- Replace the normal jar with the shaded one -->
-                            <shadedArtifactAttached>false</shadedArtifactAttached>
-
-                            <!-- Don’t generate a dependency-reduced POM -->
-                            <createDependencyReducedPom>false</createDependencyReducedPom>
-
-                            <!-- Avoid signature collisions -->
-                            <filters>
-                                <filter>
-                                    <artifact>*:*</artifact>
-                                    <excludes>
-                                        <exclude>META-INF/*.SF</exclude>
-                                        <exclude>META-INF/*.DSA</exclude>
-                                        <exclude>META-INF/*.RSA</exclude>
-                                    </excludes>
-                                </filter>
-                            </filters>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-        </plugins>
-    </build>
-
-    <dependencies>
-        <dependency>
-            <artifactId>lombok</artifactId>
-            <groupId>org.projectlombok</groupId>
-            <version>1.18.38</version>
-            <scope>provided</scope>
-        </dependency>
-
-        <!-- Maven -->
-        <dependency>
-            <groupId>net.java.dev.jna</groupId>
-            <artifactId>jna</artifactId>
-            <version>5.18.1</version>
-        </dependency>
-        <dependency>
-            <groupId>com.google.code.gson</groupId>
-            <artifactId>gson</artifactId>
-            <version>2.13.2</version>
-        </dependency>
-
-
-        <!-- Junit5 -->
-        <dependency>
-            <artifactId>junit-jupiter-engine</artifactId>
-            <groupId>org.junit.jupiter</groupId>
-            <scope>test</scope>
-            <version>6.0.1</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-core</artifactId>
-            <version>5.21.0</version>
-            <scope>test</scope>
-        </dependency>
-
-    </dependencies>
 
 </project>
