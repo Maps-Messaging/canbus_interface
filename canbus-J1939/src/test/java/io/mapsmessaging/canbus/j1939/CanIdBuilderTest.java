@@ -21,8 +21,7 @@ package io.mapsmessaging.canbus.j1939;
 
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class CanIdBuilderTest {
 
@@ -61,9 +60,21 @@ class CanIdBuilderTest {
   }
 
   @Test
-  void build_priorityIsMaskedTo3Bits() {
+  void build_priorityOutsideRangeThrows() {
     int pgn = 0x00EA00; // PF < 240 so destination is used
-    int priority = 0xFF; // should become 7
+    int priority = 0xFF; // invalid
+    int sourceAddress = 0x01;
+    int destinationAddress = 0x02;
+
+    assertThrows(IllegalArgumentException.class,
+        () -> CanIdBuilder.build(pgn, priority, sourceAddress, destinationAddress));
+  }
+
+
+  @Test
+  void build_priorityIsPreservedWhenValid() {
+    int pgn = 0x00EA00;
+    int priority = 7;
     int sourceAddress = 0x01;
     int destinationAddress = 0x02;
 
@@ -71,6 +82,7 @@ class CanIdBuilderTest {
 
     assertEquals(7, extractPriority(id));
   }
+
 
   @Test
   void build_sourceAndDestinationAreMaskedTo8Bits() {
