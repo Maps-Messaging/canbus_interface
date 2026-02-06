@@ -16,10 +16,14 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-
 package io.mapsmessaging.canbus.j1939;
 
 public class CanIdBuilder {
+
+  private static final int EXTENDED_ID_MASK = 0x1FFFFFFF;
+  private static final int PRIORITY_MASK = 0x07;
+  private static final int BYTE_MASK = 0xFF;
+  private static final int PDU1_MAX_PF = 239;
 
   private CanIdBuilder() {
   }
@@ -35,22 +39,29 @@ public class CanIdBuilder {
    * - SA: bits 0..7
    *
    * PGN rules:
-   * - PF < 240 => PDU1 => PS is destination
+   * - PF < 240 => PDU1 => PS is destination, PGN low byte must be 0x00
    * - PF >= 240 => PDU2 => PS comes from PGN low byte, destination implied global
    */
   public static int build(int pgn, int priority, int sourceAddress, int destinationAddress) {
-    int prio = priority & 0x07;
-    int dp = (pgn >> 16) & 0x01;
-    int pf = (pgn >> 8) & 0xFF;
-
-    int ps;
-    if (pf < 240) {
-      ps = destinationAddress & 0xFF;
-    } else {
-      ps = pgn & 0xFF;
+    if (priority < 0 || priority > PRIORITY_MASK) {
+      throw new IllegalArgumentException("priority must be in range 0..7, got " + priority);
     }
 
-    int sa = sourceAddress & 0xFF;
+    int prio = priority & PRIORITY_MASK;
+    int dp = (pgn >> 16) & 0x01;
+    int pf = (pgn >> 8) & BYTE_MASK;
+
+    int ps;
+    if (pf <= PDU1_MAX_PF) {
+      if ((pgn & BYTE_MASK) != 0) {
+        throw new IllegalArgumentException("PDU1 PGN must have low byte 0x00, got 0x" + Integer.toHexString(pgn));
+      }
+      ps = destinationAddress & BYTE_MASK;
+    } else {
+      ps = pgn & BYTE_MASK;
+    }
+
+    int sa = sourceAddress & BYTE_MASK;
 
     int identifier = 0;
     identifier |= (prio << 26);
@@ -59,6 +70,7 @@ public class CanIdBuilder {
     identifier |= (ps << 8);
     identifier |= sa;
 
-    return identifier & 0x1FFFFFFF;
+    return identifier & EXTENDED_ID_MASK;
   }
+
 }

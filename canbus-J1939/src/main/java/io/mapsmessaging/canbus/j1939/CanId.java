@@ -16,60 +16,80 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-
 package io.mapsmessaging.canbus.j1939;
 
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 @Getter
+@RequiredArgsConstructor
 public class CanId {
+
+  private static final int EXTENDED_ID_MASK = 0x1FFFFFFF;
+
+  private static final int PRIORITY_SHIFT = 26;
+  private static final int PRIORITY_MASK = 0x7;
+
+  private static final int DATA_PAGE_SHIFT = 24;
+  private static final int DATA_PAGE_MASK = 0x1;
+
+  private static final int PDU_FORMAT_SHIFT = 16;
+  private static final int BYTE_MASK = 0xFF;
+
+  private static final int PDU1_MAX_PF = 239;
+  private static final int BROADCAST_ADDRESS = 255;
 
   private final int priority;
   private final int pgn;
   private final int sourceAddress;
   private final int destinationAddress;
 
-  private CanId(int priority, int pgn, int sourceAddress, int destinationAddress) {
-    this.priority = priority;
-    this.pgn = pgn;
-    this.sourceAddress = sourceAddress;
-    this.destinationAddress = destinationAddress;
-  }
-
-  /**
-   * Parse a 29-bit extended CAN identifier used by NMEA 2000.
-   *
-   * Layout (J1939 style):
-   * - Priority: bits 26..28 (3 bits)
-   * - PGN: derived from PF/PS/DP
-   * - Source: bits 0..7
-   *
-   * PGN rules:
-   * - PF < 240 (PDU1): PGN uses PF and DP, PS is destination and excluded from PGN (low byte becomes 0)
-   * - PF >= 240 (PDU2): PGN includes PF and PS, destination is "global" (255)
-   */
   public static CanId parse(int canIdentifier) {
-    int identifier = canIdentifier & 0x1FFFFFFF;
+    int identifier = canIdentifier & EXTENDED_ID_MASK;
 
-    int priority = (identifier >> 26) & 0x07;
-    int pf = (identifier >> 16) & 0xFF;
-    int ps = (identifier >> 8) & 0xFF;
-    int source = identifier & 0xFF;
-    int dataPage = (identifier >> 24) & 0x01;
+    int priority = (identifier >> PRIORITY_SHIFT) & PRIORITY_MASK;
+    int pduFormat = (identifier >> PDU_FORMAT_SHIFT) & BYTE_MASK;
+    int pduSpecific = (identifier >> 8) & BYTE_MASK;
+    int sourceAddress = identifier & BYTE_MASK;
+    int dataPage = (identifier >> DATA_PAGE_SHIFT) & DATA_PAGE_MASK;
 
     int pgn;
-    int destination;
+    int destinationAddress;
 
-    if (pf < 240) {
-      // PDU1
-      destination = ps;
-      pgn = (dataPage << 16) | (pf << 8);
+    if (pduFormat <= PDU1_MAX_PF) {
+      destinationAddress = pduSpecific;
+      pgn = (dataPage << 16) | (pduFormat << 8);
     } else {
-      // PDU2
-      destination = 255;
-      pgn = (dataPage << 16) | (pf << 8) | ps;
+      destinationAddress = BROADCAST_ADDRESS;
+      pgn = (dataPage << 16) | (pduFormat << 8) | pduSpecific;
     }
 
-    return new CanId(priority, pgn, source, destination);
+    return new CanId(priority, pgn, sourceAddress, destinationAddress);
+  }
+
+  public boolean isPdu1() {
+    return (pgn & BYTE_MASK) == 0;
+  }
+
+  public boolean isPdu2() {
+    return !isPdu1();
+  }
+
+  public boolean isBroadcast() {
+    return isPdu2();
+  }
+
+  public Integer getDestinationAddressOrNull() {
+    if (isPdu1()) {
+      return destinationAddress;
+    }
+    return null;
+  }
+
+  public Integer getGroupExtensionOrNull() {
+    if (isPdu2()) {
+      return pgn & BYTE_MASK;
+    }
+    return null;
   }
 }
