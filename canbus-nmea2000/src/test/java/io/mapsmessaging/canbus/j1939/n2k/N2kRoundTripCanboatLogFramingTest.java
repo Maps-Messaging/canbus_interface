@@ -170,10 +170,10 @@ class N2kRoundTripCanboatLogFramingTest {
 
     for (CanFrame frame : frames) {
       Optional<Message> message = frameHandler.onFrame(
-          frame.getCanIdentifier(),
+          frame.canIdentifier(),
           true,
-          frame.getDataLengthCode(),
-          frame.getData()
+          frame.dataLengthCode(),
+          frame.data()
       );
 
       if (message.isEmpty()) {
