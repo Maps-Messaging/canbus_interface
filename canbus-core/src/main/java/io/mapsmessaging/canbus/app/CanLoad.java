@@ -43,7 +43,7 @@ public final class CanLoad {
     writer.writeFrame(frame);
   }
 
-  private static void read(SocketCanDevice reader, String interfaceName) throws IOException {
+  private static void read(SocketCanDevice reader) throws IOException {
     reader.readFrame();
   }
 
@@ -63,7 +63,7 @@ public final class CanLoad {
         if (startSend) {
           write(reader, 0x123, false);
         }
-        read(reader, interfaceName);
+        read(reader);
         startSend = true;
         if(System.currentTimeMillis() > reportTime){
           reportTime = System.currentTimeMillis()+1000;

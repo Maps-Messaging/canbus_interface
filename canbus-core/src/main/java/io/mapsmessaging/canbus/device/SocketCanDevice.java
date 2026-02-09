@@ -165,7 +165,7 @@ public final class SocketCanDevice implements Closeable {
   }
 
   public void writeFrame(CanFrame frame) throws IOException {
-    writeFrame(frame.getCanIdentifier(), frame.isExtendedFrame(), frame.getDataLengthCode(), frame.getData());
+    writeFrame(frame.canIdentifier(), frame.extendedFrame(), frame.dataLengthCode(), frame.data());
   }
 
   public void writeFrame(int canIdentifier, boolean extendedFrame, int dataLengthCode, byte[] data) throws IOException {
