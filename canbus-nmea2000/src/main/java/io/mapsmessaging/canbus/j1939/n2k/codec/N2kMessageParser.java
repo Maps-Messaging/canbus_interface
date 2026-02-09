@@ -71,7 +71,7 @@ public class N2kMessageParser {
     JsonObject envelope = new JsonObject();
     envelope.addProperty("pgn", pgn);
     envelope.add("decoded", decoded);
-
+    envelope.addProperty("name", message.getId());
     return envelope;
   }
 
