@@ -104,13 +104,13 @@ public class N2kJsonSchemaGenerator {
     decoded.add("properties", decodedProperties);
     decoded.addProperty("additionalProperties", false);
 
-    properties.add("decoded", decoded);
+    properties.add("packet", decoded);
 
     schema.add("properties", properties);
 
     JsonArray required = new JsonArray();
     required.add("pgn");
-    required.add("decoded");
+    required.add("packet");
     schema.add("required", required);
 
     schema.addProperty("additionalProperties", false);

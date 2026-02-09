@@ -37,6 +37,6 @@ public class KnownMessage implements Message {
     this.canId = Objects.requireNonNull(canId, "canId");
     this.rawCanIdentifier = rawCanIdentifier;
     this.payload = Objects.requireNonNull(payload, "payload");
-    this.decoded = Objects.requireNonNull(decoded, "decoded");
+    this.decoded = Objects.requireNonNull(decoded, "packet");
   }
 }

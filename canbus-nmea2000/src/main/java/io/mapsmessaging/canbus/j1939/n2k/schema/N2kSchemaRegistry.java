@@ -158,13 +158,13 @@ public class N2kSchemaRegistry {
     decodedProperty.add("required", required);
     decodedProperty.addProperty("additionalProperties", false);
 
-    properties.add("decoded", decodedProperty);
+    properties.add("packet", decodedProperty);
 
     root.add("properties", properties);
 
     JsonArray rootRequired = new JsonArray();
     rootRequired.add("pgn");
-    rootRequired.add("decoded");
+    rootRequired.add("packet");
     root.add("required", rootRequired);
 
     root.addProperty("additionalProperties", false);

@@ -55,7 +55,7 @@ class N2kJsonSchemaGeneratorTest {
     assertNotNull(required);
     assertEquals(2, required.size());
     assertEquals("pgn", required.get(0).getAsString());
-    assertEquals("decoded", required.get(1).getAsString());
+    assertEquals("packet", required.get(1).getAsString());
 
     JsonObject properties = schema.getAsJsonObject("properties");
     assertNotNull(properties);
@@ -65,7 +65,7 @@ class N2kJsonSchemaGeneratorTest {
     assertEquals("integer", pgn.get("type").getAsString());
     assertEquals(129025, pgn.get("const").getAsInt());
 
-    JsonObject decoded = properties.getAsJsonObject("decoded");
+    JsonObject decoded = properties.getAsJsonObject("packet");
     assertNotNull(decoded);
     assertEquals("object", decoded.get("type").getAsString());
     assertFalse(decoded.get("additionalProperties").getAsBoolean());
@@ -103,7 +103,7 @@ class N2kJsonSchemaGeneratorTest {
 
     JsonObject decodedProperties = schema
         .getAsJsonObject("properties")
-        .getAsJsonObject("decoded")
+        .getAsJsonObject("packet")
         .getAsJsonObject("properties");
 
     JsonObject prop = decodedProperties.getAsJsonObject("waterTemp");
@@ -252,7 +252,7 @@ class N2kJsonSchemaGeneratorTest {
 
     JsonObject decodedProperties = schema
         .getAsJsonObject("properties")
-        .getAsJsonObject("decoded")
+        .getAsJsonObject("packet")
         .getAsJsonObject("properties");
 
     assertTrue(decodedProperties.has("validNumber"));
@@ -311,7 +311,7 @@ class N2kJsonSchemaGeneratorTest {
 
     JsonObject decodedProperties = schema
         .getAsJsonObject("properties")
-        .getAsJsonObject("decoded")
+        .getAsJsonObject("packet")
         .getAsJsonObject("properties");
 
     Iterator<Map.Entry<String, JsonElement>> iterator = decodedProperties.entrySet().iterator();
@@ -373,7 +373,7 @@ class N2kJsonSchemaGeneratorTest {
 
     JsonObject decodedProperties = schema
         .getAsJsonObject("properties")
-        .getAsJsonObject("decoded")
+        .getAsJsonObject("packet")
         .getAsJsonObject("properties");
 
     assertFalse(decodedProperties.has("missingOffset"));
@@ -442,7 +442,7 @@ class N2kJsonSchemaGeneratorTest {
 
     JsonObject decodedProperties = schema
         .getAsJsonObject("properties")
-        .getAsJsonObject("decoded")
+        .getAsJsonObject("packet")
         .getAsJsonObject("properties");
 
     JsonObject nameOnlyProp = decodedProperties.getAsJsonObject("nameOnly");

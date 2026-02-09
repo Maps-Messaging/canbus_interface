@@ -48,14 +48,14 @@ class N2kCodecRoundTripTest {
 
     JsonObject envelope = new JsonObject();
     envelope.addProperty("pgn", 127245);
-    envelope.add("decoded", decoded);
+    envelope.add("packet", decoded);
 
     byte[] payload = parser.encodeFromJson(127245, envelope);
     JsonObject decodedBack = parser.decodeToJson(127245, payload);
 
-    assertEquals(127245, decodedBack.get("pgn").getAsInt());
+    assertEquals("rudder", decodedBack.get("name").getAsString());
 
-    JsonObject decodedFields = decodedBack.getAsJsonObject("decoded");
+    JsonObject decodedFields = decodedBack.getAsJsonObject("packet");
     assertEquals(1, decodedFields.get("rudderInstance").getAsInt());
     assertEquals(3, decodedFields.get("directionOrder").getAsInt());
 
@@ -77,14 +77,14 @@ class N2kCodecRoundTripTest {
 
     JsonObject envelope = new JsonObject();
     envelope.addProperty("pgn", 127250);
-    envelope.add("decoded", decoded);
+    envelope.add("packet", decoded);
 
     byte[] payload = parser.encodeFromJson(127250, envelope);
     JsonObject decodedBack = parser.decodeToJson(127250, payload);
 
-    assertEquals(127250, decodedBack.get("pgn").getAsInt());
+    assertEquals("vesselHeading", decodedBack.get("name").getAsString());
 
-    JsonObject decodedFields = decodedBack.getAsJsonObject("decoded");
+    JsonObject decodedFields = decodedBack.getAsJsonObject("packet");
     assertEquals(9, decodedFields.get("sid").getAsInt());
     assertEquals(2, decodedFields.get("headingSensorReference").getAsInt());
 

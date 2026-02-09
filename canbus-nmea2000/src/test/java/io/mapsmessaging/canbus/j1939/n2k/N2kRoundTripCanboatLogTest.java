@@ -88,8 +88,8 @@ class N2kRoundTripCanboatLogTest {
         JsonObject decoded2Envelope = parser.decodeToJson(row.pgn, reencoded);
         assertNotNull(decoded2Envelope, "decodeToJson( reencoded ) returned null. line=" + totalLines);
 
-        JsonObject decoded1 = decodedEnvelope.getAsJsonObject("decoded");
-        JsonObject decoded2 = decoded2Envelope.getAsJsonObject("decoded");
+        JsonObject decoded1 = decodedEnvelope.getAsJsonObject("packet");
+        JsonObject decoded2 = decoded2Envelope.getAsJsonObject("packet");
         assertNotNull(decoded1, "Missing decoded object in first envelope. line=" + totalLines);
         assertNotNull(decoded2, "Missing decoded object in second envelope. line=" + totalLines);
 

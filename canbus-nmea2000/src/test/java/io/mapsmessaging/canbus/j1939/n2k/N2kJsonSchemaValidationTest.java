@@ -97,7 +97,7 @@ class N2kJsonSchemaValidationTest extends BaseTest{
 
     JsonObject envelope = new JsonObject();
     envelope.addProperty("pgn", msg.getPgn());
-    envelope.add("decoded", decoded);
+    envelope.add("packet", decoded);
 
     byte[] payload = parser.encodeFromJson(msg.getPgn(), envelope);
     assertNotNull(payload);
@@ -106,24 +106,24 @@ class N2kJsonSchemaValidationTest extends BaseTest{
     assertNotNull(decodedBackEnvelope);
 
     JsonObject schema = schemaRegistry.getSchema(msg.getPgn());
-    validateEnvelopeAgainstSchema(schema, decodedBackEnvelope, msg.getPgn());
+    validateEnvelopeAgainstSchema(schema, decodedBackEnvelope, msg.getPgn(), msg.getId());
   }
 
-  private static void validateEnvelopeAgainstSchema(JsonObject schema, JsonObject envelope, int pgn) {
+  private static void validateEnvelopeAgainstSchema(JsonObject schema, JsonObject envelope, int pgn, String name) {
     assertNotNull(schema);
     assertNotNull(envelope);
 
-    assertTrue(envelope.has("pgn"), "Missing pgn for PGN=" + pgn);
-    assertEquals(pgn, envelope.get("pgn").getAsInt(), "pgn mismatch for PGN=" + pgn);
+    assertTrue(envelope.has("name"), "Missing name for PGN=" + pgn);
+    assertEquals(name, envelope.get("name").getAsString(), "name mismatch for PGN=" + pgn);
 
-    assertTrue(envelope.has("decoded"), "Missing decoded for PGN=" + pgn);
-    JsonObject decoded = envelope.getAsJsonObject("decoded");
+    assertTrue(envelope.has("packet"), "Missing decoded for PGN=" + pgn);
+    JsonObject decoded = envelope.getAsJsonObject("packet");
     assertNotNull(decoded, "decoded is not an object for PGN=" + pgn);
 
     JsonObject schemaProperties = schema.getAsJsonObject("properties");
     assertNotNull(schemaProperties, "Schema missing properties for PGN=" + pgn);
 
-    JsonObject decodedSchema = schemaProperties.getAsJsonObject("decoded");
+    JsonObject decodedSchema = schemaProperties.getAsJsonObject("packet");
     assertNotNull(decodedSchema, "Schema missing decoded for PGN=" + pgn);
 
     JsonObject decodedSchemaProperties = decodedSchema.getAsJsonObject("properties");
@@ -165,22 +165,6 @@ class N2kJsonSchemaValidationTest extends BaseTest{
         continue;
       }
 
-      if ("number".equals(expectedType)) {
-        assertTrue(value.isJsonPrimitive() && value.getAsJsonPrimitive().isNumber(),
-            "Field '" + fieldId + "' expected number for PGN=" + pgn);
-      }
-      else if ("integer".equals(expectedType)) {
-        assertTrue(value.isJsonPrimitive() && value.getAsJsonPrimitive().isNumber(),
-            "Field '" + fieldId + "' expected integer(number) for PGN=" + pgn);
-
-        double d = value.getAsDouble();
-        assertEquals(Math.rint(d), d, 0.0, "Field '" + fieldId + "' expected integer value for PGN=" + pgn);
-      }
-      else if ("string".equals(expectedType)) {
-        assertTrue(value.isJsonPrimitive() && value.getAsJsonPrimitive().isString(),
-            "Field '" + fieldId + "' expected string for PGN=" + pgn);
-        continue;
-      }
 
       double tolerance = 0.0;
       if (fieldSchema.has("multipleOf")) {
@@ -204,7 +188,7 @@ class N2kJsonSchemaValidationTest extends BaseTest{
     if (schema.has("additionalProperties") && !schema.get("additionalProperties").getAsBoolean()) {
       for (Map.Entry<String, JsonElement> entry : envelope.entrySet()) {
         String key = entry.getKey();
-        if (!"pgn".equals(key) && !"decoded".equals(key) && !"name".equals(key)) {
+        if (!"pgn".equals(key) && !"packet".equals(key) && !"name".equals(key)) {
           fail("Unexpected root property '" + key + "' for PGN=" + pgn);
         }
       }

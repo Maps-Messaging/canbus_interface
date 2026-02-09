@@ -90,8 +90,8 @@ class N2kRoundTripAllPgnsTest extends BaseTest{
     }
 
     JsonObject envelope = new JsonObject();
-    envelope.addProperty("pgn", msg.getPgn());
-    envelope.add("decoded", decoded);
+    envelope.addProperty("name", msg.getId());
+    envelope.add("packet", decoded);
 
     byte[] payload = parser.encodeFromJson(msg.getPgn(), envelope);
     assertNotNull(payload);
@@ -99,9 +99,9 @@ class N2kRoundTripAllPgnsTest extends BaseTest{
     JsonObject decodedBackEnvelope = parser.decodeToJson(msg.getPgn(), payload);
     assertNotNull(decodedBackEnvelope);
 
-    assertEquals(msg.getPgn(), decodedBackEnvelope.get("pgn").getAsInt());
+    assertEquals(msg.getId(), decodedBackEnvelope.get("name").getAsString());
 
-    JsonObject decodedBack = decodedBackEnvelope.getAsJsonObject("decoded");
+    JsonObject decodedBack = decodedBackEnvelope.getAsJsonObject("packet");
     assertNotNull(decodedBack);
 
     for (Map.Entry<String, JsonElement> entry : decoded.entrySet()) {

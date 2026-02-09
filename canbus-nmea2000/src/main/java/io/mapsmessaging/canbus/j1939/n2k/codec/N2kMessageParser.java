@@ -69,8 +69,7 @@ public class N2kMessageParser {
     }
 
     JsonObject envelope = new JsonObject();
-    envelope.addProperty("pgn", pgn);
-    envelope.add("decoded", decoded);
+    envelope.add("packet", decoded);
     envelope.addProperty("name", message.getId());
     return envelope;
   }
@@ -83,10 +82,10 @@ public class N2kMessageParser {
     if (envelope == null) {
       throw new IllegalArgumentException("Envelope is null");
     }
-    if (!envelope.has("decoded") || envelope.get("decoded").isJsonNull()) {
+    if (!envelope.has("packet") || envelope.get("packet").isJsonNull()) {
       throw new IllegalArgumentException("Missing 'decoded' object");
     }
-    JsonObject decoded = envelope.getAsJsonObject("decoded");
+    JsonObject decoded = envelope.getAsJsonObject("packet");
 
     int payloadLengthBytes = computePayloadLengthBytes(message, decoded);
     byte[] payload = new byte[payloadLengthBytes];

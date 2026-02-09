@@ -92,7 +92,7 @@ class N2kRoundTripCanboatLogFramingTest {
           continue;
         }
 
-        JsonObject decoded1 = decodedEnvelope1.getAsJsonObject("decoded");
+        JsonObject decoded1 = decodedEnvelope1.getAsJsonObject("packet");
         if (decoded1 == null) {
           decodeFailureCounts.merge(row.pgn, 1, Integer::sum);
           continue;
@@ -119,7 +119,7 @@ class N2kRoundTripCanboatLogFramingTest {
 
         assembled++;
 
-        JsonObject decoded2 = decodedEnvelope2.getAsJsonObject("decoded");
+        JsonObject decoded2 = decodedEnvelope2.getAsJsonObject("packet");
         assertNotNull(decoded2, "Missing decoded object in second envelope. line=" + totalLines);
 
         assertSemanticallyEqual(row.pgn, decoded1, decoded2, totalLines);
