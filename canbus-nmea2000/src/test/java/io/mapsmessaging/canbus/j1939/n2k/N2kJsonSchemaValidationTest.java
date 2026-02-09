@@ -204,7 +204,7 @@ class N2kJsonSchemaValidationTest extends BaseTest{
     if (schema.has("additionalProperties") && !schema.get("additionalProperties").getAsBoolean()) {
       for (Map.Entry<String, JsonElement> entry : envelope.entrySet()) {
         String key = entry.getKey();
-        if (!"pgn".equals(key) && !"decoded".equals(key)) {
+        if (!"pgn".equals(key) && !"decoded".equals(key) && !"name".equals(key)) {
           fail("Unexpected root property '" + key + "' for PGN=" + pgn);
         }
       }
