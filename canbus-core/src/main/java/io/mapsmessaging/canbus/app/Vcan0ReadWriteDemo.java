@@ -18,8 +18,9 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-package io.mapsmessaging.canbus.device;
+package io.mapsmessaging.canbus.app;
 
+import io.mapsmessaging.canbus.device.SocketCanDevice;
 import io.mapsmessaging.canbus.device.frames.CanFrame;
 
 import java.io.IOException;
@@ -34,16 +35,17 @@ public final class Vcan0ReadWriteDemo {
   private static final int PAYLOAD_LENGTH = 8;
 
   public static void main(String[] args) throws Exception {
-    String interfaceName = args != null && args.length > 0 ? args[0] : "vcan0";
+    String interfaceName1 = args != null && args.length > 0 ? args[0] : "vcan0";
+    String interfaceName2 = args != null && args.length > 0 ? args[0] : "vcan0";
 
     AtomicBoolean running = new AtomicBoolean(true);
     AtomicLong sentCount = new AtomicLong(0);
 
-    try (SocketCanDevice reader = new SocketCanDevice(interfaceName);
-         SocketCanDevice writer = new SocketCanDevice(interfaceName)) {
+    try (SocketCanDevice reader = new SocketCanDevice(interfaceName1);
+         SocketCanDevice writer = new SocketCanDevice(interfaceName2)) {
 
-      System.out.println("Opened reader on " + interfaceName + " capabilities=" + reader.getCanCapabilities());
-      System.out.println("Opened writer on " + interfaceName + " capabilities=" + writer.getCanCapabilities());
+      System.out.println("Opened reader on " + interfaceName1 + " capabilities=" + reader.getCanCapabilities());
+      System.out.println("Opened writer on " + interfaceName2 + " capabilities=" + writer.getCanCapabilities());
       System.out.println("Press Ctrl+C to stop.");
 
       Thread readThread = new Thread(() -> runReadLoop(reader, running), "vcan-read");
@@ -70,12 +72,6 @@ public final class Vcan0ReadWriteDemo {
       try {
         CanFrame frame = reader.readFrame();
         received++;
-
-        String payloadHex = toHex(frame.getData(), frame.getDataLengthCode());
-        System.out.println("RX id=0x" + Integer.toHexString(frame.getCanIdentifier())
-            + " len=" + frame.getDataLengthCode()
-            + " data=" + payloadHex);
-
         Instant now = Instant.now();
         if (Duration.between(lastPrint, now).toSeconds() >= 5) {
           System.out.println("RX stats: received=" + received);
@@ -111,12 +107,14 @@ public final class Vcan0ReadWriteDemo {
         writer.writeFrame(new CanFrame(CAN_ID, false, PAYLOAD_LENGTH, payload));
 
         long sent = sentCount.incrementAndGet();
-        if ((sent % 20) == 0) {
+        if ((sent % 3000) == 0) {
           System.out.println("TX stats: sent=" + sent);
         }
 
         counter++;
-        Thread.sleep(250);
+        if(counter % 3 == 0) {
+          Thread.sleep(1);
+        }
       } catch (IOException e) {
         if (running.get()) {
           System.err.println("TX error: " + e.getMessage());

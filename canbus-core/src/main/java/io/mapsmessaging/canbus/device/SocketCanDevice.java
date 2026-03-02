@@ -73,7 +73,7 @@ public final class SocketCanDevice implements Closeable {
   }
 
   public SocketCanDevice(String interfaceName, LibCFacade libC, InterfaceIndexResolver resolver) throws IOException {
-    this.interfaceName = interfaceName;
+    this.interfaceName = interfaceName.trim();
     this.libC = libC;
     InterfaceIndexResolver interfaceIndexResolver = resolver != null ? resolver : new JnaInterfaceIndexResolver(libC);
 
