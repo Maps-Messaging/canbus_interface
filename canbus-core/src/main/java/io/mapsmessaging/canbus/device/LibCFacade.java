@@ -38,5 +38,7 @@ public interface LibCFacade {
 
   int getsockopt(int sockfd, int level, int optname, IntByReference optval, IntByReference optlen);
 
+  int ifNameToIndex(String interfaceName);
+
   int getLastError();
 }
