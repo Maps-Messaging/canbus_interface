@@ -107,14 +107,12 @@ public final class Vcan0ReadWriteDemo {
         writer.writeFrame(new CanFrame(CAN_ID, false, PAYLOAD_LENGTH, payload));
 
         long sent = sentCount.incrementAndGet();
-        if ((sent % 3000) == 0) {
+        if ((sent % 20) == 0) {
           System.out.println("TX stats: sent=" + sent);
         }
 
         counter++;
-        if(counter % 3 == 0) {
-          Thread.sleep(1);
-        }
+        Thread.sleep(200);
       } catch (IOException e) {
         if (running.get()) {
           System.err.println("TX error: " + e.getMessage());
