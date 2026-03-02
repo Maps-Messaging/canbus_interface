@@ -73,6 +73,9 @@ public final class SocketCanDevice implements Closeable {
   }
 
   public SocketCanDevice(String interfaceName, LibCFacade libC, InterfaceIndexResolver resolver) throws IOException {
+    if (interfaceName == null) {
+      throw new IllegalArgumentException("interfaceName must not be null");
+    }
     this.interfaceName = interfaceName.trim();
     this.libC = libC;
     InterfaceIndexResolver interfaceIndexResolver = resolver != null ? resolver : new JnaInterfaceIndexResolver(libC);
@@ -169,27 +172,8 @@ public final class SocketCanDevice implements Closeable {
   }
 
   public void writeFrame(int canIdentifier, boolean extendedFrame, int dataLengthCode, byte[] data) throws IOException {
-    if (data == null) {
-      throw new IllegalArgumentException("data must not be null");
-    }
-    if (dataLengthCode < 0) {
-      throw new IllegalArgumentException("dataLengthCode must be >= 0");
-    }
-    if (dataLengthCode > CAN_FD_MAX_PAYLOAD) {
-      throw new IllegalArgumentException("dataLengthCode must be 0.." + CAN_FD_MAX_PAYLOAD);
-    }
-    if (data.length < dataLengthCode) {
-      throw new IllegalArgumentException("data.length (" + data.length + ") < dataLengthCode (" + dataLengthCode + ")");
-    }
-
-    // Ensure caller isn't feeding us a "raw-with-flags" id.
-    int maskedId = extendedFrame ? (canIdentifier & CAN_EFF_MASK) : (canIdentifier & CAN_SFF_MASK);
-    if (maskedId != canIdentifier) {
-      throw new IllegalArgumentException("canIdentifier contains invalid bits for " + (extendedFrame ? "extended" : "standard") + " frame: 0x" + Integer.toHexString(canIdentifier));
-    }
-
+    validateWriteArgs(canIdentifier, extendedFrame, dataLengthCode, data);
     int rawCanId = extendedFrame ? (canIdentifier | CAN_EFF_FLAG) : canIdentifier;
-
     if (dataLengthCode <= CLASSIC_CAN_MAX_PAYLOAD) {
       NativeCanFrame classic = new NativeCanFrame();
 
@@ -232,6 +216,27 @@ public final class SocketCanDevice implements Closeable {
     }
     if (bytesWritten != fd.size()) {
       throw new IOException("Short write: " + bytesWritten + " bytes (expected " + fd.size() + ")");
+    }
+  }
+
+  private void validateWriteArgs(int canIdentifier, boolean extendedFrame, int dataLengthCode, byte[] data) {
+    if (data == null) {
+      throw new IllegalArgumentException("data must not be null");
+    }
+    if (dataLengthCode < 0) {
+      throw new IllegalArgumentException("dataLengthCode must be >= 0");
+    }
+    if (dataLengthCode > CAN_FD_MAX_PAYLOAD) {
+      throw new IllegalArgumentException("dataLengthCode must be 0.." + CAN_FD_MAX_PAYLOAD);
+    }
+    if (data.length < dataLengthCode) {
+      throw new IllegalArgumentException("data.length (" + data.length + ") < dataLengthCode (" + dataLengthCode + ")");
+    }
+
+    // Ensure caller isn't feeding us a "raw-with-flags" id.
+    int maskedId = extendedFrame ? (canIdentifier & CAN_EFF_MASK) : (canIdentifier & CAN_SFF_MASK);
+    if (maskedId != canIdentifier) {
+      throw new IllegalArgumentException("canIdentifier contains invalid bits for " + (extendedFrame ? "extended" : "standard") + " frame: 0x" + Integer.toHexString(canIdentifier));
     }
   }
 

@@ -36,7 +36,7 @@ public final class Vcan0ReadWriteDemo {
 
   public static void main(String[] args) throws Exception {
     String interfaceName1 = args != null && args.length > 0 ? args[0] : "vcan0";
-    String interfaceName2 = args != null && args.length > 0 ? args[0] : "vcan0";
+    String interfaceName2 = args != null && args.length > 1 ? args[1] : "vcan0";
 
     AtomicBoolean running = new AtomicBoolean(true);
     AtomicLong sentCount = new AtomicLong(0);
@@ -70,7 +70,7 @@ public final class Vcan0ReadWriteDemo {
 
     while (running.get()) {
       try {
-        CanFrame frame = reader.readFrame();
+        reader.readFrame();
         received++;
         Instant now = Instant.now();
         if (Duration.between(lastPrint, now).toSeconds() >= 5) {
@@ -124,25 +124,5 @@ public final class Vcan0ReadWriteDemo {
         running.set(false);
       }
     }
-  }
-
-  private static String toHex(byte[] data, int length) {
-    if (data == null) {
-      return "";
-    }
-    int safeLength = Math.min(Math.max(length, 0), data.length);
-
-    StringBuilder builder = new StringBuilder(safeLength * 2);
-    for (int i = 0; i < safeLength; i++) {
-      int value = data[i] & 0xFF;
-      if (value < 0x10) {
-        builder.append('0');
-      }
-      builder.append(Integer.toHexString(value));
-      if (i + 1 < safeLength) {
-        builder.append(' ');
-      }
-    }
-    return builder.toString();
   }
 }
