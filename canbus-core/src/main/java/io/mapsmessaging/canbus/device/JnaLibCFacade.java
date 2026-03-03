@@ -67,7 +67,31 @@ public final class JnaLibCFacade implements LibCFacade {
   }
 
   @Override
+  public int ifNameToIndex(String interfaceName) {
+    return libC.if_nametoindex(interfaceName);
+  }
+
+  @Override
   public int getLastError() {
     return Native.getLastError();
+  }
+
+  private interface LibC extends com.sun.jna.Library {
+
+    int socket(int domain, int type, int protocol);
+
+    int bind(int socketFileDescriptor, Structure address, int addressLength);
+
+    int ioctl(int fileDescriptor, int request, Pointer argumentPointer);
+
+    int read(int fileDescriptor, Pointer buffer, int count);
+
+    int write(int fileDescriptor, Pointer buffer, int count);
+
+    int close(int fileDescriptor);
+
+    int getsockopt(int sockfd, int level, int optname, IntByReference optval, IntByReference optlen);
+
+    int if_nametoindex(String interfaceName);
   }
 }

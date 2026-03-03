@@ -73,6 +73,8 @@ Dependencies:
 
 NMEA 2000 is treated as a **specialised J1939 profile**, preserving correct layering and reuse.
 
+Want to dive deeper? 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Maps-Messaging/canbus_interface)
 ---
 
 ## Current Capabilities
