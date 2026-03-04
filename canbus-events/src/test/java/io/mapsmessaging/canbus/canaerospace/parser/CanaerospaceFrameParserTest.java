@@ -39,7 +39,6 @@ class CanaerospaceFrameParserTest {
     Mockito.when(identifierDefinition.getRange()).thenReturn(numericRange);
 
     Mockito.when(registry.findIdentifier(canId)).thenReturn(Optional.of(identifierDefinition));
-    Mockito.when(registry.findIdentifierRange(canId)).thenReturn(Optional.empty());
 
     int payloadDataTypeNumber = 1;
     Mockito.when(registry.findDataTypeNameByNumber(payloadDataTypeNumber)).thenReturn(Optional.of("SHORT"));
