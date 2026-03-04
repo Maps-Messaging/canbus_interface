@@ -34,6 +34,7 @@
 
     <modules>
         <module>canbus-core</module>
+        <module>canbus-events</module>
         <module>canbus-J1939</module>
         <module>canbus-nmea2000</module>
     </modules>
@@ -79,7 +80,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-        <maven.compiler.release>17</maven.compiler.release>
+        <maven.compiler.release>21</maven.compiler.release>
 
         <nvd.api.key>${env.NVD_API_KEY}</nvd.api.key>
         <gpg.keyname>matthew.buckton@mapsmessaging.io</gpg.keyname>
