@@ -33,11 +33,11 @@ public class DataTypeCodec {
     }
 
     if ("SHORT".equals(schemaDataTypeName)) {
-      return (int) buffer.getShort(0);
+      return (int) buffer.getShort(2);
     }
 
     if ("USHORT".equals(schemaDataTypeName)) {
-      return buffer.getShort(0) & 0xFFFF;
+      return buffer.getShort(2) & 0xFFFF;
     }
 
     if ("CHAR".equals(schemaDataTypeName)) {
@@ -120,9 +120,9 @@ public class DataTypeCodec {
   }
 
   private static int decodeUnsigned24(byte[] dataBytes) {
-    int b0 = dataBytes[0] & 0xFF;
-    int b1 = dataBytes[1] & 0xFF;
-    int b2 = dataBytes[2] & 0xFF;
+    int b0 = dataBytes[1] & 0xFF;
+    int b1 = dataBytes[2] & 0xFF;
+    int b2 = dataBytes[3] & 0xFF;
     return (b0 << 16) | (b1 << 8) | b2;
   }
 

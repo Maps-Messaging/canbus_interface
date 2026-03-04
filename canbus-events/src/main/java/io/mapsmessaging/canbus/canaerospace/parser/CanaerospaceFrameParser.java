@@ -2,7 +2,6 @@ package io.mapsmessaging.canbus.canaerospace.parser;
 
 import io.mapsmessaging.canbus.canaerospace.schema.CanaerospaceSchemaRegistry;
 import io.mapsmessaging.canbus.canaerospace.schema.IdentifierDefinition;
-import io.mapsmessaging.canbus.canaerospace.schema.IdentifierRangeDefinition;
 import io.mapsmessaging.canbus.canaerospace.schema.MessageTypeDefinition;
 
 import java.util.Arrays;
@@ -19,69 +18,7 @@ public class CanaerospaceFrameParser {
     this.registry = registry;
   }
 
-  public static ResolvedIdentifier fromExact(IdentifierDefinition definition) {
-    Double min = null;
-    Double max = null;
-    if (definition.getRange() != null) {
-      if (definition.getRange().getMin() != null) {
-        min = definition.getRange().getMin().doubleValue();
-      }
-      if (definition.getRange().getMax() != null) {
-        max = definition.getRange().getMax().doubleValue();
-      }
-    }
-
-    Double resolution = definition.getResolution();
-
-    return new ResolvedIdentifier(
-        definition.getId(),
-        definition.getGroup(),
-        definition.getTitle(),
-        definition.getName(),
-        definition.getDataType(),
-        definition.getUnits(),
-        resolution,
-        definition.getNotes(),
-        min,
-        max
-    );
-  }
-
-  public static ResolvedIdentifier fromRange(int canId, IdentifierRangeDefinition range) {
-    int base = range.getIdRange().getMin();
-    int n = (canId - base) + 1;
-
-    String title = range.getTitleTemplate();
-    if (title != null) {
-      title = title.replace("#{n}", Integer.toString(n));
-    }
-
-    Double min = null;
-    Double max = null;
-    if (range.getRange() != null) {
-      if (range.getRange().getMin() != null) {
-        min = range.getRange().getMin().doubleValue();
-      }
-      if (range.getRange().getMax() != null) {
-        max = range.getRange().getMax().doubleValue();
-      }
-    }
-
-    return new ResolvedIdentifier(
-        canId,
-        range.getGroup(),
-        title,
-        null,
-        range.getDataType(),
-        range.getUnits(),
-        range.getResolution(),
-        range.getNotes(),
-        min,
-        max
-    );
-  }
-
-  public ParsedCanaerospaceMessage parse(int canId, byte[] payload) {
+   public ParsedCanaerospaceMessage parse(int canId, byte[] payload) {
     if (payload == null) {
       throw new IllegalArgumentException("payload must not be null");
     }
@@ -96,18 +33,11 @@ public class CanaerospaceFrameParser {
     byte[] dataBytes = Arrays.copyOfRange(payload, 4, 8);
 
     Optional<MessageTypeDefinition> messageTypeOptional = registry.findMessageType(canId);
-
     Optional<IdentifierDefinition> identifierOptional = registry.findIdentifier(canId);
-    Optional<IdentifierRangeDefinition> identifierRangeOptional;
 
     ResolvedIdentifier resolvedIdentifier = null;
     if (identifierOptional.isPresent()) {
       resolvedIdentifier = ResolvedIdentifier.fromExact(identifierOptional.get());
-    } else {
-      identifierRangeOptional = registry.findIdentifierRange(canId);
-      if (identifierRangeOptional.isPresent()) {
-        resolvedIdentifier = ResolvedIdentifier.fromRange(canId, identifierRangeOptional.get());
-      }
     }
 
     Object raw = null;

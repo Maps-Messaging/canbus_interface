@@ -6,19 +6,18 @@ import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.Constructor;
 
 import java.io.InputStream;
-import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 
-
 public class CanaerospaceSchemaRegistry {
 
   public static final String DEFAULT_SCHEMA_RESOURCE = "canaerospace_schema.yaml";
+
   @Getter
   private final CanaerospaceSchema schema;
+
   private final Map<Integer, IdentifierDefinition> identifiersById;
-  private final List<IdentifierRangeDefinition> identifierRanges;
   private final Map<Integer, String> dataTypeNameByNumber;
   private final List<MessageTypeDefinition> messageTypes;
 
@@ -27,8 +26,8 @@ public class CanaerospaceSchemaRegistry {
       throw new IllegalArgumentException("schema must not be null");
     }
     this.schema = schema;
-    this.identifiersById = buildIdentifiersById(schema);
-    this.identifierRanges = buildIdentifierRanges(schema);
+    List<IdentifierRangeDefinition> identifierRanges = buildIdentifierRanges(schema);
+    this.identifiersById = buildIdentifiersById(schema, identifierRanges);
     this.dataTypeNameByNumber = buildDataTypeNameByNumber(schema);
     this.messageTypes = buildMessageTypes(schema);
   }
@@ -49,23 +48,6 @@ public class CanaerospaceSchemaRegistry {
 
   public Optional<IdentifierDefinition> findIdentifier(int canId) {
     return Optional.ofNullable(identifiersById.get(canId));
-  }
-
-  public Optional<IdentifierRangeDefinition> findIdentifierRange(int canId) {
-    for (IdentifierRangeDefinition range : identifierRanges) {
-      IdRange idRange = range.getIdRange();
-      if (idRange == null) {
-        continue;
-      }
-
-      Integer min = idRange.getMin();
-      Integer max = idRange.getMax();
-
-      if (min != null && max != null && canId >= min && canId <= max) {
-        return Optional.of(range);
-      }
-    }
-    return Optional.empty();
   }
 
   public Optional<String> findDataTypeNameByNumber(int payloadDataTypeNumber) {
@@ -117,39 +99,87 @@ public class CanaerospaceSchemaRegistry {
     return loadedSchema;
   }
 
-  private static Map<Integer, IdentifierDefinition> buildIdentifiersById(CanaerospaceSchema schema) {
-    List<IdentifierDefinition> identifiers = schema.getIdentifiers();
-    if (identifiers == null || identifiers.isEmpty()) {
-      return Map.of();
-    }
-
-    Map<Integer, List<IdentifierDefinition>> grouped = new LinkedHashMap<>();
-    for (IdentifierDefinition identifier : identifiers) {
-      Integer id = extractIdentifierId(identifier);
-      if (id == null) {
-        continue;
-      }
-      grouped.computeIfAbsent(id, ignored -> new ArrayList<>()).add(identifier);
-    }
-
+  private static Map<Integer, IdentifierDefinition> buildIdentifiersById(CanaerospaceSchema schema, List<IdentifierRangeDefinition> sortedRanges) {
     Map<Integer, IdentifierDefinition> result = new LinkedHashMap<>();
-    for (Map.Entry<Integer, List<IdentifierDefinition>> entry : grouped.entrySet()) {
-      Integer id = entry.getKey();
-      List<IdentifierDefinition> values = entry.getValue();
-      if (values.size() == 1) {
-        result.put(id, values.getFirst());
-      } else {
-        IdentifierDefinition best = values.getFirst();
-        for (IdentifierDefinition candidate : values) {
-          if (isBetterIdentifier(candidate, best)) {
-            best = candidate;
+
+    List<IdentifierDefinition> identifiers = schema.getIdentifiers();
+    if (identifiers != null && !identifiers.isEmpty()) {
+
+      Map<Integer, List<IdentifierDefinition>> grouped = new LinkedHashMap<>();
+      for (IdentifierDefinition identifier : identifiers) {
+        Integer id = extractIdentifierId(identifier);
+        if (id == null) {
+          continue;
+        }
+        grouped.computeIfAbsent(id, ignored -> new ArrayList<>()).add(identifier);
+      }
+
+      for (Map.Entry<Integer, List<IdentifierDefinition>> entry : grouped.entrySet()) {
+        Integer id = entry.getKey();
+        List<IdentifierDefinition> values = entry.getValue();
+        if (values.size() == 1) {
+          result.put(id, values.getFirst());
+        } else {
+          IdentifierDefinition best = values.getFirst();
+          for (IdentifierDefinition candidate : values) {
+            if (isBetterIdentifier(candidate, best)) {
+              best = candidate;
+            }
+          }
+          result.put(id, best);
+        }
+      }
+    }
+
+    if (sortedRanges != null && !sortedRanges.isEmpty()) {
+      for (IdentifierRangeDefinition range : sortedRanges) {
+        IdRange idRange = range.getIdRange();
+        if (idRange == null || idRange.getMin() == null || idRange.getMax() == null) {
+          continue;
+        }
+
+        int min = idRange.getMin();
+        int max = idRange.getMax();
+
+        for (int canId = min; canId <= max; canId++) {
+          if (!result.containsKey(canId)) {
+            IdentifierDefinition expanded = expandRangeIdentifier(range, canId);
+            result.put(canId, expanded);
           }
         }
-        result.put(id, best);
       }
     }
 
     return Collections.unmodifiableMap(result);
+  }
+
+  private static IdentifierDefinition expandRangeIdentifier(IdentifierRangeDefinition range, int canId) {
+    IdentifierDefinition expanded = new IdentifierDefinition();
+
+    expanded.setId(canId);
+    expanded.setGroup(range.getGroup());
+
+    String title = range.getTitleTemplate();
+    if (title != null) {
+      int base = range.getIdRange().getMin();
+      int n = (canId - base) + 1;
+      title = title.replace("{n}", Integer.toString(n));
+    }
+    expanded.setTitle(title);
+    expanded.setName(title);
+
+    expanded.setDataType(range.getDataType());
+    expanded.setUnits(range.getUnits());
+    expanded.setResolution(range.getResolution());
+    expanded.setNotes(range.getNotes());
+
+    NumericRange rangeValue = range.getRange();
+    expanded.setRange(rangeValue);
+
+    expanded.setMessageType(null);
+    expanded.setHex(null);
+
+    return expanded;
   }
 
   private static boolean isBetterIdentifier(IdentifierDefinition candidate, IdentifierDefinition currentBest) {
