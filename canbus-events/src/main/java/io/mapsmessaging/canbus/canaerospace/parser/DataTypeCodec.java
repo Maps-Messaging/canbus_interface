@@ -20,100 +20,78 @@ public class DataTypeCodec {
 
     ByteBuffer buffer = ByteBuffer.wrap(dataBytes).order(BYTE_ORDER);
 
-    if ("FLOAT".equals(schemaDataTypeName)) {
-      return buffer.getFloat(0);
-    }
-
-    if ("LONG".equals(schemaDataTypeName)) {
-      return buffer.getInt(0);
-    }
-
-    if ("ULONG".equals(schemaDataTypeName)) {
-      return buffer.getInt(0) & 0xFFFFFFFFL;
-    }
-
-    if ("SHORT".equals(schemaDataTypeName)) {
-      return (int) buffer.getShort(2);
-    }
-
-    if ("USHORT".equals(schemaDataTypeName)) {
-      return buffer.getShort(2) & 0xFFFF;
-    }
-
-    if ("CHAR".equals(schemaDataTypeName)) {
-      return (int) dataBytes[0];
-    }
-
-    if ("UCHAR".equals(schemaDataTypeName)) {
-      return dataBytes[0] & 0xFF;
-    }
-
-    if ("CHAR2".equals(schemaDataTypeName)) {
-      int a = dataBytes[0];
-      int b = dataBytes[1];
-      return new int[]{a, b};
-    }
-
-    if ("UCHAR2".equals(schemaDataTypeName)) {
-      int a = dataBytes[0] & 0xFF;
-      int b = dataBytes[1] & 0xFF;
-      return new int[]{a, b};
-    }
-
-    if ("CHAR4".equals(schemaDataTypeName)) {
-      return new int[]{dataBytes[0], dataBytes[1], dataBytes[2], dataBytes[3]};
-    }
-
-    if ("UCHAR4".equals(schemaDataTypeName)) {
-      return new int[]{dataBytes[0] & 0xFF, dataBytes[1] & 0xFF, dataBytes[2] & 0xFF, dataBytes[3] & 0xFF};
-    }
-
-    if ("SHORT2".equals(schemaDataTypeName)) {
-      int a = buffer.getShort(0);
-      int b = buffer.getShort(2);
-      return new int[]{a, b};
-    }
-
-    if ("USHORT2".equals(schemaDataTypeName)) {
-      int a = buffer.getShort(0) & 0xFFFF;
-      int b = buffer.getShort(2) & 0xFFFF;
-      return new int[]{a, b};
-    }
-
-    if ("BSHORT".equals(schemaDataTypeName)) {
-      return buffer.getShort(0) & 0xFFFF;
-    }
-
-    if ("BLONG".equals(schemaDataTypeName)) {
-      return buffer.getInt(0) & 0xFFFFFFFFL;
-    }
-
-    if ("MEMID".equals(schemaDataTypeName) || "CHKSUM".equals(schemaDataTypeName)) {
-      return buffer.getInt(0) & 0xFFFFFFFFL;
-    }
-
-    if ("ACHAR".equals(schemaDataTypeName)) {
-      return dataBytes[0] & 0xFF;
-    }
-
-    if ("ACHAR2".equals(schemaDataTypeName)) {
-      return new int[]{dataBytes[0] & 0xFF, dataBytes[1] & 0xFF};
-    }
-
-    if ("ACHAR4".equals(schemaDataTypeName)) {
-      return new String(new byte[]{dataBytes[0], dataBytes[1], dataBytes[2], dataBytes[3]});
-    }
-
-    if ("VARIABLE3".equals(schemaDataTypeName)) {
-      return decodeSigned24(dataBytes);
-    }
-
-    if ("UVARIABLE3".equals(schemaDataTypeName)) {
-      return decodeUnsigned24(dataBytes);
-    }
-
-    if ("NODATA".equals(schemaDataTypeName)) {
-      return null;
+    switch (schemaDataTypeName) {
+      case "FLOAT" -> {
+        return buffer.getFloat(0);
+      }
+      case "LONG" -> {
+        return buffer.getInt(0);
+      }
+      case "ULONG" -> {
+        return buffer.getInt(0) & 0xFFFFFFFFL;
+      }
+      case "SHORT" -> {
+        return (int) buffer.getShort(2);
+      }
+      case "USHORT" -> {
+        return buffer.getShort(2) & 0xFFFF;
+      }
+      case "CHAR" -> {
+        return (int) dataBytes[0];
+      }
+      case "UCHAR" -> {
+        return dataBytes[0] & 0xFF;
+      }
+      case "CHAR2" -> {
+        int a = dataBytes[0];
+        int b = dataBytes[1];
+        return new int[]{a, b};
+      }
+      case "UCHAR2" -> {
+        int a = dataBytes[0] & 0xFF;
+        int b = dataBytes[1] & 0xFF;
+        return new int[]{a, b};
+      }
+      case "CHAR4" -> {
+        return new int[]{dataBytes[0], dataBytes[1], dataBytes[2], dataBytes[3]};
+      }
+      case "UCHAR4" -> {
+        return new int[]{dataBytes[0] & 0xFF, dataBytes[1] & 0xFF, dataBytes[2] & 0xFF, dataBytes[3] & 0xFF};
+      }
+      case "SHORT2" -> {
+        int a = buffer.getShort(0);
+        int b = buffer.getShort(2);
+        return new int[]{a, b};
+      }
+      case "USHORT2" -> {
+        int a = buffer.getShort(0) & 0xFFFF;
+        int b = buffer.getShort(2) & 0xFFFF;
+        return new int[]{a, b};
+      }
+      case "BSHORT" -> {
+        return buffer.getShort(0) & 0xFFFF;
+      }
+      case "BLONG", "MEMID", "CHKSUM" -> {
+        return buffer.getInt(0) & 0xFFFFFFFFL;
+      }
+      case "ACHAR" -> {
+        return dataBytes[0] & 0xFF;
+      }
+      case "ACHAR2" -> {
+        return new int[]{dataBytes[0] & 0xFF, dataBytes[1] & 0xFF};
+      }
+      case "ACHAR4" -> {
+        return new String(new byte[]{dataBytes[0], dataBytes[1], dataBytes[2], dataBytes[3]});
+      }
+      case "VARIABLE3" -> {
+        return decodeSigned24(dataBytes);
+      }
+      case "UVARIABLE3" -> {
+        return decodeUnsigned24(dataBytes);
+      }
+      case "NODATA" -> {
+        return null;
+      }
     }
 
     return dataBytes;

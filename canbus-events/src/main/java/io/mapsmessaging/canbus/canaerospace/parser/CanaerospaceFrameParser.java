@@ -51,7 +51,7 @@ public class CanaerospaceFrameParser {
 
       Double resolution = resolvedIdentifier.getResolution();
       if (resolution != null && raw instanceof Number number) {
-        engineeringValue = number.doubleValue() * resolution.doubleValue();
+        engineeringValue = number.doubleValue() * resolution;
       } else if (raw instanceof Float floatValue) {
         engineeringValue = floatValue.doubleValue();
       } else if (raw instanceof Double doubleValue) {

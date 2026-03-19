@@ -95,6 +95,7 @@ class CanaerospaceSchemaRoundTripParserTest {
 
     ParsedCanaerospaceMessage parsed = frameParser.parse(canId, payload);
 
+
     JsonObject json = new JsonObject();
     json.addProperty("canId", parsed.getCanId());
     json.addProperty("messageType", parsed.getMessageType());
