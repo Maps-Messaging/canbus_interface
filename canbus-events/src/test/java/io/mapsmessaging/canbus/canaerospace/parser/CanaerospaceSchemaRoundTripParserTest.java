@@ -1,18 +1,30 @@
 package io.mapsmessaging.canbus.canaerospace.parser;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import io.mapsmessaging.canbus.canaerospace.schema.*;
+import io.mapsmessaging.canbus.canaerospace.schema.CanaerospaceSchema;
+import io.mapsmessaging.canbus.canaerospace.schema.CanaerospaceSchemaRegistry;
+import io.mapsmessaging.canbus.canaerospace.schema.DataTypeEntry;
+import io.mapsmessaging.canbus.canaerospace.schema.DataTypesDefinition;
+import io.mapsmessaging.canbus.canaerospace.schema.IdRange;
+import io.mapsmessaging.canbus.canaerospace.schema.IdentifierDefinition;
+import io.mapsmessaging.canbus.canaerospace.schema.IdentifierRangeDefinition;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
 class CanaerospaceSchemaRoundTripParserTest {
+
+  private static final Gson GSON = new Gson();
 
   private static CanaerospaceFrameParser frameParser;
 
@@ -43,6 +55,7 @@ class CanaerospaceSchemaRoundTripParserTest {
 
     AtomicInteger executed = new AtomicInteger(0);
     AtomicInteger validated = new AtomicInteger(0);
+    AtomicInteger roundTripped = new AtomicInteger(0);
 
     for (ExpandedIdentifier identifier : allIdentifiers) {
       if (identifier.dataTypeName == null || identifier.dataTypeName.isBlank()) {
@@ -66,8 +79,7 @@ class CanaerospaceSchemaRoundTripParserTest {
           identifier.rangeMax,
           identifier.resolution
       );
-
-      JsonObject json = parseToJson(identifier.id, payload);
+      JsonObject json = parsePayloadToJson(identifier.id, payload);
       Assertions.assertNotNull(json, "Parser returned null JSON for id=" + identifier.id);
 
       executed.incrementAndGet();
@@ -77,17 +89,30 @@ class CanaerospaceSchemaRoundTripParserTest {
       if (tryValidateNumericValue(json, identifier)) {
         validated.incrementAndGet();
       }
+
+      byte[] rebuiltPayload = encodePayloadFromJson(json);
+      Assertions.assertArrayEquals(
+          payload,
+          rebuiltPayload,
+          "Payload round trip failed for id=" + identifier.id + " name=" + identifier.name
+      );
+      roundTripped.incrementAndGet();
     }
 
     Assertions.assertTrue(executed.get() > 0, "No packets were executed through the parser");
-    System.out.println("Executed packets: " + executed.get() + ", numeric validations: " + validated.get());
+    Assertions.assertEquals(executed.get(), roundTripped.get(), "Not all executed packets round-tripped");
+    System.out.println(
+        "Executed packets: " + executed.get()
+            + ", numeric validations: " + validated.get()
+            + ", round trips: " + roundTripped.get()
+    );
   }
 
   /**
    * Expected payload layout (DLC=8):
-   *   [0]=nodeId, [1]=dataType, [2]=serviceCode, [3]=messageCode, [4..7]=data (big-endian)
+   * [0]=nodeId, [1]=dataType, [2]=serviceCode, [3]=messageCode, [4..7]=data
    */
-  private static JsonObject parseToJson(int canId, byte[] payload) throws Exception {
+  private static JsonObject parsePayloadToJson(int canId, byte[] payload) throws Exception {
     if (frameParser == null) {
       CanaerospaceSchemaRegistry registry = CanaerospaceSchemaRegistry.loadFromClasspath();
       frameParser = new CanaerospaceFrameParser(registry);
@@ -95,41 +120,73 @@ class CanaerospaceSchemaRoundTripParserTest {
 
     ParsedCanaerospaceMessage parsed = frameParser.parse(canId, payload);
 
-
     JsonObject json = new JsonObject();
     json.addProperty("canId", parsed.getCanId());
-    json.addProperty("messageType", parsed.getMessageType());
+    addString(json, "messageType", parsed.getMessageType());
 
     json.addProperty("nodeId", parsed.getNodeId());
     json.addProperty("payloadDataTypeNumber", parsed.getPayloadDataTypeNumber());
-    json.addProperty("payloadDataTypeName", parsed.getPayloadDataTypeName());
+    addString(json, "payloadDataTypeName", parsed.getPayloadDataTypeName());
     json.addProperty("serviceCode", parsed.getServiceCode());
     json.addProperty("messageCode", parsed.getMessageCode());
 
-    json.addProperty("group", parsed.getGroup());
-    json.addProperty("title", parsed.getTitle());
-    json.addProperty("name", parsed.getName());
-    json.addProperty("schemaDataType", parsed.getSchemaDataType());
-    json.addProperty("units", parsed.getUnits());
-    json.addProperty("resolution", parsed.getResolution());
-    json.addProperty("notes", parsed.getNotes());
-    json.addProperty("rangeMin", parsed.getRangeMin());
-    json.addProperty("rangeMax", parsed.getRangeMax());
+    addString(json, "group", parsed.getGroup());
+    addString(json, "title", parsed.getTitle());
+    addString(json, "name", parsed.getName());
+    addString(json, "schemaDataType", parsed.getSchemaDataType());
+    addString(json, "units", parsed.getUnits());
+    addNumber(json, "resolution", parsed.getResolution());
+    addString(json, "notes", parsed.getNotes());
+    addNumber(json, "rangeMin", parsed.getRangeMin());
+    addNumber(json, "rangeMax", parsed.getRangeMax());
 
     Object raw = parsed.getRawValue();
-    if (raw instanceof Number number) {
-      json.addProperty("rawValue", number.doubleValue());
-    } else if (raw != null) {
-      json.addProperty("rawValue", raw.toString());
+    if (raw != null) {
+      json.add("rawValue", GSON.toJsonTree(raw));
     }
 
     if (parsed.getEngineeringValue() != null) {
-      json.addProperty("value", parsed.getEngineeringValue());
+      json.addProperty("engineeringValue", parsed.getEngineeringValue());
     }
 
     json.addProperty("dataTypeMismatch", parsed.isDataTypeMismatch());
 
     return json;
+  }
+
+  private static byte[] encodePayloadFromJson(JsonObject json) {
+    int nodeId = requireInt(json, "nodeId");
+    int payloadDataTypeNumber = requireInt(json, "payloadDataTypeNumber");
+    int serviceCode = requireInt(json, "serviceCode");
+    int messageCode = requireInt(json, "messageCode");
+
+    String schemaDataType = getString(json, "schemaDataType");
+    if (schemaDataType == null || schemaDataType.isBlank()) {
+      schemaDataType = getString(json, "payloadDataTypeName");
+    }
+
+    Assertions.assertNotNull(schemaDataType, "Missing schemaDataType/payloadDataTypeName in JSON");
+
+    Object rawValue = null;
+    JsonElement rawElement = json.get("rawValue");
+    if (rawElement != null && !rawElement.isJsonNull()) {
+      rawValue = GSON.fromJson(rawElement, Object.class);
+    }
+
+    if (rawValue == null && json.has("engineeringValue")) {
+      rawValue = json.get("engineeringValue").getAsDouble();
+    }
+
+    byte[] dataBytes = DataTypeCodec.encode(schemaDataType, rawValue);
+
+    byte[] payload = new byte[8];
+    payload[0] = (byte) nodeId;
+    payload[1] = (byte) payloadDataTypeNumber;
+    payload[2] = (byte) serviceCode;
+    payload[3] = (byte) messageCode;
+    System.arraycopy(dataBytes, 0, payload, 4, 4);
+
+    return payload;
   }
 
   private static byte[] buildPayload(
@@ -168,8 +225,10 @@ class CanaerospaceSchemaRoundTripParserTest {
     switch (dataTypeName) {
       case "SHORT" -> {
         int raw = toRawSigned(chosenEngineeringValue, resolution);
-        Assertions.assertTrue(raw >= Short.MIN_VALUE && raw <= Short.MAX_VALUE,
-            "SHORT raw overflow for raw=" + raw + " value=" + chosenEngineeringValue + " res=" + resolution);
+        Assertions.assertTrue(
+            raw >= Short.MIN_VALUE && raw <= Short.MAX_VALUE,
+            "SHORT raw overflow for raw=" + raw + " value=" + chosenEngineeringValue + " res=" + resolution
+        );
         putInt16BigEndian(out, (short) raw);
       }
       case "USHORT" -> {
@@ -185,8 +244,8 @@ class CanaerospaceSchemaRoundTripParserTest {
         putUInt32BigEndian(out, raw);
       }
       case "FLOAT" -> {
-        float f = (float) chosenEngineeringValue;
-        putFloat32BigEndian(out, f);
+        float floatValue = (float) chosenEngineeringValue;
+        putFloat32BigEndian(out, floatValue);
       }
       case "VARIABLE3" -> {
         int raw = toRawSigned(chosenEngineeringValue, resolution);
@@ -197,28 +256,60 @@ class CanaerospaceSchemaRoundTripParserTest {
         putUInt24BigEndian(out, raw);
       }
       case "CHAR", "UCHAR", "ACHAR" -> {
-        out[0] = 0;
+        out[0] = 42;
         out[1] = 0;
         out[2] = 0;
-        out[3] = 42;
+        out[3] = 0;
       }
       case "CHAR2", "UCHAR2", "ACHAR2" -> {
-        out[0] = 0;
-        out[1] = 0;
-        out[2] = 1;
-        out[3] = 2;
+        out[0] = 1;
+        out[1] = 2;
+        out[2] = 0;
+        out[3] = 0;
       }
-      case "CHAR4", "UCHAR4", "ACHAR4" -> {
+      case "CHAR4", "UCHAR4" -> {
         out[0] = 1;
         out[1] = 2;
         out[2] = 3;
         out[3] = 4;
       }
-      case "BLONG", "BSHORT", "BCHAR", "BSHORT2", "BCHAR2", "BCHAR4" -> {
-        out[0] = (byte) 0xAA;
-        out[1] = (byte) 0x55;
-        out[2] = (byte) 0x0F;
-        out[3] = (byte) 0xF0;
+      case "ACHAR4" -> {
+        out[0] = 'A';
+        out[1] = 'B';
+        out[2] = 'C';
+        out[3] = 'D';
+      }
+      case "SHORT2" -> {
+        ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.BIG_ENDIAN);
+        buffer.putShort((short) 10);
+        buffer.putShort((short) 20);
+        byte[] bytes = buffer.array();
+        System.arraycopy(bytes, 0, out, 0, 4);
+      }
+      case "USHORT2" -> {
+        ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.BIG_ENDIAN);
+        buffer.putShort((short) 10);
+        buffer.putShort((short) 20);
+        byte[] bytes = buffer.array();
+        System.arraycopy(bytes, 0, out, 0, 4);
+      }
+      case "BSHORT" -> {
+        out[0] = 0x12;
+        out[1] = 0x34;
+        out[2] = 0;
+        out[3] = 0;
+      }
+      case "BLONG", "MEMID", "CHKSUM" -> {
+        out[0] = 0x12;
+        out[1] = 0x34;
+        out[2] = 0x56;
+        out[3] = 0x78;
+      }
+      case "NODATA" -> {
+        out[0] = 0;
+        out[1] = 0;
+        out[2] = 0;
+        out[3] = 0;
       }
       default -> {
         putUInt32BigEndian(out, 123456789L);
@@ -233,63 +324,62 @@ class CanaerospaceSchemaRoundTripParserTest {
       return engineeringValue;
     }
 
-    long minRaw;
-    long maxRaw;
+    long minimumRaw;
+    long maximumRaw;
 
     switch (dataTypeName) {
       case "SHORT" -> {
-        minRaw = Short.MIN_VALUE;
-        maxRaw = Short.MAX_VALUE;
+        minimumRaw = Short.MIN_VALUE;
+        maximumRaw = Short.MAX_VALUE;
       }
       case "USHORT", "BSHORT" -> {
-        minRaw = 0;
-        maxRaw = 0xFFFFL;
+        minimumRaw = 0;
+        maximumRaw = 0xFFFFL;
       }
       case "VARIABLE3" -> {
-        minRaw = -(1L << 23);
-        maxRaw = (1L << 23) - 1;
+        minimumRaw = -(1L << 23);
+        maximumRaw = (1L << 23) - 1;
       }
       case "UVARIABLE3" -> {
-        minRaw = 0;
-        maxRaw = (1L << 24) - 1;
+        minimumRaw = 0;
+        maximumRaw = (1L << 24) - 1;
       }
       case "LONG" -> {
-        minRaw = Integer.MIN_VALUE;
-        maxRaw = Integer.MAX_VALUE;
+        minimumRaw = Integer.MIN_VALUE;
+        maximumRaw = Integer.MAX_VALUE;
       }
       case "ULONG", "BLONG", "MEMID", "CHKSUM" -> {
-        minRaw = 0;
-        maxRaw = 0xFFFFFFFFL;
+        minimumRaw = 0;
+        maximumRaw = 0xFFFFFFFFL;
       }
       default -> {
         return engineeringValue;
       }
     }
 
-    double minEng = minRaw * resolution;
-    double maxEng = maxRaw * resolution;
+    double minimumEngineering = minimumRaw * resolution;
+    double maximumEngineering = maximumRaw * resolution;
 
-    if (engineeringValue < minEng) {
-      return minEng;
+    if (engineeringValue < minimumEngineering) {
+      return minimumEngineering;
     }
-    if (engineeringValue > maxEng) {
-      return maxEng;
+    if (engineeringValue > maximumEngineering) {
+      return maximumEngineering;
     }
     return engineeringValue;
   }
 
-
-  private static double chooseEngineeringValue(Double min, Double max) {
-    if (min == null && max == null) {
+  private static double chooseEngineeringValue(Double minimum, Double maximum) {
+    if (minimum == null && maximum == null) {
       return 1.0;
     }
-    if (min != null && max != null) {
-      return (min + max) / 2.0;
+    if (minimum != null && maximum != null) {
+      return (minimum + maximum) / 2.0;
     }
-    if (min != null) {
-      return min;
+    if (minimum != null) {
+      return minimum;
     }
-    return max;
+    return maximum;
   }
 
   private static int toRawSigned(double engineeringValue, Double resolution) {
@@ -321,7 +411,7 @@ class CanaerospaceSchemaRoundTripParserTest {
       Assertions.assertEquals(identifier.id, json.get("canId").getAsInt(), "JSON canId mismatch");
     }
     if (identifier.name != null && json.has("name")) {
-      Assertions.assertEquals(identifier.name, json.get("name").getAsString(), "JSON name mismatch on "+identifier.id);
+      Assertions.assertEquals(identifier.name, json.get("name").getAsString(), "JSON name mismatch on " + identifier.id);
     }
   }
 
@@ -330,7 +420,7 @@ class CanaerospaceSchemaRoundTripParserTest {
       return false;
     }
 
-    JsonElement valueElement = json.get("value");
+    JsonElement valueElement = json.get("engineeringValue");
     if (valueElement == null || !valueElement.isJsonPrimitive() || !valueElement.getAsJsonPrimitive().isNumber()) {
       return false;
     }
@@ -370,42 +460,42 @@ class CanaerospaceSchemaRoundTripParserTest {
   }
 
   private static List<ExpandedIdentifier> expandIdentifierRanges(CanaerospaceSchema schema) {
-    Object identifierRanges = invokeGetterIfPresent(schema, "getIdentifierRanges");
-    if (!(identifierRanges instanceof List<?> list)) {
-      return Collections.emptyList();
-    }
+    List<IdentifierRangeDefinition> list = Optional.ofNullable(schema.getIdentifierRanges())
+        .orElseGet(Collections::emptyList);
 
     List<ExpandedIdentifier> expanded = new ArrayList<>();
-    for (Object rangeObj : list) {
-      IdentifierRangeDefinition rangeDef = (IdentifierRangeDefinition) rangeObj;
-
-      IdRange idRange = rangeDef.getIdRange();
+    for (IdentifierRangeDefinition rangeDefinition : list) {
+      IdRange idRange = rangeDefinition.getIdRange();
       if (idRange == null || idRange.getMin() == null || idRange.getMax() == null) {
         continue;
       }
 
-      int min = idRange.getMin().intValue();
-      int max = idRange.getMax().intValue();
+      int minimum = idRange.getMin().intValue();
+      int maximum = idRange.getMax().intValue();
 
-      Double rangeMin = rangeDef.getRange() == null || rangeDef.getRange().getMin() == null ? null : rangeDef.getRange().getMin().doubleValue();
-      Double rangeMax = rangeDef.getRange() == null || rangeDef.getRange().getMax() == null ? null : rangeDef.getRange().getMax().doubleValue();
-      Double resolution = rangeDef.getResolution();
+      Double rangeMinimum = rangeDefinition.getRange() == null || rangeDefinition.getRange().getMin() == null
+          ? null
+          : rangeDefinition.getRange().getMin().doubleValue();
 
-      for (int id = min; id <= max; id++) {
-        ExpandedIdentifier e = ExpandedIdentifier.fromRange(rangeDef, id, (id - min) + 1, rangeMin, rangeMax, resolution);
-        expanded.add(e);
+      Double rangeMaximum = rangeDefinition.getRange() == null || rangeDefinition.getRange().getMax() == null
+          ? null
+          : rangeDefinition.getRange().getMax().doubleValue();
+
+      Double resolution = rangeDefinition.getResolution();
+
+      for (int id = minimum; id <= maximum; id++) {
+        ExpandedIdentifier expandedIdentifier = ExpandedIdentifier.fromRange(
+            rangeDefinition,
+            id,
+            (id - minimum) + 1,
+            rangeMinimum,
+            rangeMaximum,
+            resolution
+        );
+        expanded.add(expandedIdentifier);
       }
     }
     return expanded;
-  }
-
-  private static Object invokeGetterIfPresent(Object target, String methodName) {
-    try {
-      Method m = target.getClass().getMethod(methodName);
-      return m.invoke(target);
-    } catch (Exception ignored) {
-      return null;
-    }
   }
 
   private static void putInt16BigEndian(byte[] out, short value) {
@@ -461,6 +551,33 @@ class CanaerospaceSchemaRoundTripParserTest {
     out[3] = (byte) (v & 0xFF);
   }
 
+  private static int requireInt(JsonObject object, String field) {
+    JsonElement element = object.get(field);
+    Assertions.assertNotNull(element, "Missing field '" + field + "'");
+    Assertions.assertFalse(element.isJsonNull(), "Field '" + field + "' is null");
+    return element.getAsInt();
+  }
+
+  private static String getString(JsonObject object, String field) {
+    JsonElement element = object.get(field);
+    if (element == null || element.isJsonNull()) {
+      return null;
+    }
+    return element.getAsString();
+  }
+
+  private static void addString(JsonObject jsonObject, String field, String value) {
+    if (value != null) {
+      jsonObject.addProperty(field, value);
+    }
+  }
+
+  private static void addNumber(JsonObject jsonObject, String field, Number value) {
+    if (value != null) {
+      jsonObject.addProperty(field, value);
+    }
+  }
+
   private static final class ExpandedIdentifier {
 
     private final int id;
@@ -470,7 +587,14 @@ class CanaerospaceSchemaRoundTripParserTest {
     private final Double rangeMax;
     private final Double resolution;
 
-    private ExpandedIdentifier(int id, String name, String dataTypeName, Double rangeMin, Double rangeMax, Double resolution) {
+    private ExpandedIdentifier(
+        int id,
+        String name,
+        String dataTypeName,
+        Double rangeMin,
+        Double rangeMax,
+        Double resolution
+    ) {
       this.id = id;
       this.name = name;
       this.dataTypeName = dataTypeName;
@@ -480,34 +604,39 @@ class CanaerospaceSchemaRoundTripParserTest {
     }
 
     static ExpandedIdentifier fromConcrete(IdentifierDefinition identifier) {
-      Double min = identifier.getRange() == null || identifier.getRange().getMin() == null ? null : identifier.getRange().getMin().doubleValue();
-      Double max = identifier.getRange() == null || identifier.getRange().getMax() == null ? null : identifier.getRange().getMax().doubleValue();
+      Double minimum = identifier.getRange() == null || identifier.getRange().getMin() == null
+          ? null
+          : identifier.getRange().getMin().doubleValue();
+
+      Double maximum = identifier.getRange() == null || identifier.getRange().getMax() == null
+          ? null
+          : identifier.getRange().getMax().doubleValue();
 
       return new ExpandedIdentifier(
           identifier.getId(),
           identifier.getName(),
           identifier.getDataType(),
-          min,
-          max,
+          minimum,
+          maximum,
           identifier.getResolution()
       );
     }
 
     static ExpandedIdentifier fromRange(
-        IdentifierRangeDefinition rangeDef,
+        IdentifierRangeDefinition rangeDefinition,
         int id,
         int ordinal,
         Double rangeMin,
         Double rangeMax,
         Double resolution
     ) {
-      String template = rangeDef.getTitleTemplate();
+      String template = rangeDefinition.getTitleTemplate();
       String name = template == null ? null : template.replace("{n}", String.valueOf(ordinal));
 
       return new ExpandedIdentifier(
           id,
           name,
-          rangeDef.getDataType(),
+          rangeDefinition.getDataType(),
           rangeMin,
           rangeMax,
           resolution
