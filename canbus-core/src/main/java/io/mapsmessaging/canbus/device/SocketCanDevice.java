@@ -68,6 +68,14 @@ public final class SocketCanDevice implements Closeable {
   @Getter
   private final CanCapabilities canCapabilities;
 
+  // Reusable read-side state to avoid per-frame allocations.
+  // This class should be treated as single-reader unless you add external synchronisation.
+  private final int classicFrameSize;
+  private final int fdFrameSize;
+  private final Memory readBuffer;
+  private final NativeCanFrame reusableClassicFrame;
+  private final NativeCanFdFrame reusableFdFrame;
+
   public SocketCanDevice(String interfaceName) throws IOException {
     this(interfaceName, new JnaLibCFacade(), null);
   }
@@ -102,51 +110,51 @@ public final class SocketCanDevice implements Closeable {
 
     this.socketFileDescriptor = fileDescriptor;
     this.canCapabilities = loadCapabilities();
-  }
 
-  public CanFrame readFrame() throws IOException {
     NativeCanFrame classicProbe = new NativeCanFrame();
     NativeCanFdFrame fdProbe = new NativeCanFdFrame();
 
-    int classicSize = classicProbe.size();
-    int fdSize = fdProbe.size();
+    this.classicFrameSize = classicProbe.size();
+    this.fdFrameSize = fdProbe.size();
+    this.readBuffer = new Memory(fdFrameSize);
+    this.reusableClassicFrame = new NativeCanFrame(readBuffer);
+    this.reusableFdFrame = new NativeCanFdFrame(readBuffer);
+  }
 
-    Pointer buffer = new Memory(fdSize);
-
-    int bytesRead = libC.read(this.socketFileDescriptor, buffer, fdSize);
+  public CanFrame readFrame() throws IOException {
+    int bytesRead = libC.read(this.socketFileDescriptor, readBuffer, fdFrameSize);
     if (bytesRead < 0) {
       throw new IOException("read(can_frame/canfd_frame) failed errno=" + libC.getLastError());
     }
 
-    if (bytesRead == classicSize) {
-      NativeCanFrame classic = new NativeCanFrame(buffer);
-      classic.read();
+    if (bytesRead == classicFrameSize) {
+      reusableClassicFrame.read();
 
-      int rawCanId = classic.canIdentifier;
+      int rawCanId = reusableClassicFrame.canIdentifier;
 
       boolean extendedFrame = (rawCanId & CAN_EFF_FLAG) != 0;
       int cleanCanId = extendedFrame ? (rawCanId & CAN_EFF_MASK) : (rawCanId & CAN_SFF_MASK);
 
-      // If you ever care about RTR/ERR, this is where you'd surface it.
-      // For now, we reject them because your CanFrame model has no place to store them.
       if ((rawCanId & (CAN_RTR_FLAG | CAN_ERR_FLAG)) != 0) {
         throw new IOException("Unsupported CAN frame flags (RTR/ERR) in canIdentifier=0x" + Integer.toHexString(rawCanId));
       }
 
-      int dataLengthCode = classic.dataLengthCode & 0xFF;
+      int dataLengthCode = reusableClassicFrame.dataLengthCode & 0xFF;
       if (dataLengthCode > CLASSIC_CAN_MAX_PAYLOAD) {
         throw new IOException("Invalid classic DLC: " + dataLengthCode);
       }
 
-      byte[] data = Arrays.copyOf(classic.data, dataLengthCode);
+      byte[] data = new byte[dataLengthCode];
+      if (dataLengthCode > 0) {
+        System.arraycopy(reusableClassicFrame.data, 0, data, 0, dataLengthCode);
+      }
       return new CanFrame(cleanCanId, extendedFrame, dataLengthCode, data);
     }
 
-    if (bytesRead == fdSize) {
-      NativeCanFdFrame fd = new NativeCanFdFrame(buffer);
-      fd.read();
+    if (bytesRead == fdFrameSize) {
+      reusableFdFrame.read();
 
-      int rawCanId = fd.canIdentifier;
+      int rawCanId = reusableFdFrame.canIdentifier;
 
       boolean extendedFrame = (rawCanId & CAN_EFF_FLAG) != 0;
       int cleanCanId = extendedFrame ? (rawCanId & CAN_EFF_MASK) : (rawCanId & CAN_SFF_MASK);
@@ -155,16 +163,19 @@ public final class SocketCanDevice implements Closeable {
         throw new IOException("Unsupported CAN FD frame flags (RTR/ERR) in canIdentifier=0x" + Integer.toHexString(rawCanId));
       }
 
-      int dataLengthCode = fd.length & 0xFF; // SocketCAN canfd_frame.len is byte length (0..64)
+      int dataLengthCode = reusableFdFrame.length & 0xFF;
       if (dataLengthCode > CAN_FD_MAX_PAYLOAD) {
         throw new IOException("Invalid FD length: " + dataLengthCode);
       }
 
-      byte[] data = Arrays.copyOf(fd.data, dataLengthCode);
+      byte[] data = new byte[dataLengthCode];
+      if (dataLengthCode > 0) {
+        System.arraycopy(reusableFdFrame.data, 0, data, 0, dataLengthCode);
+      }
       return new CanFrame(cleanCanId, extendedFrame, dataLengthCode, data);
     }
 
-    throw new IOException("Unexpected read size: " + bytesRead + " bytes (expected " + classicSize + " or " + fdSize + ")");
+    throw new IOException("Unexpected read size: " + bytesRead + " bytes (expected " + classicFrameSize + " or " + fdFrameSize + ")");
   }
 
   public void writeFrame(CanFrame frame) throws IOException {
@@ -202,7 +213,7 @@ public final class SocketCanDevice implements Closeable {
     NativeCanFdFrame fd = new NativeCanFdFrame();
 
     fd.canIdentifier = rawCanId;
-    fd.length = (byte) dataLengthCode; // SocketCAN canfd_frame.len is byte length (0..64)
+    fd.length = (byte) dataLengthCode;
     fd.flags = 0;
 
     Arrays.fill(fd.data, (byte) 0);
@@ -233,7 +244,6 @@ public final class SocketCanDevice implements Closeable {
       throw new IllegalArgumentException("data.length (" + data.length + ") < dataLengthCode (" + dataLengthCode + ")");
     }
 
-    // Ensure caller isn't feeding us a "raw-with-flags" id.
     int maskedId = extendedFrame ? (canIdentifier & CAN_EFF_MASK) : (canIdentifier & CAN_SFF_MASK);
     if (maskedId != canIdentifier) {
       throw new IllegalArgumentException("canIdentifier contains invalid bits for " + (extendedFrame ? "extended" : "standard") + " frame: 0x" + Integer.toHexString(canIdentifier));
@@ -410,11 +420,19 @@ public final class SocketCanDevice implements Closeable {
     }
   }
 
-  // Package-private constructor for tests: no native calls, no probing, no drama.
   SocketCanDevice(LibCFacade libC, CanCapabilities canCapabilities, int socketFileDescriptor, String interfaceName) {
     this.libC = libC;
     this.canCapabilities = canCapabilities;
     this.socketFileDescriptor = socketFileDescriptor;
     this.interfaceName = interfaceName;
+
+    NativeCanFrame classicProbe = new NativeCanFrame();
+    NativeCanFdFrame fdProbe = new NativeCanFdFrame();
+
+    this.classicFrameSize = classicProbe.size();
+    this.fdFrameSize = fdProbe.size();
+    this.readBuffer = new Memory(fdFrameSize);
+    this.reusableClassicFrame = new NativeCanFrame(readBuffer);
+    this.reusableFdFrame = new NativeCanFdFrame(readBuffer);
   }
 }

@@ -37,13 +37,28 @@ public class LookupProcessor implements Processor {
     decoded.addProperty(field.getId(),(int) (raw & field.getMask()));
   }
 
+  @Override
   public void unpack(N2kCompiledField field, byte[] payload, JsonObject decoded) {
     if (!decoded.has(field.getId()) || decoded.get(field.getId()).isJsonNull()) {
       return;
     }
 
     long rawValue = decoded.get(field.getId()).getAsLong();
+    writeLookupValue(field, payload, rawValue);
+  }
 
+
+  @Override
+  public void unpack(N2kCompiledField field, byte[] payload, FieldValueSource source) {
+    Long rawValue = source.getLong(field.getId());
+    if (rawValue == null) {
+      return;
+    }
+
+    writeLookupValue(field, payload, rawValue);
+  }
+
+  private static void writeLookupValue(N2kCompiledField field, byte[] payload, long rawValue) {
     long max = (field.getBitLength() >= 64) ? -1L : ((1L << field.getBitLength()) - 1L);
     if (field.getBitLength() < 64 && rawValue > max) {
       rawValue = max;
