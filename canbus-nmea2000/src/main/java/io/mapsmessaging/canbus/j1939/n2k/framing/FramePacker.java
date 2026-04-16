@@ -71,7 +71,7 @@ public class FramePacker {
     return packFastPacket(pgn, canIdentifier, sourceAddress, destinationAddress, payload);
   }
 
-  private List<CanFrame> packFastPacket(
+  public List<CanFrame> packFastPacket(
       int pgn,
       int canIdentifier,
       int sourceAddress,
