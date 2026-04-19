@@ -26,7 +26,7 @@ class CanFrameTest {
 
   @Test
   void roundTrip_standardFrame_dlc8_preservesFieldsAndData() {
-    int canIdentifier = 0x09F8027F;
+    int canIdentifier = 0x7FF;
     boolean extendedFrame = false;
     int dataLengthCode = 8;
     byte[] data = new byte[]{0x00, (byte) 0xFC, (byte) 0xFF, (byte) 0xFF, 0x00, 0x00, (byte) 0xFF, (byte) 0xFF};
@@ -61,7 +61,7 @@ class CanFrameTest {
   void getRawData_encodesCanIdentifierBigEndian() {
     int canIdentifier = 0x01020304;
 
-    CanFrame frame = new CanFrame(canIdentifier, false, 0, new byte[0]);
+    CanFrame frame = new CanFrame(canIdentifier, true, 0, new byte[0]);
     byte[] raw = frame.getRawData();
 
     Assertions.assertEquals((byte) 0x01, raw[0]);
@@ -87,12 +87,12 @@ class CanFrameTest {
   }
 
   @Test
-  void getRawData_truncatesPayloadTo8Bytes() {
-    int canIdentifier = 0x09F8017F;
-    boolean extendedFrame = false;
+  void getRawData_writesPayloadBytes() {
+    int canIdentifier = 0x1ABCDE01;
+    boolean extendedFrame = true;
     int dataLengthCode = 8;
 
-    byte[] data = new byte[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+    byte[] data = new byte[]{0, 1, 2, 3, 4, 5, 6, 7};
     CanFrame frame = new CanFrame(canIdentifier, extendedFrame, dataLengthCode, data);
 
     byte[] raw = frame.getRawData();
@@ -100,7 +100,7 @@ class CanFrameTest {
     byte[] payload = new byte[8];
     System.arraycopy(raw, 5, payload, 0, 8);
 
-    Assertions.assertArrayEquals(new byte[]{0, 1, 2, 3, 4, 5, 6, 7}, payload);
+    Assertions.assertArrayEquals(data, payload);
   }
 
   @Test
@@ -117,7 +117,7 @@ class CanFrameTest {
   @Test
   void constructor_defensivelyCopiesData() {
     byte[] data = new byte[]{1, 2, 3, 4};
-    CanFrame frame = new CanFrame(0x12345678, false, 4, data);
+    CanFrame frame = new CanFrame(0x12345678, true, 4, data);
 
     data[0] = 99;
 
@@ -128,11 +128,75 @@ class CanFrameTest {
   @Test
   void getData_returnsDefensiveCopy() {
     byte[] data = new byte[]{10, 20, 30, 40};
-    CanFrame frame = new CanFrame(0x12345678, false, 4, data);
+    CanFrame frame = new CanFrame(0x12345678, true, 4, data);
 
     byte[] retrieved = frame.data();
     retrieved[0] = 99;
 
     Assertions.assertArrayEquals(new byte[]{10, 20, 30, 40}, frame.data());
+  }
+
+  @Test
+  void constructor_rejectsStandardIdentifierAbove11Bit() {
+    Assertions.assertThrows(
+        IllegalArgumentException.class,
+        () -> new CanFrame(0x800, false, 0, new byte[0])
+    );
+  }
+
+  @Test
+  void constructor_rejectsExtendedIdentifierAbove29Bit() {
+    Assertions.assertThrows(
+        IllegalArgumentException.class,
+        () -> new CanFrame(0x20000000, true, 0, new byte[0])
+    );
+  }
+
+  @Test
+  void constructor_rejectsNegativeIdentifier() {
+    Assertions.assertThrows(
+        IllegalArgumentException.class,
+        () -> new CanFrame(-1, true, 0, new byte[0])
+    );
+  }
+
+  @Test
+  void constructor_rejectsInvalidDataLengthCode() {
+    Assertions.assertThrows(
+        IllegalArgumentException.class,
+        () -> new CanFrame(0x123, false, 9, new byte[8])
+    );
+  }
+
+  @Test
+  void constructor_rejectsNullDataWhenDlcGreaterThanZero() {
+    Assertions.assertThrows(
+        IllegalArgumentException.class,
+        () -> new CanFrame(0x123, false, 1, null)
+    );
+  }
+
+  @Test
+  void constructor_rejectsDataShorterThanDlc() {
+    Assertions.assertThrows(
+        IllegalArgumentException.class,
+        () -> new CanFrame(0x123, false, 4, new byte[]{1, 2, 3})
+    );
+  }
+
+  @Test
+  void constructor_rejectsDataLongerThanEightBytes() {
+    Assertions.assertThrows(
+        IllegalArgumentException.class,
+        () -> new CanFrame(0x12345678, true, 8, new byte[]{0, 1, 2, 3, 4, 5, 6, 7, 8})
+    );
+  }
+
+  @Test
+  void constructor_rejectsNonEmptyDataWhenDlcZero() {
+    Assertions.assertThrows(
+        IllegalArgumentException.class,
+        () -> new CanFrame(0x123, false, 0, new byte[]{1})
+    );
   }
 }
