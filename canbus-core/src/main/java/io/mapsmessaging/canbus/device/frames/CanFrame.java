@@ -23,8 +23,9 @@ import java.util.Arrays;
 
 public record CanFrame(int canIdentifier, boolean extendedFrame, int dataLengthCode, byte[] data) {
 
-  private static final int RAW_FRAME_LENGTH = 13;
-  private static final int MAX_DATA_LENGTH = 8;
+  private static final int RAW_CLASSIC_FRAME_LENGTH = 13;
+  private static final int MAX_CLASSIC_DATA_LENGTH = 8;
+  private static final int MAX_FD_DATA_LENGTH = 64;
   private static final int STANDARD_IDENTIFIER_MAX = 0x7FF;
   private static final int EXTENDED_IDENTIFIER_MAX = 0x1FFFFFFF;
 
@@ -44,8 +45,12 @@ public record CanFrame(int canIdentifier, boolean extendedFrame, int dataLengthC
     return Arrays.copyOf(data, data.length);
   }
 
+  public boolean isCanFd() {
+    return dataLengthCode > MAX_CLASSIC_DATA_LENGTH;
+  }
+
   public static CanFrame fromBytes(byte[] raw) {
-    if (raw == null || raw.length != RAW_FRAME_LENGTH) {
+    if (raw == null || raw.length != RAW_CLASSIC_FRAME_LENGTH) {
       throw new IllegalArgumentException("Raw CAN frame must be exactly 13 bytes");
     }
 
@@ -60,7 +65,9 @@ public record CanFrame(int canIdentifier, boolean extendedFrame, int dataLengthC
     int dataLengthCode = (flags >>> 1) & 0x0F;
 
     validateIdentifier(canIdentifier, extendedFrame);
-    validateDataLengthCode(dataLengthCode);
+    if (dataLengthCode > MAX_CLASSIC_DATA_LENGTH) {
+      throw new IllegalArgumentException("Raw classic CAN frame data length code must be between 0 and 8");
+    }
 
     byte[] payload = new byte[dataLengthCode];
     if (dataLengthCode > 0) {
@@ -71,7 +78,11 @@ public record CanFrame(int canIdentifier, boolean extendedFrame, int dataLengthC
   }
 
   public byte[] getRawData() {
-    byte[] raw = new byte[RAW_FRAME_LENGTH];
+    if (isCanFd()) {
+      throw new IllegalStateException("CAN FD frames cannot be encoded using the 13-byte classic CAN raw format");
+    }
+
+    byte[] raw = new byte[RAW_CLASSIC_FRAME_LENGTH];
 
     raw[0] = (byte) ((canIdentifier >>> 24) & 0xFF);
     raw[1] = (byte) ((canIdentifier >>> 16) & 0xFF);
@@ -101,7 +112,8 @@ public record CanFrame(int canIdentifier, boolean extendedFrame, int dataLengthC
       if (canIdentifier > EXTENDED_IDENTIFIER_MAX) {
         throw new IllegalArgumentException("Extended CAN identifier must be <= 0x1FFFFFFF");
       }
-    } else {
+    }
+    else {
       if (canIdentifier > STANDARD_IDENTIFIER_MAX) {
         throw new IllegalArgumentException("Standard CAN identifier must be <= 0x7FF");
       }
@@ -109,8 +121,8 @@ public record CanFrame(int canIdentifier, boolean extendedFrame, int dataLengthC
   }
 
   private static void validateDataLengthCode(int dataLengthCode) {
-    if (dataLengthCode < 0 || dataLengthCode > MAX_DATA_LENGTH) {
-      throw new IllegalArgumentException("CAN data length code must be between 0 and 8");
+    if (dataLengthCode < 0 || dataLengthCode > MAX_FD_DATA_LENGTH) {
+      throw new IllegalArgumentException("CAN data length code must be between 0 and 64");
     }
   }
 
@@ -130,8 +142,8 @@ public record CanFrame(int canIdentifier, boolean extendedFrame, int dataLengthC
       throw new IllegalArgumentException("Data length must be at least the data length code");
     }
 
-    if (data.length > MAX_DATA_LENGTH) {
-      throw new IllegalArgumentException("Data length must not exceed 8 bytes");
+    if (data.length > MAX_FD_DATA_LENGTH) {
+      throw new IllegalArgumentException("Data length must not exceed 64 bytes");
     }
   }
 }

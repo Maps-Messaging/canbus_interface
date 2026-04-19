@@ -185,10 +185,12 @@ class CanFrameTest {
   }
 
   @Test
-  void constructor_rejectsDataLongerThanEightBytes() {
+  void constructor_rejectsDataLongerThanSixtyFourBytes() {
+    byte[] data = new byte[65];
+
     Assertions.assertThrows(
         IllegalArgumentException.class,
-        () -> new CanFrame(0x12345678, true, 8, new byte[]{0, 1, 2, 3, 4, 5, 6, 7, 8})
+        () -> new CanFrame(0x12345678, true, 64, data)
     );
   }
 
