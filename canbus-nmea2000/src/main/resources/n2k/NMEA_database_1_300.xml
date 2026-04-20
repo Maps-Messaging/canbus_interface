@@ -8,6 +8,195 @@
 <PGNDefinitions>
   <PGNs>
     <PGNInfo>
+      <PGN>126993</PGN>
+      <Id>heartbeat</Id>
+      <Description>Heartbeat</Description>
+      <Priority>6</Priority>
+      <Type>Single</Type>
+      <Complete>true</Complete>
+      <FieldCount>2</FieldCount>
+      <Length>8</Length>
+      <Fields>
+        <Field>
+          <Order>1</Order>
+          <Id>sequenceCounter</Id>
+          <Name>Sequence Counter</Name>
+          <BitLength>8</BitLength>
+          <BitOffset>0</BitOffset>
+          <BitStart>0</BitStart>
+          <Resolution>1</Resolution>
+          <Signed>false</Signed>
+          <RangeMin>0</RangeMin>
+          <RangeMax>252</RangeMax>
+          <FieldType>NUMBER</FieldType>
+          <TypeInPdf>uint8</TypeInPdf>
+        </Field>
+
+        <Field>
+          <Order>2</Order>
+          <Id>reserved</Id>
+          <Name>Reserved</Name>
+          <BitLength>56</BitLength>
+          <BitOffset>8</BitOffset>
+          <BitStart>0</BitStart>
+          <FieldType>BINARY</FieldType>
+          <TypeInPdf>reserved</TypeInPdf>
+        </Field>
+      </Fields>
+    </PGNInfo>
+    <PGNInfo>
+      <PGN>60928</PGN>
+      <Id>isoAddressClaim</Id>
+      <Description>ISO Address Claim</Description>
+      <Priority>6</Priority>
+      <Type>Single</Type>
+      <Complete>true</Complete>
+      <FieldCount>10</FieldCount>
+      <Length>8</Length>
+      <Fields>
+        <Field>
+          <Order>1</Order>
+          <Id>uniqueNumber</Id>
+          <Name>Unique Number</Name>
+          <BitLength>21</BitLength>
+          <BitOffset>0</BitOffset>
+          <BitStart>0</BitStart>
+          <Resolution>1</Resolution>
+          <Signed>false</Signed>
+          <RangeMin>0</RangeMin>
+          <RangeMax>2097151</RangeMax>
+          <FieldType>NUMBER</FieldType>
+          <TypeInPdf>uint21</TypeInPdf>
+        </Field>
+        <Field>
+          <Order>2</Order>
+          <Id>manufacturerCode</Id>
+          <Name>Manufacturer Code</Name>
+          <BitLength>11</BitLength>
+          <BitOffset>21</BitOffset>
+          <BitStart>0</BitStart>
+          <Resolution>1</Resolution>
+          <Signed>false</Signed>
+          <RangeMin>0</RangeMin>
+          <RangeMax>2047</RangeMax>
+          <FieldType>NUMBER</FieldType>
+          <TypeInPdf>uint11</TypeInPdf>
+        </Field>
+        <Field>
+          <Order>3</Order>
+          <Id>deviceInstanceLower</Id>
+          <Name>Device Instance Lower</Name>
+          <BitLength>3</BitLength>
+          <BitOffset>32</BitOffset>
+          <BitStart>0</BitStart>
+          <Resolution>1</Resolution>
+          <Signed>false</Signed>
+          <RangeMin>0</RangeMin>
+          <RangeMax>7</RangeMax>
+          <FieldType>NUMBER</FieldType>
+          <TypeInPdf>uint3</TypeInPdf>
+        </Field>
+        <Field>
+          <Order>4</Order>
+          <Id>deviceInstanceUpper</Id>
+          <Name>Device Instance Upper</Name>
+          <BitLength>5</BitLength>
+          <BitOffset>35</BitOffset>
+          <BitStart>0</BitStart>
+          <Resolution>1</Resolution>
+          <Signed>false</Signed>
+          <RangeMin>0</RangeMin>
+          <RangeMax>31</RangeMax>
+          <FieldType>NUMBER</FieldType>
+          <TypeInPdf>uint5</TypeInPdf>
+        </Field>
+        <Field>
+          <Order>5</Order>
+          <Id>deviceFunction</Id>
+          <Name>Device Function</Name>
+          <BitLength>8</BitLength>
+          <BitOffset>40</BitOffset>
+          <BitStart>0</BitStart>
+          <Resolution>1</Resolution>
+          <Signed>false</Signed>
+          <RangeMin>0</RangeMin>
+          <RangeMax>255</RangeMax>
+          <FieldType>NUMBER</FieldType>
+          <TypeInPdf>uint8</TypeInPdf>
+        </Field>
+        <Field>
+          <Order>6</Order>
+          <Id>reserved</Id>
+          <Name>Reserved</Name>
+          <BitLength>1</BitLength>
+          <BitOffset>48</BitOffset>
+          <BitStart>0</BitStart>
+          <Resolution>1</Resolution>
+          <Signed>false</Signed>
+          <RangeMin>0</RangeMin>
+          <RangeMax>1</RangeMax>
+          <FieldType>NUMBER</FieldType>
+          <TypeInPdf>bit</TypeInPdf>
+        </Field>
+        <Field>
+          <Order>7</Order>
+          <Id>deviceClass</Id>
+          <Name>Device Class</Name>
+          <BitLength>7</BitLength>
+          <BitOffset>49</BitOffset>
+          <BitStart>0</BitStart>
+          <Resolution>1</Resolution>
+          <Signed>false</Signed>
+          <RangeMin>0</RangeMin>
+          <RangeMax>127</RangeMax>
+          <FieldType>NUMBER</FieldType>
+          <TypeInPdf>uint7</TypeInPdf>
+        </Field>
+        <Field>
+          <Order>8</Order>
+          <Id>systemInstance</Id>
+          <Name>System Instance</Name>
+          <BitLength>4</BitLength>
+          <BitOffset>56</BitOffset>
+          <BitStart>0</BitStart>
+          <Resolution>1</Resolution>
+          <Signed>false</Signed>
+          <RangeMin>0</RangeMin>
+          <RangeMax>15</RangeMax>
+          <FieldType>NUMBER</FieldType>
+          <TypeInPdf>uint4</TypeInPdf>
+        </Field>
+        <Field>
+          <Order>9</Order>
+          <Id>industryGroup</Id>
+          <Name>Industry Group</Name>
+          <BitLength>3</BitLength>
+          <BitOffset>60</BitOffset>
+          <BitStart>0</BitStart>
+          <Resolution>1</Resolution>
+          <Signed>false</Signed>
+          <RangeMin>0</RangeMin>
+          <RangeMax>7</RangeMax>
+          <FieldType>NUMBER</FieldType>
+          <TypeInPdf>uint3</TypeInPdf>
+        </Field>
+        <Field>
+          <Order>10</Order>
+          <Id>arbitraryAddressCapable</Id>
+          <Name>Arbitrary Address Capable</Name>
+          <BitLength>1</BitLength>
+          <BitOffset>63</BitOffset>
+          <BitStart>0</BitStart>
+          <Resolution>1</Resolution>
+          <Signed>false</Signed>
+          <RangeMin>0</RangeMin>
+          <RangeMax>1</RangeMax>
+          <FieldType>NUMBER</FieldType>
+          <TypeInPdf>bit</TypeInPdf>
+        </Field>
+      </Fields>
+    </PGNInfo>
+    <PGNInfo>
     <PGN>126992</PGN>
     <Id>systemTime</Id>
     <Description>System Time</Description>
@@ -87,6 +276,7 @@
      </Field>
     </Fields>
   </PGNInfo>
+
   <PGNInfo>
     <PGN>126996</PGN>
     <Id>productInformation</Id>
