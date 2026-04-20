@@ -24,15 +24,35 @@ import io.mapsmessaging.canbus.j1939.n2k.compile.N2kCompiledField;
 
 public interface Processor {
 
-  default void pack(N2kCompiledField field, byte[] payload, JsonObject decoded) {
-    // no-op
+  default int computePayloadLength(N2kCompiledField field, JsonObject decoded) {
+    if (field.isCompileTimeFixed()) {
+      return 0;
+    }
+
+    Integer bitLength = field.getBitLength();
+    if (bitLength == null || bitLength <= 0) {
+      return 0;
+    }
+
+    return (bitLength + 7) >>> 3;
   }
 
-  default void unpack(N2kCompiledField field, byte[] payload, JsonObject decoded) {
-    // no-op
+  default int computePayloadLength(N2kCompiledField field, FieldValueSource source) {
+    return 0;
   }
 
-  default void unpack(N2kCompiledField field, byte[] payload, FieldValueSource source) {
-    // no-op
+  default int pack(N2kCompiledField field, byte[] payload, int cursor, JsonObject decoded) {
+    return cursor;
+  }
+
+  default int unpack(N2kCompiledField field, byte[] payload, int cursor, JsonObject decoded) {
+    return cursor;
+  }
+
+  default int pack(N2kCompiledField field, byte[] payload, int cursor, FieldValueSource decoded) {
+    return cursor;
+  }
+  default int unpack(N2kCompiledField field, byte[] payload, int cursor, FieldValueSource source) {
+    return cursor;
   }
 }

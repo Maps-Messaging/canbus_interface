@@ -31,6 +31,7 @@ import io.mapsmessaging.canbus.j1939.n2k.codec.N2kMessageParser;
 import io.mapsmessaging.canbus.j1939.n2k.compile.N2kCompiledField;
 import io.mapsmessaging.canbus.j1939.n2k.compile.N2kCompiledMessage;
 import io.mapsmessaging.canbus.j1939.n2k.compile.N2kCompiledRegistry;
+import io.mapsmessaging.canbus.j1939.n2k.model.N2kFieldDefinition;
 import io.mapsmessaging.canbus.j1939.n2k.model.N2kFieldType;
 import io.mapsmessaging.canbus.j1939.n2k.schema.N2kSchemaRegistry;
 import java.util.*;
@@ -68,13 +69,10 @@ class N2kJsonSchemaValidationTest extends BaseTest{
     JsonObject decoded = new JsonObject();
     Random random = new Random(BASE_SEED ^ (long) msg.getPgn());
 
-    for (N2kCompiledField field : msg.getFields()) {
-      if (field.isReserved()) {
-        continue;
-      }
+    for (N2kFieldDefinition field : msg.getDefinitions()) {
 
-      N2kFieldType type = field.getFieldType();
-      if (type != N2kFieldType.NUMBER && type != N2kFieldType.LOOKUP && type != N2kFieldType.FLOAT) {
+      if (field.getFieldType() == N2kFieldType.RESERVED
+          || field.getFieldType() == N2kFieldType.REPEAT_MARKER) {
         continue;
       }
 
@@ -83,15 +81,46 @@ class N2kJsonSchemaValidationTest extends BaseTest{
         continue;
       }
 
-      long rawValue = randomRawValue(field, random);
-      long clampedRawValue = clampRawValueToSchemaRange(field, rawValue);
+      switch (field.getFieldType()) {
 
-      if (type == N2kFieldType.LOOKUP) {
-        decoded.addProperty(id, (int) (clampedRawValue & field.getMask()));
-      }
-      else {
-        double value = clampedRawValue * field.getResolution() + field.getOffset();
-        decoded.addProperty(id, value);
+        case LOOKUP: {
+          long max = (field.getBitLength() != null && field.getBitLength() < 64)
+              ? (1L << field.getBitLength()) - 1
+              : 255;
+          int value = (int) (random.nextInt((int) Math.min(max, Integer.MAX_VALUE)));
+          decoded.addProperty(id, value);
+          break;
+        }
+
+        case NUMBER:
+        case FLOAT: {
+          long raw = randomRawValueFromDefinition(field, random);
+          double value = raw * field.getResolution() + field.getOffset();
+          decoded.addProperty(id, value);
+          break;
+        }
+
+        case STRING_FIX: {
+          int lenBytes = (field.getBitLength() != null)
+              ? field.getBitLength() / 8
+              : 8;
+
+          String value = "TEST_" + id;
+          if (value.length() > lenBytes) {
+            value = value.substring(0, lenBytes);
+          }
+          decoded.addProperty(id, value);
+          break;
+        }
+
+        case STRING_LAU: {
+          decoded.addProperty(id, "VAR_" + id);
+          break;
+        }
+
+        default:
+          // ignore anything else for now
+          break;
       }
     }
 
@@ -139,9 +168,6 @@ class N2kJsonSchemaValidationTest extends BaseTest{
       JsonArray required = decodedSchema.getAsJsonArray("required");
       for (JsonElement req : required) {
         String fieldId = req.getAsString();
-        if(!decoded.has(fieldId)){
-
-        }
         assertTrue(decoded.has(fieldId), "Missing required decoded field '" + fieldId + "' for PGN=" + pgn);
       }
     }
@@ -194,4 +220,5 @@ class N2kJsonSchemaValidationTest extends BaseTest{
       }
     }
   }
+
 }

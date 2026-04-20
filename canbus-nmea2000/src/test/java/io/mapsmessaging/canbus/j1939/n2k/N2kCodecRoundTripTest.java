@@ -36,6 +36,47 @@ class N2kCodecRoundTripTest {
   }
 
   @Test
+  void pgn126998_configurationInformation_roundTrip() throws Exception {
+    N2kCompiledRegistry registry = buildRegistry();
+    N2kMessageParser parser = new N2kMessageParser(registry);
+
+    JsonObject decoded = new JsonObject();
+    decoded.addProperty("installationDescriptionField1", "Maps Messaging Server");
+    decoded.addProperty("installationDescriptionField2", "AIS Source Bridge");
+    decoded.addProperty("manufacturerInformationField3", "MapsMessaging B.V.");
+
+    JsonObject envelope = new JsonObject();
+    envelope.addProperty("pgn", 126998);
+    envelope.add("packet", decoded);
+
+    byte[] payload = parser.encodeFromJson(126998, envelope);
+
+    // sanity: payload should not be empty anymore
+    assertTrue(payload.length > 0);
+
+    JsonObject decodedBack = parser.decodeToJson(126998, payload);
+
+    assertEquals("configurationInformation", decodedBack.get("name").getAsString());
+
+    JsonObject decodedFields = decodedBack.getAsJsonObject("packet");
+
+    assertEquals(
+        "Maps Messaging Server",
+        decodedFields.get("installationDescriptionField1").getAsString()
+    );
+
+    assertEquals(
+        "AIS Source Bridge",
+        decodedFields.get("installationDescriptionField2").getAsString()
+    );
+
+    assertEquals(
+        "MapsMessaging B.V.",
+        decodedFields.get("manufacturerInformationField3").getAsString()
+    );
+  }
+
+  @Test
   void pgn127245_rudder_roundTrip() throws Exception {
     N2kCompiledRegistry registry = buildRegistry();
     N2kMessageParser parser = new N2kMessageParser(registry);

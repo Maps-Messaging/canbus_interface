@@ -28,15 +28,18 @@ import lombok.Value;
 public class N2kCompiledField {
   String id;
   String name;
+  boolean compileTimeFixed;
+  int order;
 
+  // Only for FIXED position and length PGNs
   int bitOffset;
   int bitLength;
-
   int startByte;
   int startBit;
   int bytesToRead;
-
   long mask;
+  long rawMin;
+  long rawMax;
 
   boolean signed;
   double resolution;
@@ -50,6 +53,4 @@ public class N2kCompiledField {
 
   boolean reserved;
 
-  long rawMin;
-  long rawMax;
 }
