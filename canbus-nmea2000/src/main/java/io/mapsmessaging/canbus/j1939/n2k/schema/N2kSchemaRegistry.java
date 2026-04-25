@@ -25,10 +25,9 @@ import io.mapsmessaging.canbus.j1939.n2k.compile.N2kCompiledField;
 import io.mapsmessaging.canbus.j1939.n2k.compile.N2kCompiledMessage;
 import io.mapsmessaging.canbus.j1939.n2k.compile.N2kCompiledRegistry;
 import io.mapsmessaging.canbus.j1939.n2k.model.N2kFieldType;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
+
+import java.util.*;
+
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
@@ -74,7 +73,7 @@ public class N2kSchemaRegistry {
 
   private Map<Integer, JsonObject> buildSchemas() {
     Map<Integer, N2kCompiledMessage> messages = registry.getMessagesByPgn();
-    java.util.HashMap<Integer, JsonObject> out = new java.util.HashMap<>(messages.size());
+    java.util.HashMap<Integer, JsonObject> out = HashMap.newHashMap(messages.size());
 
     for (N2kCompiledMessage message : messages.values()) {
       int pgn = message.getPgn();
@@ -151,7 +150,9 @@ public class N2kSchemaRegistry {
       }
 
       decodedProperties.add(id, fieldSchema);
-      required.add(id);
+      if(field.getFieldType() != N2kFieldType.REPEAT_MARKER) {
+        required.add(id);
+      }
     }
 
     decodedProperty.add("properties", decodedProperties);

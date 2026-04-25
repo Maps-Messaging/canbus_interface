@@ -23,6 +23,7 @@ import io.mapsmessaging.canbus.j1939.n2k.compile.N2kCompiledField;
 import io.mapsmessaging.canbus.j1939.n2k.compile.N2kCompiledMessage;
 import io.mapsmessaging.canbus.j1939.n2k.compile.N2kCompiledRegistry;
 import io.mapsmessaging.canbus.j1939.n2k.compile.N2kCompiler;
+import io.mapsmessaging.canbus.j1939.n2k.model.N2kFieldDefinition;
 import io.mapsmessaging.canbus.j1939.n2k.model.N2kMessageDefinition;
 import io.mapsmessaging.canbus.j1939.n2k.parser.N2kXmlDialectParser;
 import java.util.List;
@@ -207,48 +208,108 @@ public class BaseTest {
   }
 
 
-  protected static long clampRawValueToSchemaRange(N2kCompiledField field, long rawValue) {
-    long clamped = clampRawValue(field, rawValue);
+  protected static long randomRawValueFromDefinition(N2kFieldDefinition field, Random random) {
+    RawRange range = computeAllowedRawRange(field);
 
-    Double min = field.getRangeMin();
-    Double max = field.getRangeMax();
+    if (!range.valid) {
+      return 0L;
+    }
 
-    if (min == null && max == null) {
-      return clamped;
+    if (range.min == range.max) {
+      return range.min;
+    }
+
+    long span = range.max - range.min;
+    long offset = nextLongBounded(random, span + 1L);
+
+    return range.min + offset;
+  }
+
+  protected static RawRange computeAllowedRawRange(N2kFieldDefinition field) {
+    Integer bitLengthValue = field.getBitLength();
+    int bitLength = bitLengthValue != null ? bitLengthValue : 8;
+    if (bitLength <= 0) {
+      return RawRange.invalid();
+    }
+
+    long bitMin;
+    long bitMax;
+
+    if (field.isSigned()) {
+      if (bitLength >= 64) {
+        bitMin = Long.MIN_VALUE;
+        bitMax = Long.MAX_VALUE;
+      }
+      else {
+        bitMin = -(1L << (bitLength - 1));
+        bitMax = (1L << (bitLength - 1)) - 1L;
+      }
+    }
+    else {
+      bitMin = 0L;
+      if (bitLength >= 63) {
+        bitMax = Long.MAX_VALUE;
+      }
+      else {
+        bitMax = (1L << bitLength) - 1L;
+      }
+    }
+
+    Double rangeMin = field.getRangeMin();
+    Double rangeMax = field.getRangeMax();
+
+    if (rangeMin == null && rangeMax == null) {
+      return RawRange.of(bitMin, bitMax);
     }
 
     double resolution = field.getResolution();
     if (resolution <= 0.0) {
-      return clamped;
+      return RawRange.of(bitMin, bitMax);
     }
 
     double offset = field.getOffset();
 
-    long minRaw = Long.MIN_VALUE;
-    long maxRaw = Long.MAX_VALUE;
+    long rawFromRangeMin = bitMin;
+    long rawFromRangeMax = bitMax;
 
-    if (min != null) {
-      minRaw = Math.round((min - offset) / resolution);
-    }
-    if (max != null) {
-      maxRaw = Math.round((max - offset) / resolution);
+    if (rangeMin != null) {
+      double unscaledMin = (rangeMin - offset) / resolution;
+      rawFromRangeMin = (long) Math.ceil(unscaledMin - 1e-12);
     }
 
-    if (minRaw > maxRaw) {
-      return clamped;
+    if (rangeMax != null) {
+      double unscaledMax = (rangeMax - offset) / resolution;
+      rawFromRangeMax = (long) Math.floor(unscaledMax + 1e-12);
     }
 
-    if (clamped < minRaw) {
-      return minRaw;
-    }
-    if (clamped > maxRaw) {
-      return maxRaw;
+    long min = Math.max(bitMin, rawFromRangeMin);
+    long max = Math.min(bitMax, rawFromRangeMax);
+
+    if (min > max) {
+      return RawRange.of(bitMin, bitMax);
     }
 
-    return clamped;
+    return RawRange.of(min, max);
   }
 
+  protected static double randomEngineeringValueFromDefinition(N2kFieldDefinition field, Random random) {
+    RawRange range = computeAllowedRawRange(field);
+    if (!range.valid) {
+      return 0.0;
+    }
 
+    long raw;
+    if (range.min == range.max) {
+      raw = range.min;
+    }
+    else {
+      long span = range.max - range.min;
+      long offset = nextLongBounded(random, span + 1L);
+      raw = range.min + offset;
+    }
+
+    return raw * field.getResolution() + field.getOffset();
+  }
 
   protected static N2kCompiledRegistry buildRegistry() throws Exception {
     List<N2kMessageDefinition> defs = N2kXmlDialectParser.parseFromClasspath(DIALECT_RESOURCE_PATH);

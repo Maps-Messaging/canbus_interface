@@ -67,25 +67,33 @@ class N2kRoundTripAllPgnsTest extends BaseTest{
       }
 
       N2kFieldType type = field.getFieldType();
-      if (type != N2kFieldType.NUMBER && type != N2kFieldType.LOOKUP && type != N2kFieldType.FLOAT) {
-        continue;
-      }
-
       String id = field.getId();
       if (id == null || id.isBlank()) {
         continue;
       }
 
-      long rawValue = randomRawValue(field, random);
-      long clampedRawValue = clampRawValue(field, rawValue);
+      if (type == N2kFieldType.NUMBER || type == N2kFieldType.LOOKUP || type == N2kFieldType.FLOAT) {
+        long rawValue = randomRawValue(field, random);
+        long clampedRawValue = clampRawValue(field, rawValue);
 
-      double value = clampedRawValue * field.getResolution() + field.getOffset();
+        double value = clampedRawValue * field.getResolution() + field.getOffset();
 
-      if (type == N2kFieldType.LOOKUP) {
-        decoded.addProperty(id, (int) (clampedRawValue & field.getMask()));
+        if (type == N2kFieldType.LOOKUP) {
+          decoded.addProperty(id, (int) (clampedRawValue & field.getMask()));
+        }
+        else {
+          decoded.addProperty(id, value);
+        }
+        continue;
       }
-      else {
-        decoded.addProperty(id, value);
+
+      if (type == N2kFieldType.STRING_LAU) {
+        decoded.addProperty(id, "VAR_" + id);
+        continue;
+      }
+
+      if (type == N2kFieldType.STRING_FIX) {
+        decoded.addProperty(id, buildFixedStringValue(field, id));
       }
     }
 
@@ -116,16 +124,41 @@ class N2kRoundTripAllPgnsTest extends BaseTest{
 
       N2kFieldType type = field.getFieldType();
       if (type == N2kFieldType.LOOKUP) {
-        assertEquals(expectedJson.getAsInt(), actualJson.getAsInt(), "LOOKUP mismatch for " + fieldId + " PGN=" + msg.getPgn());
+        assertEquals(
+            expectedJson.getAsInt(),
+            actualJson.getAsInt(),
+            "LOOKUP mismatch for " + fieldId + " PGN=" + msg.getPgn()
+        );
+      }
+      else if (type == N2kFieldType.STRING_LAU || type == N2kFieldType.STRING_FIX) {
+        assertEquals(
+            expectedJson.getAsString(),
+            actualJson.getAsString(),
+            "STRING mismatch for " + fieldId + " PGN=" + msg.getPgn()
+        );
       }
       else {
         double expected = expectedJson.getAsDouble();
         double actual = actualJson.getAsDouble();
         double tolerance = toleranceFor(field);
-        assertEquals(expected, actual, tolerance, "NUMERIC mismatch for " + fieldId + " PGN=" + msg.getPgn());
+        assertEquals(
+            expected,
+            actual,
+            tolerance,
+            "NUMERIC mismatch for " + fieldId + " PGN=" + msg.getPgn()
+        );
       }
     }
   }
 
+  private static String buildFixedStringValue(N2kCompiledField field, String id) {
+    Integer bitLength = field.getBitLength();
+    int lengthBytes = (bitLength == null || bitLength <= 0) ? 8 : (bitLength + 7) >>> 3;
 
+    String value = "FIX_" + id;
+    if (value.length() > lengthBytes) {
+      return value.substring(0, lengthBytes);
+    }
+    return value;
+  }
 }
