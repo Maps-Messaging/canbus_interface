@@ -72,8 +72,14 @@ public final class SerialCanDevice implements CanDevice, Closeable {
     canFrameStreamCodec.write(outputStream, canFrame);
   }
 
+  @Override
   public void flush() throws IOException {
     canFrameStreamCodec.flush(outputStream);
+  }
+
+  @Override
+  public CanCapabilities getCanCapabilities() {
+    return canFrameStreamCodec.getCanCapabilities();
   }
 
   @Override

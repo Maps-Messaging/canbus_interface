@@ -31,4 +31,6 @@ public interface CanDevice extends Closeable {
 
   default void flush() throws IOException {
   }
+
+  CanCapabilities getCanCapabilities();
 }

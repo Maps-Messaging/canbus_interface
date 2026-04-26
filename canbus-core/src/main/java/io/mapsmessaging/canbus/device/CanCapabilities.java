@@ -30,4 +30,13 @@ public record CanCapabilities(
   public boolean canSendFd() {
     return interfaceFdEnabled && socketFdEnabled && ioMaxPayloadBytes == 64;
   }
+
+  public static CanCapabilities classicCan() {
+    return new CanCapabilities(
+        false,
+        false,
+        8,
+        8
+    );
+  }
 }
