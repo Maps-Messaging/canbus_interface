@@ -1,20 +1,19 @@
 /*
+ *   Copyright [ 2024 -  2026 ] MapsMessaging B.V.
  *
- *  Copyright [ 2020 - 2024 ] Matthew Buckton
- *  Copyright [ 2024 - 2026 ] MapsMessaging B.V.
+ *   Licensed under the Apache License, Version 2.0 with the Commons Clause
+ *   (the "License"); you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at:
  *
- *  Licensed under the Apache License, Version 2.0 with the Commons Clause
- *  (the "License"); you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at:
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *       https://commonsclause.com/
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *      https://commonsclause.com/
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
  */
 package io.mapsmessaging.canbus.device;
 
@@ -23,7 +22,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.sun.jna.Memory;
 import com.sun.jna.Native;
-import com.sun.jna.Pointer;
 import com.sun.jna.ptr.IntByReference;
 import io.mapsmessaging.canbus.device.frames.CanFrame;
 import io.mapsmessaging.canbus.device.frames.NativeCanFdFrame;
@@ -128,54 +126,61 @@ public final class SocketCanDevice implements Closeable {
     }
 
     if (bytesRead == classicFrameSize) {
-      reusableClassicFrame.read();
-
-      int rawCanId = reusableClassicFrame.canIdentifier;
-
-      boolean extendedFrame = (rawCanId & CAN_EFF_FLAG) != 0;
-      int cleanCanId = extendedFrame ? (rawCanId & CAN_EFF_MASK) : (rawCanId & CAN_SFF_MASK);
-
-      if ((rawCanId & (CAN_RTR_FLAG | CAN_ERR_FLAG)) != 0) {
-        throw new IOException("Unsupported CAN frame flags (RTR/ERR) in canIdentifier=0x" + Integer.toHexString(rawCanId));
-      }
-
-      int dataLengthCode = reusableClassicFrame.dataLengthCode & 0xFF;
-      if (dataLengthCode > CLASSIC_CAN_MAX_PAYLOAD) {
-        throw new IOException("Invalid classic DLC: " + dataLengthCode);
-      }
-
-      byte[] data = new byte[dataLengthCode];
-      if (dataLengthCode > 0) {
-        System.arraycopy(reusableClassicFrame.data, 0, data, 0, dataLengthCode);
-      }
-      return new CanFrame(cleanCanId, extendedFrame, dataLengthCode, data);
+      return readClassicFrame();
     }
 
     if (bytesRead == fdFrameSize) {
-      reusableFdFrame.read();
+      return readFDFrame();
+    }
+    throw new IOException("Unexpected read size: " + bytesRead + " bytes (expected " + classicFrameSize + " or " + fdFrameSize + ")");
+  }
 
-      int rawCanId = reusableFdFrame.canIdentifier;
+  private CanFrame readClassicFrame() throws IOException {
+    reusableClassicFrame.read();
 
-      boolean extendedFrame = (rawCanId & CAN_EFF_FLAG) != 0;
-      int cleanCanId = extendedFrame ? (rawCanId & CAN_EFF_MASK) : (rawCanId & CAN_SFF_MASK);
+    int rawCanId = reusableClassicFrame.canIdentifier;
 
-      if ((rawCanId & (CAN_RTR_FLAG | CAN_ERR_FLAG)) != 0) {
-        throw new IOException("Unsupported CAN FD frame flags (RTR/ERR) in canIdentifier=0x" + Integer.toHexString(rawCanId));
-      }
+    boolean extendedFrame = (rawCanId & CAN_EFF_FLAG) != 0;
+    int cleanCanId = extendedFrame ? (rawCanId & CAN_EFF_MASK) : (rawCanId & CAN_SFF_MASK);
 
-      int dataLengthCode = reusableFdFrame.length & 0xFF;
-      if (dataLengthCode > CAN_FD_MAX_PAYLOAD) {
-        throw new IOException("Invalid FD length: " + dataLengthCode);
-      }
-
-      byte[] data = new byte[dataLengthCode];
-      if (dataLengthCode > 0) {
-        System.arraycopy(reusableFdFrame.data, 0, data, 0, dataLengthCode);
-      }
-      return new CanFrame(cleanCanId, extendedFrame, dataLengthCode, data);
+    if ((rawCanId & (CAN_RTR_FLAG | CAN_ERR_FLAG)) != 0) {
+      throw new IOException("Unsupported CAN frame flags (RTR/ERR) in canIdentifier=0x" + Integer.toHexString(rawCanId));
     }
 
-    throw new IOException("Unexpected read size: " + bytesRead + " bytes (expected " + classicFrameSize + " or " + fdFrameSize + ")");
+    int dataLengthCode = reusableClassicFrame.dataLengthCode & 0xFF;
+    if (dataLengthCode > CLASSIC_CAN_MAX_PAYLOAD) {
+      throw new IOException("Invalid classic DLC: " + dataLengthCode);
+    }
+
+    byte[] data = new byte[dataLengthCode];
+    if (dataLengthCode > 0) {
+      System.arraycopy(reusableClassicFrame.data, 0, data, 0, dataLengthCode);
+    }
+    return new CanFrame(cleanCanId, extendedFrame, dataLengthCode, data);
+  }
+
+  private CanFrame readFDFrame() throws IOException {
+    reusableFdFrame.read();
+
+    int rawCanId = reusableFdFrame.canIdentifier;
+
+    boolean extendedFrame = (rawCanId & CAN_EFF_FLAG) != 0;
+    int cleanCanId = extendedFrame ? (rawCanId & CAN_EFF_MASK) : (rawCanId & CAN_SFF_MASK);
+
+    if ((rawCanId & (CAN_RTR_FLAG | CAN_ERR_FLAG)) != 0) {
+      throw new IOException("Unsupported CAN FD frame flags (RTR/ERR) in canIdentifier=0x" + Integer.toHexString(rawCanId));
+    }
+
+    int dataLengthCode = reusableFdFrame.length & 0xFF;
+    if (dataLengthCode > CAN_FD_MAX_PAYLOAD) {
+      throw new IOException("Invalid FD length: " + dataLengthCode);
+    }
+
+    byte[] data = new byte[dataLengthCode];
+    if (dataLengthCode > 0) {
+      System.arraycopy(reusableFdFrame.data, 0, data, 0, dataLengthCode);
+    }
+    return new CanFrame(cleanCanId, extendedFrame, dataLengthCode, data);
   }
 
   public void writeFrame(CanFrame frame) throws IOException {
