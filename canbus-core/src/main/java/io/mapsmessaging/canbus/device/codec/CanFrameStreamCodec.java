@@ -18,6 +18,7 @@
 
 package io.mapsmessaging.canbus.device.codec;
 
+import io.mapsmessaging.canbus.device.CanCapabilities;
 import io.mapsmessaging.canbus.device.frames.CanFrame;
 
 import java.io.IOException;
@@ -27,6 +28,10 @@ import java.io.OutputStream;
 public interface CanFrameStreamCodec {
 
   default void initialise(InputStream inputStream, OutputStream outputStream) throws IOException {
+  }
+
+  default CanCapabilities getCanCapabilities() {
+    return CanCapabilities.classicCan();
   }
 
   CanFrame read(InputStream inputStream) throws IOException;

@@ -26,7 +26,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-public final class SerialCanDevice implements Closeable {
+public final class SerialCanDevice implements CanDevice, Closeable {
 
   private final InputStream inputStream;
   private final OutputStream outputStream;
@@ -71,8 +71,14 @@ public final class SerialCanDevice implements Closeable {
     canFrameStreamCodec.write(outputStream, canFrame);
   }
 
+  @Override
   public void flush() throws IOException {
     canFrameStreamCodec.flush(outputStream);
+  }
+
+  @Override
+  public CanCapabilities getCanCapabilities() {
+    return canFrameStreamCodec.getCanCapabilities();
   }
 
   @Override
