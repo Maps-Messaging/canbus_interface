@@ -18,29 +18,36 @@
 package io.mapsmessaging.canbus.device;
 
 import io.mapsmessaging.canbus.device.frames.CanFrame;
+import lombok.Getter;
 
-import java.io.Closeable;
-import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
-public interface CanDevice extends Closeable {
+@Getter
+final class CanWriteMessage {
 
-  CanFrame readFrame() throws IOException;
+  private final List<CanFrame> canFrames;
+  private final int estimatedBits;
 
-  void writeFrame(CanFrame canFrame) throws IOException;
-
-  default void writeFrames(List<CanFrame> canFrames) throws IOException {
+  CanWriteMessage(List<CanFrame> canFrames, int estimatedBits) {
     if (canFrames == null) {
       throw new IllegalArgumentException("canFrames must not be null");
     }
+    if (canFrames.isEmpty()) {
+      throw new IllegalArgumentException("canFrames must not be empty");
+    }
+    if (estimatedBits <= 0) {
+      throw new IllegalArgumentException("estimatedBits must be > 0");
+    }
 
     for (CanFrame canFrame : canFrames) {
-      writeFrame(canFrame);
+      if (canFrame == null) {
+        throw new IllegalArgumentException("canFrames must not contain null entries");
+      }
     }
-  }
 
-  default void flush() throws IOException {
+    this.canFrames = Collections.unmodifiableList(new ArrayList<>(canFrames));
+    this.estimatedBits = estimatedBits;
   }
-
-  CanCapabilities getCanCapabilities();
 }
