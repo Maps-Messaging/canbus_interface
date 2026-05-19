@@ -120,8 +120,8 @@ public class StringProcessor implements Processor {
   }
 
   private static int computeRelativeBytes(N2kCompiledField field) {
-    Integer bitLength = field.getBitLength();
-    if (bitLength == null || bitLength <= 0) {
+    int bitLength = field.getBitLength();
+    if (bitLength <= 0) {
       return 0;
     }
     return (bitLength + 7) >>> 3;
