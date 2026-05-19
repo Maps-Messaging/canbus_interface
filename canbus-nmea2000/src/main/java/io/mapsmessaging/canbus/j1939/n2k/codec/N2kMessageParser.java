@@ -1,20 +1,19 @@
 /*
+ *   Copyright [ 2024 -  2026 ] MapsMessaging B.V.
  *
- *  Copyright [ 2020 - 2024 ] Matthew Buckton
- *  Copyright [ 2024 - 2026 ] MapsMessaging B.V.
+ *   Licensed under the Apache License, Version 2.0 with the Commons Clause
+ *   (the "License"); you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at:
  *
- *  Licensed under the Apache License, Version 2.0 with the Commons Clause
- *  (the "License"); you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at:
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *       https://commonsclause.com/
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *      https://commonsclause.com/
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
  */
 
 package io.mapsmessaging.canbus.j1939.n2k.codec;
@@ -42,9 +41,11 @@ public class N2kMessageParser {
     PROCESSORS.put(N2kFieldType.LOOKUP, new LookupProcessor());
     PROCESSORS.put(N2kFieldType.STRING_FIX, new StringProcessor());
     PROCESSORS.put(N2kFieldType.RESERVED, new ReservedProcessor());
+    PROCESSORS.put(N2kFieldType.STRING_LAU, new StringLauProcessor());
   }
 
-  @Getter private final N2kCompiledRegistry registry;
+  @Getter
+  private final N2kCompiledRegistry registry;
 
   public JsonObject decodeToJson(int pgn, byte[] payload) {
     N2kCompiledMessage message = registry.getRequiredMessage(pgn);
@@ -53,25 +54,28 @@ public class N2kMessageParser {
     }
 
     JsonObject decoded = new JsonObject();
+    int cursor = message.getMinimumLengthBytes();
     int payloadBits = payload.length << 3;
 
     for (N2kCompiledField field : message.getFields()) {
-
-      int endBitExclusive = field.getBitOffset() + field.getBitLength();
-      if (endBitExclusive > payloadBits) {
-        break;
+      Processor processor = PROCESSORS.get(field.getFieldType());
+      if (processor == null) {
+        continue;
       }
 
-      Processor packer = PROCESSORS.get(field.getFieldType());
-      if (packer != null) {
-        packer.pack(field, payload, decoded);
+      if (field.isCompileTimeFixed()) {
+        int endBitExclusive = field.getBitOffset() + field.getBitLength();
+        if (endBitExclusive > payloadBits) {
+          break;
+        }
       }
+
+      cursor = processor.unpack(field, payload, cursor, decoded);
     }
 
     JsonObject envelope = new JsonObject();
-    envelope.addProperty("pgn", pgn);
-    envelope.add("decoded", decoded);
-
+    envelope.add("packet", decoded);
+    envelope.addProperty("name", message.getId());
     return envelope;
   }
 
@@ -83,79 +87,104 @@ public class N2kMessageParser {
     if (envelope == null) {
       throw new IllegalArgumentException("Envelope is null");
     }
-    if (!envelope.has("decoded") || envelope.get("decoded").isJsonNull()) {
-      throw new IllegalArgumentException("Missing 'decoded' object");
+    if (!envelope.has("packet") || envelope.get("packet").isJsonNull()) {
+      throw new IllegalArgumentException("Missing 'packet' object");
     }
-    JsonObject decoded = envelope.getAsJsonObject("decoded");
+
+    JsonObject decoded = envelope.getAsJsonObject("packet");
 
     int payloadLengthBytes = computePayloadLengthBytes(message, decoded);
     byte[] payload = new byte[payloadLengthBytes];
     Arrays.fill(payload, (byte) 0xFF);
 
+    int cursor = message.getMinimumLengthBytes();
+
     for (N2kCompiledField field : message.getFields()) {
       Processor processor = PROCESSORS.get(field.getFieldType());
-      if (processor != null) {
-        processor.unpack(field, payload, decoded);
+      if (processor == null) {
+        continue;
       }
+
+      cursor = processor.pack(field, payload, cursor, decoded);
     }
 
     return payload;
   }
 
-  private static int computePayloadLengthBytes(N2kCompiledMessage message, JsonObject decoded) {
-    int requiredBitExclusive = message.getMinimumLengthBytes() << 3;
+  public byte[] encodeFromSource(int pgn, FieldValueSource source) {
+    N2kCompiledMessage message = registry.getRequiredMessage(pgn);
+    if (message == null) {
+      return new byte[0];
+    }
+    if (source == null) {
+      throw new IllegalArgumentException("FieldValueSource is null");
+    }
+
+    int payloadLengthBytes = computePayloadLengthBytes(message, source);
+    byte[] payload = new byte[payloadLengthBytes];
+    Arrays.fill(payload, (byte) 0xFF);
+
+    int cursor = message.getMinimumLengthBytes();
 
     for (N2kCompiledField field : message.getFields()) {
-      if (!shouldWriteField(field, decoded)) {
+      Processor processor = PROCESSORS.get(field.getFieldType());
+      if (processor == null) {
         continue;
       }
 
-      int endBitExclusive = field.getBitOffset() + field.getBitLength();
-      if (endBitExclusive > requiredBitExclusive) {
-        requiredBitExclusive = endBitExclusive;
-      }
+      cursor = processor.pack(field, payload, cursor, source);
     }
 
-    int requiredBytes = (requiredBitExclusive + 7) >>> 3;
+    return payload;
+  }
+
+  private int computePayloadLengthBytes(N2kCompiledMessage message, JsonObject decoded) {
+    int length = message.getMinimumLengthBytes();
+
+    for (N2kCompiledField field : message.getFields()) {
+      Processor processor = PROCESSORS.get(field.getFieldType());
+      if (processor == null) {
+        continue;
+      }
+
+      if (field.isCompileTimeFixed()) {
+        continue;
+      }
+
+      length += processor.computePayloadLength(field, decoded);
+    }
 
     if (message.getLengthType() == N2kMessageLengthType.FIXED) {
       Integer fixedLengthBytes = message.getFixedLengthBytes();
       if (fixedLengthBytes == null) {
-        throw new IllegalStateException(
+        throw new IllegalArgumentException(
             "FIXED lengthType but fixedLengthBytes is null for PGN " + message.getPgn()
         );
       }
-
-      if (requiredBytes > fixedLengthBytes) {
-        throw new IllegalArgumentException(
-            "PGN " + message.getPgn() +
-                " requires " + requiredBytes +
-                " bytes based on provided fields, but fixed length is " + fixedLengthBytes
-        );
-      }
-
       return fixedLengthBytes;
     }
 
-    return requiredBytes;
+    return length;
   }
 
+  private int computePayloadLengthBytes(N2kCompiledMessage message, FieldValueSource source) {
+    int length = message.getMinimumLengthBytes();
 
-  private static boolean shouldWriteField(N2kCompiledField field, JsonObject decoded) {
-    if (field.isReserved()) {
-      return true;
+    for (N2kCompiledField field : message.getFields()) {
+      Processor processor = PROCESSORS.get(field.getFieldType());
+      if (processor != null && !field.isCompileTimeFixed()) {
+        length += processor.computePayloadLength(field, source);
+      }
     }
 
-    String id = field.getId();
-    if (id == null || id.isBlank()) {
-      return false;
+    if (message.getLengthType() == N2kMessageLengthType.FIXED) {
+      Integer fixedLengthBytes = message.getFixedLengthBytes();
+      if (fixedLengthBytes == null) {
+        throw new IllegalStateException("FIXED lengthType but fixedLengthBytes is null for PGN " + message.getPgn());
+      }
+      return fixedLengthBytes;
     }
 
-    if (field.getFieldType() == N2kFieldType.STRING_FIX) {
-      return decoded.has(id + "Raw") || decoded.has(id);
-    }
-
-    return decoded.has(id);
+    return length;
   }
-
 }

@@ -1,0 +1,3313 @@
+meta:
+  schema: CANaerospace
+  version: '1.3'
+  generated: '2026-03-03'
+  notes:
+    - Clean CANaerospace schema (no SAE J1939 PGN/SPN/PDU concepts).
+    - Multi-byte values are big-endian (Motorola).
+    - Standard CANaerospace messages here assume DLC=8.
+    - Content populated from user-provided extracted tables (message types, data types, node services, identifier lists).
+    - Expanded identifier ranges and navigation/engine/electrical/hydraulic/landing/misc identifiers from user-provided tables.
+    - Added Native Format Message Channels, baseline example node IDs, and example time slot allocation tables (as optional/illustrative
+      metadata).
+messageTypes:
+  - name: EED
+    title: Emergency Event Data
+    idRange:
+      min: 0
+      max: 127
+    hexRange:
+      min: '0x000'
+      max: '0x07F'
+    explanation: Transmitted asynchronously whenever a situation requiring immediate action occurs.
+  - name: NSH
+    title: High Priority Node Service Data
+    idRange:
+      min: 128
+      max: 199
+    hexRange:
+      min: '0x080'
+      max: '0x0C7'
+    channels: 36
+    explanation: Transmitted asynchronously or cyclic with defined transmission intervals (36 channels). Can be unique to an
+      avionic or suite of avionics.
+  - name: UDH
+    title: High Priority User-Defined Data
+    idRange:
+      min: 200
+      max: 299
+    hexRange:
+      min: '0x0C8'
+      max: '0x12B'
+    explanation: Message/data format and transmission intervals entirely user-defined. Can be unique to an avionic or suite
+      of avionics.
+  - name: NOD
+    title: Normal Operation Data
+    idRange:
+      min: 300
+      max: 1799
+    hexRange:
+      min: '0x12C'
+      max: '0x707'
+    explanation: Transmitted asynchronously or cyclic with defined transmission intervals for operational and status data.
+  - name: UDL
+    title: Low Priority User-Defined Data
+    idRange:
+      min: 1800
+      max: 1899
+    hexRange:
+      min: '0x708'
+      max: '0x76B'
+    explanation: Message/data format and transmission intervals entirely user-defined. Can be unique to an avionic or suite
+      of avionics.
+  - name: DSD
+    title: Debug Service Data
+    idRange:
+      min: 1900
+      max: 1999
+    hexRange:
+      min: '0x76C'
+      max: '0x7CF'
+    explanation: Transmitted asynchronously or cyclic for debug communication & software download actions.
+  - name: NSL
+    title: Low Priority Node Service Data
+    idRange:
+      min: 2000
+      max: 2031
+    hexRange:
+      min: '0x7D0'
+      max: '0x7EF'
+    channels: 16
+    explanation: Transmitted asynchronously or cyclic for test & maintenance actions (16 channels), or other user-defined actions.
+frame:
+  dlc:
+    expected: 8
+  endianness: big
+  payloadLayout:
+    - name: nodeId
+      byteOffset: 0
+      byteLength: 1
+      type: uint8
+    - name: dataType
+      byteOffset: 1
+      byteLength: 1
+      type: uint8
+    - name: serviceCode
+      byteOffset: 2
+      byteLength: 1
+      type: uint8
+    - name: messageCode
+      byteOffset: 3
+      byteLength: 1
+      type: uint8
+    - name: data
+      byteOffset: 4
+      byteLength: 4
+      type: bytes[4]
+dataTypes:
+  byName:
+    NODATA:
+      typeNumber: 0
+      hex: '0x00'
+      bits: 0
+      range: null
+      explanation: No data type
+    ERROR:
+      typeNumber: 1
+      hex: '0x01'
+      bits: 32
+      range: null
+      explanation: Emergency event data type
+    FLOAT:
+      typeNumber: 2
+      hex: '0x02'
+      bits: 32
+      range:
+        min: 127
+        max: 8388607
+      explanation: IEEE-754 single precision float
+    LONG:
+      typeNumber: 3
+      hex: '0x03'
+      bits: 32
+      range:
+        min: -2147483647
+        max: 2147483648
+      explanation: 2’s complement integer
+    ULONG:
+      typeNumber: 4
+      hex: '0x04'
+      bits: 32
+      range:
+        min: 0
+        max: 4294967295
+      explanation: Unsigned integer
+    BLONG:
+      typeNumber: 5
+      hex: '0x05'
+      bits: 32
+      range: null
+      explanation: Discrete states (32 bits coded into 4 bytes)
+    SHORT:
+      typeNumber: 6
+      hex: '0x06'
+      bits: 16
+      range:
+        min: -32767
+        max: 32768
+      explanation: 2’s complement short
+    USHORT:
+      typeNumber: 7
+      hex: '0x07'
+      bits: 16
+      range:
+        min: 0
+        max: 65535
+      explanation: Unsigned short
+    BSHORT:
+      typeNumber: 8
+      hex: '0x08'
+      bits: 16
+      range: null
+      explanation: Discrete short (16 bits coded into 2 bytes)
+    CHAR:
+      typeNumber: 9
+      hex: '0x09'
+      bits: 8
+      range:
+        min: -127
+        max: 128
+      explanation: 2’s complement char
+    UCHAR:
+      typeNumber: 10
+      hex: '0x0A'
+      bits: 8
+      range:
+        min: 0
+        max: 255
+      explanation: Unsigned char
+    BCHAR:
+      typeNumber: 11
+      hex: '0x0B'
+      bits: 8
+      range: null
+      explanation: Discrete char (8 bits coded into 1 byte)
+    SHORT2:
+      typeNumber: 12
+      hex: '0x0C'
+      bits: 2x16
+      range:
+        min: -32767
+        max: 32768
+      explanation: Two 16-bit signed shorts
+    USHORT2:
+      typeNumber: 13
+      hex: '0x0D'
+      bits: 2x16
+      range:
+        min: 0
+        max: 65535
+      explanation: Two 16-bit unsigned shorts
+    BSHORT2:
+      typeNumber: 14
+      hex: '0x0E'
+      bits: 2x16
+      range: null
+      explanation: Two discrete shorts
+    CHAR4:
+      typeNumber: 15
+      hex: '0x0F'
+      bits: 4x8
+      range:
+        min: -127
+        max: 128
+      explanation: Four signed chars
+    UCHAR4:
+      typeNumber: 16
+      hex: '0x10'
+      bits: 4x8
+      range:
+        min: 0
+        max: 255
+      explanation: Four unsigned chars
+    BCHAR4:
+      typeNumber: 17
+      hex: '0x11'
+      bits: 4x8
+      range: null
+      explanation: Four discrete chars
+    CHAR2:
+      typeNumber: 18
+      hex: '0x12'
+      bits: 2x8
+      range:
+        min: -127
+        max: 128
+      explanation: Two signed chars
+    UCHAR2:
+      typeNumber: 19
+      hex: '0x13'
+      bits: 2x8
+      range:
+        min: 0
+        max: 255
+      explanation: Two unsigned chars
+    BCHAR2:
+      typeNumber: 20
+      hex: '0x14'
+      bits: 2x8
+      range: null
+      explanation: Two discrete chars
+    MEMID:
+      typeNumber: 21
+      hex: '0x15'
+      bits: 32
+      range:
+        min: 0
+        max: 4294967295
+      explanation: Memory ID for upload/download
+    CHKSUM:
+      typeNumber: 22
+      hex: '0x16'
+      bits: 32
+      range:
+        min: 0
+        max: 4294967295
+      explanation: Checksum for upload/download
+    ACHAR:
+      typeNumber: 23
+      hex: '0x17'
+      bits: 8
+      range:
+        min: 0
+        max: 255
+      explanation: ASCII character
+    ACHAR2:
+      typeNumber: 24
+      hex: '0x18'
+      bits: 2x8
+      range:
+        min: 0
+        max: 255
+      explanation: Two ASCII characters
+    ACHAR4:
+      typeNumber: 25
+      hex: '0x19'
+      bits: 4x8
+      range:
+        min: 0
+        max: 255
+      explanation: Four ASCII characters
+    VARIABLE3:
+      typeNumber: 100
+      hex: '0x64'
+      bits: 3x8
+      range: null
+      explanation: 17 to 24-bit signed 2’s complement integer
+    UVARIABLE3:
+      typeNumber: 101
+      hex: '0x65'
+      bits: 3x8
+      range: null
+      explanation: 17 to 24-bit unsigned integer
+    UDEF:
+      typeNumber: 102
+      hex: '0x66'
+      bits: null
+      range: null
+      explanation: User-defined data types (102-255)
+  byNumber:
+    0: NODATA
+    1: ERROR
+    2: FLOAT
+    3: LONG
+    4: ULONG
+    5: BLONG
+    6: SHORT
+    7: USHORT
+    8: BSHORT
+    9: CHAR
+    10: UCHAR
+    11: BCHAR
+    12: SHORT2
+    13: USHORT2
+    14: BSHORT2
+    15: CHAR4
+    16: UCHAR4
+    17: BCHAR4
+    18: CHAR2
+    19: UCHAR2
+    20: BCHAR2
+    21: MEMID
+    22: CHKSUM
+    23: ACHAR
+    24: ACHAR2
+    25: ACHAR4
+    100: VARIABLE3
+    101: UVARIABLE3
+    102: UDEF
+nodeServices:
+  channels:
+    NSH:
+      - channel: 0
+        requestId: 128
+        responseId: 129
+      - channel: 1
+        requestId: 130
+        responseId: 131
+      - channel: 2
+        requestId: 132
+        responseId: 133
+      - channel: 3
+        requestId: 134
+        responseId: 135
+      - channel: 4
+        requestId: 136
+        responseId: 137
+      - channel: 5
+        requestId: 138
+        responseId: 139
+      - channel: 6
+        requestId: 140
+        responseId: 141
+      - channel: 7
+        requestId: 142
+        responseId: 143
+      - channel: 8
+        requestId: 144
+        responseId: 145
+      - channel: 9
+        requestId: 146
+        responseId: 147
+      - channel: 10
+        requestId: 148
+        responseId: 149
+      - channel: 11
+        requestId: 150
+        responseId: 151
+      - channel: 12
+        requestId: 152
+        responseId: 153
+      - channel: 13
+        requestId: 154
+        responseId: 155
+      - channel: 14
+        requestId: 156
+        responseId: 157
+      - channel: 15
+        requestId: 158
+        responseId: 159
+      - channel: 16
+        requestId: 160
+        responseId: 161
+      - channel: 17
+        requestId: 162
+        responseId: 163
+      - channel: 18
+        requestId: 164
+        responseId: 165
+      - channel: 19
+        requestId: 166
+        responseId: 167
+      - channel: 20
+        requestId: 168
+        responseId: 169
+      - channel: 21
+        requestId: 170
+        responseId: 171
+      - channel: 22
+        requestId: 172
+        responseId: 173
+      - channel: 23
+        requestId: 174
+        responseId: 175
+      - channel: 24
+        requestId: 176
+        responseId: 177
+      - channel: 25
+        requestId: 178
+        responseId: 179
+      - channel: 26
+        requestId: 180
+        responseId: 181
+      - channel: 27
+        requestId: 182
+        responseId: 183
+      - channel: 28
+        requestId: 184
+        responseId: 185
+      - channel: 29
+        requestId: 186
+        responseId: 187
+      - channel: 30
+        requestId: 188
+        responseId: 189
+      - channel: 31
+        requestId: 190
+        responseId: 191
+      - channel: 32
+        requestId: 192
+        responseId: 193
+      - channel: 33
+        requestId: 194
+        responseId: 195
+      - channel: 34
+        requestId: 196
+        responseId: 197
+      - channel: 35
+        requestId: 198
+        responseId: 199
+    NSL:
+      - channel: 100
+        requestId: 2000
+        responseId: 2001
+      - channel: 101
+        requestId: 2002
+        responseId: 2003
+      - channel: 102
+        requestId: 2004
+        responseId: 2005
+      - channel: 103
+        requestId: 2006
+        responseId: 2007
+      - channel: 104
+        requestId: 2008
+        responseId: 2009
+      - channel: 105
+        requestId: 2010
+        responseId: 2011
+      - channel: 106
+        requestId: 2012
+        responseId: 2013
+      - channel: 107
+        requestId: 2014
+        responseId: 2015
+      - channel: 108
+        requestId: 2016
+        responseId: 2017
+      - channel: 109
+        requestId: 2018
+        responseId: 2019
+      - channel: 110
+        requestId: 2020
+        responseId: 2021
+      - channel: 111
+        requestId: 2022
+        responseId: 2023
+      - channel: 112
+        requestId: 2024
+        responseId: 2025
+      - channel: 113
+        requestId: 2026
+        responseId: 2027
+      - channel: 114
+        requestId: 2028
+        responseId: 2029
+      - channel: 115
+        requestId: 2030
+        responseId: 2031
+  serviceCodes:
+    - name: IDS
+      serviceCode: 0
+      responseRequired: true
+      action: Identification service
+    - name: NSS
+      serviceCode: 1
+      responseRequired: false
+      action: Node synchronisation service
+    - name: DDS
+      serviceCode: 2
+      responseRequired: true
+      action: Data download service
+    - name: DUS
+      serviceCode: 3
+      responseRequired: true
+      action: Data upload service
+    - name: RESERVED
+      serviceCodeRange:
+        min: 4
+        max: 99
+      action: Reserved
+    - name: USER_DEFINED
+      serviceCodeRange:
+        min: 100
+        max: 255
+      action: User-defined services
+  formats:
+    IDS:
+      request:
+        dataType: NODATA
+        serviceCode: 0
+      response:
+        dataType: UCHAR4
+        serviceCode: 0
+        dataBytes:
+          - hardwareRevision
+          - softwareRevision
+          - identifierDistribution
+          - headerType
+    NSS:
+      request:
+        nodeId: 0
+        dataType: ULONG
+        serviceCode: 1
+        messageCode: 0
+        data: timestamp
+    DDS:
+      request:
+        dataType: MEMID
+        serviceCode: 2
+        data: memoryDestinationIdentifier
+      response:
+        dataType: LONG
+        serviceCode: 2
+        data: flowControlOrStatus (-2 INVALID, -1 ABORT, 0 XOFF, 1 XON)
+      checksumResponse:
+        dataType: CHKSUM
+        serviceCode: 2
+        data: checksum
+    DUS:
+      request:
+        dataType: MEMID
+        serviceCode: 3
+        data: sourceMemoryIdentifier
+      response:
+        dataType: LONG
+        serviceCode: 3
+        data: status (-1 ABORT, 0 OK)
+      checksumResponse:
+        dataType: CHKSUM
+        serviceCode: 3
+        data: checksum
+identifiers:
+  - id: 300
+    hex: '0x12C'
+    group: Flight State / Air Data
+    title: Body longitudinal acceleration
+    name: bodyLongitudinalAcceleration
+    messageType: NOD
+    dataType: SHORT
+    units: g
+    range:
+      min: -16
+      max: 16
+    resolution: 0.000488
+    notes: + Forward
+  - id: 301
+    hex: '0x12D'
+    group: Flight State / Air Data
+    title: Body lateral acceleration
+    name: bodyLateralAcceleration
+    messageType: NOD
+    dataType: SHORT
+    units: g
+    range:
+      min: -16
+      max: 16
+    resolution: 0.000488
+    notes: + Right
+  - id: 302
+    hex: '0x12E'
+    group: Flight State / Air Data
+    title: Body normal acceleration
+    name: bodyNormalAcceleration
+    messageType: NOD
+    dataType: SHORT
+    units: g
+    range:
+      min: -16
+      max: 16
+    resolution: 0.000488
+    notes: + Up
+  - id: 303
+    hex: '0x12F'
+    group: Flight State / Air Data
+    title: Body pitch rate
+    name: bodyPitchRate
+    messageType: NOD
+    dataType: SHORT
+    units: deg/s
+    range:
+      min: -512
+      max: 512
+    resolution: 0.015625
+    notes: + Nose Up
+  - id: 304
+    hex: '0x130'
+    group: Flight State / Air Data
+    title: Body roll rate
+    name: bodyRollRate
+    messageType: NOD
+    dataType: SHORT
+    units: deg/s
+    range:
+      min: -512
+      max: 512
+    resolution: 0.015625
+    notes: + Rt. Wing Down
+  - id: 305
+    hex: '0x131'
+    group: Flight State / Air Data
+    title: Body yaw rate
+    name: bodyYawRate
+    messageType: NOD
+    dataType: SHORT
+    units: deg/s
+    range:
+      min: -512
+      max: 512
+    resolution: 0.015625
+    notes: + Nose Right
+  - id: 306
+    hex: '0x132'
+    group: Flight State / Air Data
+    title: Rudder position
+    name: rudderPosition
+    messageType: NOD
+    dataType: SHORT
+    units: deg
+    range:
+      min: -90
+      max: 90
+    resolution: 0.002747
+    notes: + Right
+  - id: 307
+    hex: '0x133'
+    group: Flight State / Air Data
+    title: Stabilizer position
+    name: stabilizerPosition
+    messageType: NOD
+    dataType: SHORT
+    units: deg
+    range:
+      min: -90
+      max: 90
+    resolution: 0.002747
+    notes: + Up
+  - id: 308
+    hex: '0x134'
+    group: Flight State / Air Data
+    title: Elevator position
+    name: elevatorPosition
+    messageType: NOD
+    dataType: SHORT
+    units: deg
+    range:
+      min: -90
+      max: 90
+    resolution: 0.002747
+    notes: + Up
+  - id: 309
+    hex: '0x135'
+    group: Flight State / Air Data
+    title: Left aileron position
+    name: leftAileronPosition
+    messageType: NOD
+    dataType: SHORT
+    units: deg
+    range:
+      min: -90
+      max: 90
+    resolution: 0.002747
+    notes: + Up
+  - id: 310
+    hex: '0x136'
+    group: Flight State / Air Data
+    title: Right aileron position
+    name: rightAileronPosition
+    messageType: NOD
+    dataType: SHORT
+    units: deg
+    range:
+      min: -90
+      max: 90
+    resolution: 0.002747
+    notes: + Up
+  - id: 311
+    hex: '0x137'
+    group: Flight State / Air Data
+    title: Body pitch angle
+    name: bodyPitchAngle
+    messageType: NOD
+    dataType: SHORT
+    units: deg
+    range:
+      min: -180
+      max: 180
+    resolution: 0.005493
+    notes: + Nose Up (Earth Referenced)
+  - id: 312
+    hex: '0x138'
+    group: Flight State / Air Data
+    title: Body roll angle
+    name: bodyRollAngle
+    messageType: NOD
+    dataType: SHORT
+    units: deg
+    range:
+      min: -180
+      max: 180
+    resolution: 0.005493
+    notes: + Rt. Wing Down (Earth Referenced)
+  - id: 313
+    hex: '0x139'
+    group: Flight State / Air Data
+    title: Body sideslip
+    name: bodySideslip
+    messageType: NOD
+    dataType: SHORT
+    units: deg
+    range:
+      min: -45
+      max: 45
+    resolution: 0.001373
+    notes: + Right
+  - id: 314
+    hex: '0x13A'
+    group: Flight State / Air Data
+    title: Altitude rate
+    name: altitudeRate
+    messageType: NOD
+    dataType: SHORT
+    units: ft/min
+    range:
+      min: -32767
+      max: 32768
+    resolution: 1
+    notes: + Up
+  - id: 315
+    hex: '0x13B'
+    group: Flight State / Air Data
+    title: Indicated airspeed
+    name: indicatedAirspeed
+    messageType: NOD
+    dataType: SHORT
+    units: kt
+    range:
+      min: 0
+      max: 1024
+    resolution: 0.03125
+    notes: + Always Positive
+  - id: 316
+    hex: '0x13C'
+    group: Flight State / Air Data
+    title: True airspeed
+    name: trueAirspeed
+    messageType: NOD
+    dataType: SHORT
+    units: kt
+    range:
+      min: 0
+      max: 1024
+    resolution: 0.03125
+    notes: + Always Positive
+  - id: 317
+    hex: '0x13D'
+    group: Flight State / Air Data
+    title: Calibrated airspeed
+    name: calibratedAirspeed
+    messageType: NOD
+    dataType: SHORT
+    units: kt
+    range:
+      min: 0
+      max: 1024
+    resolution: 0.03125
+    notes: + Always Positive
+  - id: 318
+    hex: '0x13E'
+    group: Flight State / Air Data
+    title: Mach number
+    name: machNumber
+    messageType: NOD
+    dataType: SHORT
+    units: Mach
+    range:
+      min: 0
+      max: 4
+    resolution: 0.000122
+    notes: Always Positive
+  - id: 319
+    hex: '0x13F'
+    group: Flight State / Air Data
+    title: Baro Correction (Altimeter Setting)
+    name: baroCorrectionAltimeterSetting
+    messageType: NOD
+    dataType: SHORT
+    units: inHg
+    range:
+      min: 0
+      max: 65.535
+    resolution: 0.001
+    notes: Always Positive
+  - id: 320
+    hex: '0x140'
+    group: Flight State / Air Data
+    title: Baro corrected altitude
+    name: baroCorrectedAltitude
+    messageType: NOD
+    dataType: VARIABLE3
+    units: ft
+    range:
+      min: -5000
+      max: 131072
+    resolution: 1
+    notes: Signed 18-bit
+  - id: 321
+    hex: '0x141'
+    group: Flight State / Air Data
+    title: Heading angle
+    name: headingAngle
+    messageType: NOD
+    dataType: USHORT
+    units: deg
+    range:
+      min: 0
+      max: 360
+    resolution: 0.005093
+    notes: ''
+  - id: 322
+    hex: '0x142'
+    group: Flight State / Air Data
+    title: Standard altitude
+    name: standardAltitude
+    messageType: NOD
+    dataType: VARIABLE3
+    units: ft
+    range:
+      min: -5000
+      max: 131072
+    resolution: 1
+    notes: Signed 18-bit
+  - id: 323
+    hex: '0x143'
+    group: Flight State / Air Data
+    title: Total air temperature
+    name: totalAirTemperature
+    messageType: NOD
+    dataType: SHORT
+    units: °C
+    range:
+      min: -512
+      max: 512
+    resolution: 0.015625
+    notes: ''
+  - id: 324
+    hex: '0x144'
+    group: Flight State / Air Data
+    title: Static air temperature
+    name: staticAirTemperature
+    messageType: NOD
+    dataType: SHORT
+    units: °C
+    range:
+      min: -512
+      max: 512
+    resolution: 0.015625
+    notes: ''
+  - id: 325
+    hex: '0x145'
+    group: Flight State / Air Data
+    title: Differential pressure
+    name: differentialPressure
+    messageType: NOD
+    dataType: SHORT
+    units: inHg
+    range:
+      min: 0
+      max: 65.535
+    resolution: 0.001
+    notes: Always Positive
+  - id: 326
+    hex: '0x146'
+    group: Flight State / Air Data
+    title: Static pressure
+    name: staticPressure
+    messageType: NOD
+    dataType: SHORT
+    units: hPa
+    range:
+      min: 0
+      max: 65.535
+    resolution: 0.001
+    notes: Always Positive
+  - id: 400
+    hex: '0x190'
+    group: Flight Controls Data
+    title: Pitch control position
+    name: pitchControlPosition
+    messageType: NOD
+    dataType: SHORT
+    units: norm
+    range:
+      min: -1
+      max: 1
+    resolution: 0.000031
+    notes: aft:+ fwd:-
+  - id: 401
+    hex: '0x191'
+    group: Flight Controls Data
+    title: Roll control position
+    name: rollControlPosition
+    messageType: NOD
+    dataType: SHORT
+    units: norm
+    range:
+      min: -1
+      max: 1
+    resolution: 0.000031
+    notes: right:+ left:-
+  - id: 402
+    hex: '0x192'
+    group: Flight Controls Data
+    title: Lateral stick trim position command
+    name: lateralStickTrimPositionCommand
+    messageType: NOD
+    dataType: SHORT
+    units: norm
+    range:
+      min: -1
+      max: 1
+    resolution: 0.000031
+    notes: right:+ left:-
+  - id: 403
+    hex: '0x193'
+    group: Flight Controls Data
+    title: Yaw control position
+    name: yawControlPosition
+    messageType: NOD
+    dataType: SHORT
+    units: norm
+    range: null
+    resolution: 0.000031
+    notes: left fwd:+ right fwd:-
+  - id: 405
+    hex: '0x195'
+    group: Flight Controls Data
+    title: Longitudinal stick trim position command (Pitch)
+    name: longitudinalStickTrimPositionCommandPitch
+    messageType: NOD
+    dataType: SHORT
+    units: norm
+    range:
+      min: -1
+      max: 1
+    resolution: 0.000031
+    notes: aft:+ fwd:-
+  - id: 409
+    hex: '0x199'
+    group: Flight Controls Data
+    title: Lateral trim speed (Roll)
+    name: lateralTrimSpeedRoll
+    messageType: NOD
+    dataType: SHORT
+    units: norm
+    range:
+      min: -1
+      max: 1
+    resolution: 0.000031
+    notes: + Faster
+  - id: 410
+    hex: '0x19A'
+    group: Flight Controls Data
+    title: Longitudinal trim speed (Pitch)
+    name: longitudinalTrimSpeedPitch
+    messageType: NOD
+    dataType: SHORT
+    units: norm
+    range:
+      min: -1
+      max: 1
+    resolution: 0.000031
+    notes: + Faster
+  - id: 413
+    hex: '0x19D'
+    group: Flight Controls Data
+    title: Nose wheel steering handle position
+    name: noseWheelSteeringHandlePosition
+    messageType: NOD
+    dataType: SHORT
+    units: norm
+    range:
+      min: -1
+      max: 1
+    resolution: 0.000031
+    notes: right:+ left:-
+  - id: 439
+    hex: '0x1B7'
+    group: Flight Controls Data
+    title: Trim system switches
+    name: trimSystemSwitches
+    messageType: NOD
+    dataType: BLONG
+    units: null
+    range: null
+    resolution: null
+    notes: ''
+  - id: 440
+    hex: '0x1B8'
+    group: Flight Controls Data
+    title: Trim system lights
+    name: trimSystemLights
+    messageType: NOD
+    dataType: BLONG
+    units: null
+    range: null
+    resolution: null
+    notes: ''
+  - id: 442
+    hex: '0x1BA'
+    group: Flight Controls Data
+    title: Stick shaker stall warning device
+    name: stickShakerStallWarningDevice
+    messageType: NOD
+    dataType: BLONG
+    units: null
+    range: null
+    resolution: null
+    notes: ''
+  - id: 1000
+    hex: '0x3E8'
+    group: Navigation System Data
+    title: Active nav system waypoint latitude
+    name: activeNavSystemWaypointLatitude
+    messageType: NOD
+    dataType: LONG
+    units: deg
+    range:
+      min: -90
+      max: 90
+    resolution: 4.191e-8
+    notes: 'Service code contains waypoint #'
+  - id: 1001
+    hex: '0x3E9'
+    group: Navigation System Data
+    title: Active nav system waypoint longitude
+    name: activeNavSystemWaypointLongitude
+    messageType: NOD
+    dataType: LONG
+    units: deg
+    range:
+      min: -180
+      max: 180
+    resolution: 8.382e-8
+    notes: 'Service code contains waypoint #'
+  - id: 1002
+    hex: '0x3EA'
+    group: Navigation System Data
+    title: Active nav system waypoint height above ellipsoid
+    name: activeNavSystemWaypointHeightAboveEllipsoid
+    messageType: NOD
+    dataType: VARIABLE3
+    units: ft
+    range:
+      min: -4095
+      max: 131072
+    resolution: 1
+    notes: 'Service code contains waypoint #'
+  - id: 1003
+    hex: '0x3EB'
+    group: Navigation System Data
+    title: Active nav system waypoint altitude
+    name: activeNavSystemWaypointAltitude
+    messageType: NOD
+    dataType: VARIABLE3
+    units: ft
+    range:
+      min: -4095
+      max: 131072
+    resolution: 1
+    notes: 'Service code contains waypoint #'
+  - id: 1004
+    hex: '0x3EC'
+    group: Navigation System Data
+    title: Active nav system ground speed (GS)
+    name: activeNavSystemGroundSpeedGs
+    messageType: NOD
+    dataType: SHORT
+    units: nm/hr
+    range:
+      min: 0
+      max: 1024
+    resolution: 0.03125
+    notes: 'Service code contains waypoint #'
+  - id: 1005
+    hex: '0x3ED'
+    group: Navigation System Data
+    title: Active nav system true track (TT)
+    name: activeNavSystemTrueTrackTt
+    messageType: NOD
+    dataType: USHORT
+    units: deg
+    range:
+      min: 0
+      max: 360
+    resolution: 0.005493
+    notes: 'Service code contains waypoint #'
+  - id: 1006
+    hex: '0x3EE'
+    group: Navigation System Data
+    title: Active nav system magnetic track (MT)
+    name: activeNavSystemMagneticTrackMt
+    messageType: NOD
+    dataType: USHORT
+    units: deg
+    range:
+      min: 0
+      max: 360
+    resolution: 0.005493
+    notes: 'Service code contains waypoint #'
+  - id: 1007
+    hex: '0x3EF'
+    group: Navigation System Data
+    title: Active nav system cross track error (XTK)
+    name: activeNavSystemCrossTrackErrorXtk
+    messageType: NOD
+    dataType: VARIABLE3
+    units: nm
+    range:
+      min: -16384
+      max: 16384
+    resolution: 0.002
+    notes: '+ is Right; service code contains waypoint #'
+  - id: 1008
+    hex: '0x3F0'
+    group: Navigation System Data
+    title: Active nav system track error angle (TKE)
+    name: activeNavSystemTrackErrorAngleTke
+    messageType: NOD
+    dataType: SHORT
+    units: deg
+    range:
+      min: -180
+      max: 180
+    resolution: 0.005493
+    notes: '+ is East; service code contains waypoint #'
+  - id: 1009
+    hex: '0x3F1'
+    group: Navigation System Data
+    title: Active nav system time-to-go
+    name: activeNavSystemTimeToGo
+    messageType: NOD
+    dataType: SHORT
+    units: min
+    range:
+      min: 0
+      max: 1440
+    resolution: 0.044
+    notes: 'Service code contains waypoint #'
+  - id: 1010
+    hex: '0x3F2'
+    group: Navigation System Data
+    title: Active nav system estimated time of arrival (ETA)
+    name: activeNavSystemEstimatedTimeOfArrivalEta
+    messageType: NOD
+    dataType: SHORT
+    units: min
+    range:
+      min: 0
+      max: 1440
+    resolution: 0.044
+    notes: 'Service code contains waypoint #'
+  - id: 1011
+    hex: '0x3F3'
+    group: Navigation System Data
+    title: Active nav system estimated enroute time (ETE)
+    name: activeNavSystemEstimatedEnrouteTimeEte
+    messageType: NOD
+    dataType: SHORT
+    units: min
+    range:
+      min: 0
+      max: 1440
+    resolution: 0.044
+    notes: 'Service code contains waypoint #'
+  - id: 1016
+    hex: '0x3F8'
+    group: Navigation System Data
+    title: NAV waypoint type identifier
+    name: navWaypointTypeIdentifier
+    messageType: NOD
+    dataType: LONG
+    notes: 'Service code contains waypoint # (table shows LONG/SHORT)'
+  - id: 1017
+    hex: '0x3F9'
+    group: Navigation System Data
+    title: NAV waypoint latitude
+    name: navWaypointLatitude
+    messageType: NOD
+    dataType: LONG
+    units: deg
+    range:
+      min: -90
+      max: 90
+    resolution: 4.191e-8
+    notes: '+ is North; service code contains waypoint #'
+  - id: 1018
+    hex: '0x3FA'
+    group: Navigation System Data
+    title: NAV waypoint longitude
+    name: navWaypointLongitude
+    messageType: NOD
+    dataType: LONG
+    units: deg
+    range:
+      min: -180
+      max: 180
+    resolution: 8.382e-8
+    notes: '+ is to East; service code contains waypoint #'
+  - id: 1019
+    hex: '0x3FB'
+    group: Navigation System Data
+    title: NAV waypoint minimum altitude
+    name: navWaypointMinimumAltitude
+    messageType: NOD
+    dataType: VARIABLE3
+    units: ft
+    range:
+      min: -4095
+      max: 131072
+    resolution: 1
+    notes: 'Service code contains waypoint #'
+  - id: 1020
+    hex: '0x3FC'
+    group: Navigation System Data
+    title: NAV waypoint minimum flight level
+    name: navWaypointMinimumFlightLevel
+    messageType: NOD
+    dataType: VARIABLE3
+    units: ft
+    range:
+      min: -4095
+      max: 131072
+    resolution: 1
+    notes: 'Service code contains waypoint #'
+  - id: 1021
+    hex: '0x3FD'
+    group: Navigation System Data
+    title: NAV waypoint minimum radar height
+    name: navWaypointMinimumRadarHeight
+    messageType: NOD
+    dataType: VARIABLE3
+    units: ft
+    range:
+      min: -4095
+      max: 131072
+    resolution: 1
+    notes: 'Service code contains waypoint #'
+  - id: 1022
+    hex: '0x3FE'
+    group: Navigation System Data
+    title: NAV waypoint minimum height above ellipsoid
+    name: navWaypointMinimumHeightAboveEllipsoid
+    messageType: NOD
+    dataType: VARIABLE3
+    units: ft
+    range:
+      min: -4095
+      max: 131072
+    resolution: 1
+    notes: 'Service code contains waypoint #'
+  - id: 1023
+    hex: '0x3FF'
+    group: Navigation System Data
+    title: NAV waypoint maximum altitude
+    name: navWaypointMaximumAltitude
+    messageType: NOD
+    dataType: VARIABLE3
+    units: ft
+    range:
+      min: -4095
+      max: 131072
+    resolution: 1
+    notes: 'Service code contains waypoint #'
+  - id: 1024
+    hex: '0x400'
+    group: Navigation System Data
+    title: NAV waypoint maximum flight level
+    name: navWaypointMaximumFlightLevel
+    messageType: NOD
+    dataType: VARIABLE3
+    units: ft
+    range:
+      min: -4095
+      max: 131072
+    resolution: 1
+    notes: 'Service code contains waypoint #'
+  - id: 1025
+    hex: '0x401'
+    group: Navigation System Data
+    title: NAV waypoint maximum radar height
+    name: navWaypointMaximumRadarHeight
+    messageType: NOD
+    dataType: VARIABLE3
+    units: ft
+    range:
+      min: -4095
+      max: 131072
+    resolution: 1
+    notes: 'Service code contains waypoint #'
+  - id: 1026
+    hex: '0x402'
+    group: Navigation System Data
+    title: NAV waypoint maximum height above ellipsoid
+    name: navWaypointMaximumHeightAboveEllipsoid
+    messageType: NOD
+    dataType: VARIABLE3
+    units: ft
+    range:
+      min: -4095
+      max: 131072
+    resolution: 1
+    notes: 'Service code contains waypoint #'
+  - id: 1027
+    hex: '0x403'
+    group: Navigation System Data
+    title: NAV waypoint planned altitude
+    name: navWaypointPlannedAltitude
+    messageType: NOD
+    dataType: VARIABLE3
+    units: ft
+    range:
+      min: -4095
+      max: 131072
+    resolution: 1
+    notes: 'Service code contains waypoint #'
+  - id: 1028
+    hex: '0x404'
+    group: Navigation System Data
+    title: NAV waypoint planned flight level
+    name: navWaypointPlannedFlightLevel
+    messageType: NOD
+    dataType: VARIABLE3
+    units: ft
+    range:
+      min: -4095
+      max: 131072
+    resolution: 1
+    notes: 'Service code contains waypoint #'
+  - id: 1029
+    hex: '0x405'
+    group: Navigation System Data
+    title: NAV waypoint planned radar height
+    name: navWaypointPlannedRadarHeight
+    messageType: NOD
+    dataType: VARIABLE3
+    units: ft
+    range:
+      min: -4095
+      max: 131072
+    resolution: 1
+    notes: 'Service code contains waypoint #'
+  - id: 1030
+    hex: '0x406'
+    group: Navigation System Data
+    title: NAV waypoint planned height above ellipsoid
+    name: navWaypointPlannedHeightAboveEllipsoid
+    messageType: NOD
+    dataType: VARIABLE3
+    units: ft
+    range:
+      min: -4095
+      max: 131072
+    resolution: 1
+    notes: 'Service code contains waypoint #'
+  - id: 1031
+    hex: '0x407'
+    group: Navigation System Data
+    title: Distance to NAV waypoint
+    name: distanceToNavWaypoint
+    messageType: NOD
+    dataType: VARIABLE3
+    units: ft
+    range:
+      min: -4095
+      max: 131072
+    resolution: 1
+    notes: 'Service code contains waypoint #'
+  - id: 1032
+    hex: '0x408'
+    group: Navigation System Data
+    title: Time-to-go to NAV waypoint
+    name: timeToGoToNavWaypoint
+    messageType: NOD
+    dataType: SHORT
+    units: min
+    range:
+      min: 0
+      max: 1440
+    resolution: 0.044
+    notes: 'Service code contains waypoint #'
+  - id: 1033
+    hex: '0x409'
+    group: Navigation System Data
+    title: NAV waypoint estimated time of arrival (ETA)
+    name: navWaypointEstimatedTimeOfArrivalEta
+    messageType: NOD
+    dataType: SHORT
+    units: min
+    range:
+      min: 0
+      max: 1440
+    resolution: 0.044
+    notes: 'Service code contains waypoint #'
+  - id: 1034
+    hex: '0x40A'
+    group: Navigation System Data
+    title: NAV waypoint estimated enroute time (ETE)
+    name: navWaypointEstimatedEnrouteTimeEte
+    messageType: NOD
+    dataType: SHORT
+    units: min
+    range:
+      min: 0
+      max: 1440
+    resolution: 0.044
+    notes: 'Service code contains waypoint #'
+  - id: 1035
+    hex: '0x40B'
+    group: Navigation System Data
+    title: NAV waypoint status information
+    name: navWaypointStatusInformation
+    messageType: NOD
+    dataType: BLONG
+    notes: 'User defined; service code contains waypoint #'
+  - id: 1036
+    hex: '0x40C'
+    group: Navigation System Data
+    title: GPS aircraft latitude
+    name: gpsAircraftLatitude
+    messageType: NOD
+    dataType: LONG
+    units: deg
+    range:
+      min: -90
+      max: 90
+    resolution: 4.191e-8
+    notes: + is North
+  - id: 1037
+    hex: '0x40D'
+    group: Navigation System Data
+    title: GPS aircraft longitude
+    name: gpsAircraftLongitude
+    messageType: NOD
+    dataType: LONG
+    units: deg
+    range:
+      min: -180
+      max: 180
+    resolution: 8.382e-8
+    notes: + is East
+  - id: 1038
+    hex: '0x40E'
+    group: Navigation System Data
+    title: GPS aircraft height above ellipsoid
+    name: gpsAircraftHeightAboveEllipsoid
+    messageType: NOD
+    dataType: VARIABLE3
+    units: ft
+    range:
+      min: -4095
+      max: 131072
+    resolution: 1
+  - id: 1039
+    hex: '0x40F'
+    group: Navigation System Data
+    title: GPS ground speed (GS)
+    name: gpsGroundSpeedGs
+    messageType: NOD
+    dataType: SHORT
+    units: nm/hr
+    range:
+      min: 0
+      max: 1024
+    resolution: 0.03125
+  - id: 1040
+    hex: '0x410'
+    group: Navigation System Data
+    title: GPS true track (TT)
+    name: gpsTrueTrackTt
+    messageType: NOD
+    dataType: USHORT
+    units: deg
+    range:
+      min: 0
+      max: 360
+    resolution: 0.005493
+  - id: 1041
+    hex: '0x411'
+    group: Navigation System Data
+    title: GPS magnetic track (MT)
+    name: gpsMagneticTrackMt
+    messageType: NOD
+    dataType: USHORT
+    units: deg
+    range:
+      min: 0
+      max: 360
+    resolution: 0.005493
+  - id: 1042
+    hex: '0x412'
+    group: Navigation System Data
+    title: GPS cross track error (XTK)
+    name: gpsCrossTrackErrorXtk
+    messageType: NOD
+    dataType: VARIABLE3
+    units: nm
+    range:
+      min: -16384
+      max: 16384
+    resolution: 0.002
+    notes: + is Right
+  - id: 1043
+    hex: '0x413'
+    group: Navigation System Data
+    title: GPS track error angle (TKE)
+    name: gpsTrackErrorAngleTke
+    messageType: NOD
+    dataType: SHORT
+    units: deg
+    range:
+      min: -180
+      max: 180
+    resolution: 0.005493
+    notes: + is toward East
+  - id: 1044
+    hex: '0x414'
+    group: Navigation System Data
+    title: GPS glideslope deviation
+    name: gpsGlideslopeDeviation
+    messageType: NOD
+    dataType: SHORT
+    units: ft
+    range:
+      min: -4096
+      max: 4096
+    resolution: 0.125
+    notes: + is above
+  - id: 1045
+    hex: '0x415'
+    group: Navigation System Data
+    title: GPS predicted RAIM
+    name: gpsPredictedRaim
+    messageType: NOD
+    dataType: ULONG
+    notes: Table shows ULONG/USHORT
+  - id: 1046
+    hex: '0x416'
+    group: Navigation System Data
+    title: GPS vertical figure of merit
+    name: gpsVerticalFigureOfMerit
+    messageType: NOD
+    dataType: VARIABLE3
+    units: ft
+    range:
+      min: 0
+      max: 32768
+    resolution: 0.024932
+    notes: Always Positive
+  - id: 1047
+    hex: '0x417'
+    group: Navigation System Data
+    title: GPS horizontal figure of merit
+    name: gpsHorizontalFigureOfMerit
+    messageType: NOD
+    dataType: VARIABLE3
+    units: ft
+    range:
+      min: 0
+      max: 32768
+    resolution: 0.024932
+    notes: Always Positive
+  - id: 1048
+    hex: '0x418'
+    group: Navigation System Data
+    title: GPS mode of operation
+    name: gpsModeOfOperation
+    messageType: NOD
+    dataType: SHORT
+  - id: 1049
+    hex: '0x419'
+    group: Navigation System Data
+    title: INS aircraft latitude
+    name: insAircraftLatitude
+    messageType: NOD
+    dataType: LONG
+    units: deg
+    range:
+      min: -90
+      max: 90
+    resolution: 4.191e-8
+    notes: + is North
+  - id: 1050
+    hex: '0x41A'
+    group: Navigation System Data
+    title: INS aircraft longitude
+    name: insAircraftLongitude
+    messageType: NOD
+    dataType: LONG
+    units: deg
+    range:
+      min: -180
+      max: 180
+    resolution: 8.382e-8
+    notes: + is East
+  - id: 1051
+    hex: '0x41B'
+    group: Navigation System Data
+    title: INS aircraft height above ellipsoid
+    name: insAircraftHeightAboveEllipsoid
+    messageType: NOD
+    dataType: VARIABLE3
+    units: ft
+    range:
+      min: -4095
+      max: 131072
+    resolution: 1
+  - id: 1052
+    hex: '0x41C'
+    group: Navigation System Data
+    title: INS aircraft ground speed (GS)
+    name: insAircraftGroundSpeedGs
+    messageType: NOD
+    dataType: SHORT
+    units: nm/hr
+    range:
+      min: 0
+      max: 1024
+    resolution: 0.03125
+  - id: 1053
+    hex: '0x41D'
+    group: Navigation System Data
+    title: INS aircraft true track (TT)
+    name: insAircraftTrueTrackTt
+    messageType: NOD
+    dataType: USHORT
+    units: deg
+    range:
+      min: 0
+      max: 360
+    resolution: 0.005493
+  - id: 1054
+    hex: '0x41E'
+    group: Navigation System Data
+    title: INS aircraft magnetic track (MT)
+    name: insAircraftMagneticTrackMt
+    messageType: NOD
+    dataType: USHORT
+    units: deg
+    range:
+      min: 0
+      max: 360
+    resolution: 0.005493
+  - id: 1055
+    hex: '0x41F'
+    group: Navigation System Data
+    title: INS aircraft cross track error (XTK)
+    name: insAircraftCrossTrackErrorXtk
+    messageType: NOD
+    dataType: VARIABLE3
+    units: nm
+    range:
+      min: -16384
+      max: 16384
+    resolution: 0.002
+    notes: + is Right
+  - id: 1056
+    hex: '0x420'
+    group: Navigation System Data
+    title: INS aircraft track error angle (TKE)
+    name: insAircraftTrackErrorAngleTke
+    messageType: NOD
+    dataType: SHORT
+    units: deg
+    range:
+      min: -180
+      max: 180
+    resolution: 0.005493
+    notes: + is toward East
+  - id: 1057
+    hex: '0x421'
+    group: Navigation System Data
+    title: INS vertical figure of merit
+    name: insVerticalFigureOfMerit
+    messageType: NOD
+    dataType: VARIABLE3
+    units: ft
+    range:
+      min: 0
+      max: 32768
+    resolution: 0.024932
+    notes: Always Positive
+  - id: 1058
+    hex: '0x422'
+    group: Navigation System Data
+    title: INS horizontal figure of merit
+    name: insHorizontalFigureOfMerit
+    messageType: NOD
+    dataType: VARIABLE3
+    units: ft
+    range:
+      min: 0
+      max: 32768
+    resolution: 0.024932
+    notes: Always Positive
+  - id: 1059
+    hex: '0x423'
+    group: Navigation System Data
+    title: Auxiliary nav system aircraft latitude
+    name: auxiliaryNavSystemAircraftLatitude
+    messageType: NOD
+    dataType: LONG
+    units: deg
+    range:
+      min: -90
+      max: 90
+    resolution: 4.191e-8
+    notes: + is North
+  - id: 1060
+    hex: '0x424'
+    group: Navigation System Data
+    title: Auxiliary nav system aircraft longitude
+    name: auxiliaryNavSystemAircraftLongitude
+    messageType: NOD
+    dataType: LONG
+    units: deg
+    range:
+      min: -180
+      max: 180
+    resolution: 8.382e-8
+    notes: + is East
+  - id: 1061
+    hex: '0x425'
+    group: Navigation System Data
+    title: Auxiliary nav system aircraft height above ellipsoid
+    name: auxiliaryNavSystemAircraftHeightAboveEllipsoid
+    messageType: NOD
+    dataType: VARIABLE3
+    units: ft
+    range:
+      min: -4095
+      max: 131072
+    resolution: 1
+  - id: 1062
+    hex: '0x426'
+    group: Navigation System Data
+    title: Auxiliary nav system aircraft ground speed (GS)
+    name: auxiliaryNavSystemAircraftGroundSpeedGs
+    messageType: NOD
+    dataType: SHORT
+    units: nm/hr
+    range:
+      min: 0
+      max: 1024
+    resolution: 0.03125
+  - id: 1063
+    hex: '0x427'
+    group: Navigation System Data
+    title: Auxiliary nav system aircraft true track (TT)
+    name: auxiliaryNavSystemAircraftTrueTrackTt
+    messageType: NOD
+    dataType: USHORT
+    units: deg
+    range:
+      min: 0
+      max: 360
+    resolution: 0.005493
+  - id: 1064
+    hex: '0x428'
+    group: Navigation System Data
+    title: Auxiliary nav system aircraft magnetic track (MT)
+    name: auxiliaryNavSystemAircraftMagneticTrackMt
+    messageType: NOD
+    dataType: USHORT
+    units: deg
+    range:
+      min: 0
+      max: 360
+    resolution: 0.005493
+  - id: 1065
+    hex: '0x429'
+    group: Navigation System Data
+    title: Auxiliary nav system aircraft cross track error (XTK)
+    name: auxiliaryNavSystemAircraftCrossTrackErrorXtk
+    messageType: NOD
+    dataType: VARIABLE3
+    units: nm
+    range:
+      min: -16384
+      max: 16384
+    resolution: 0.002
+    notes: + is Right
+  - id: 1066
+    hex: '0x42A'
+    group: Navigation System Data
+    title: Auxiliary nav system aircraft track error angle (TKE)
+    name: auxiliaryNavSystemAircraftTrackErrorAngleTke
+    messageType: NOD
+    dataType: SHORT
+    units: deg
+    range:
+      min: -180
+      max: 180
+    resolution: 0.005493
+    notes: + is toward East
+  - id: 1067
+    hex: '0x42B'
+    group: Navigation System Data
+    title: Auxiliary nav system vertical figure of merit
+    name: auxiliaryNavSystemVerticalFigureOfMerit
+    messageType: NOD
+    dataType: VARIABLE3
+    units: ft
+    range:
+      min: 0
+      max: 32768
+    resolution: 0.024932
+    notes: Always Positive
+  - id: 1068
+    hex: '0x42C'
+    group: Navigation System Data
+    title: Auxiliary nav system horizontal figure of merit
+    name: auxiliaryNavSystemHorizontalFigureOfMerit
+    messageType: NOD
+    dataType: VARIABLE3
+    units: ft
+    range:
+      min: 0
+      max: 32768
+    resolution: 0.024932
+    notes: Always Positive
+  - id: 1069
+    hex: '0x42D'
+    group: Navigation System Data
+    title: Magnetic heading (MH)
+    name: magneticHeadingMh
+    messageType: NOD
+    dataType: USHORT
+    units: deg
+    range:
+      min: 0
+      max: 360
+    resolution: 0.005493
+  - id: 1070
+    hex: '0x42E'
+    group: Navigation System Data
+    title: Radio Height
+    name: radioHeight
+    messageType: NOD
+    dataType: SHORT
+    units: ft
+    range:
+      min: -4095
+      max: 32768
+    resolution: 1
+  - id: 1099
+    hex: '0x44B'
+    group: Navigation System Data
+    title: Decision height
+    name: decisionHeight
+    messageType: NOD
+    dataType: SHORT
+    units: ft
+    range:
+      min: 0
+      max: 2048
+    resolution: 0.0625
+    notes: AGL
+  - id: 1120
+    hex: '0x460'
+    group: Navigation System Data
+    title: Desired track angle
+    name: desiredTrackAngle
+    messageType: NOD
+    dataType: SHORT
+    units: deg
+    range:
+      min: -180
+      max: 180
+    resolution: 0.005493
+    notes: + is toward East
+  - id: 1121
+    hex: '0x461'
+    group: Navigation System Data
+    title: Magnetic variation
+    name: magneticVariation
+    messageType: NOD
+    dataType: SHORT
+    units: deg
+    range:
+      min: -180
+      max: 180
+    resolution: 0.005493
+    notes: + is toward East
+  - id: 1122
+    hex: '0x462'
+    group: Navigation System Data
+    title: Selected glidepath angle
+    name: selectedGlidepathAngle
+    messageType: NOD
+    dataType: SHORT
+    units: deg
+    range:
+      min: 0
+      max: 32
+    resolution: 0.0009765
+  - id: 1123
+    hex: '0x463'
+    group: Navigation System Data
+    title: Selected runway heading
+    name: selectedRunwayHeading
+    messageType: NOD
+    dataType: USHORT
+    units: deg
+    range:
+      min: 0
+      max: 360
+    resolution: 0.005493
+  - id: 1124
+    hex: '0x464'
+    group: Navigation System Data
+    title: Computed vertical velocity
+    name: computedVerticalVelocity
+    messageType: NOD
+    dataType: FLOAT
+    units: ft/min
+    range:
+      min: -32767
+      max: 32768
+    resolution: 1
+    notes: Table also lists SHORT2
+  - id: 1125
+    hex: '0x465'
+    group: Navigation System Data
+    title: Selected course
+    name: selectedCourse
+    messageType: NOD
+    dataType: USHORT
+    units: deg
+    range:
+      min: 0
+      max: 360
+    resolution: 0.005493
+  - id: 1175
+    hex: '0x497'
+    group: Landing Gear System Data
+    title: Gear lever switches
+    name: gearLeverSwitches
+    messageType: NOD
+    dataType: BLONG
+    notes: User defined
+  - id: 1176
+    hex: '0x498'
+    group: Landing Gear System Data
+    title: Gear lever lights / WOW solenoid
+    name: gearLeverLightsWowSolenoid
+    messageType: NOD
+    dataType: BLONG
+    notes: User defined
+  - id: 1200
+    hex: '0x4B0'
+    group: Miscellaneous Data
+    title: UTC
+    name: utc
+    messageType: NOD
+    dataType: CHAR4
+    notes: 'Format: 13h43min22s -> bytes: 13 43 22 00'
+  - id: 1201
+    hex: '0x4B1'
+    group: Miscellaneous Data
+    title: Cabin pressure
+    name: cabinPressure
+    messageType: NOD
+    dataType: SHORT
+    units: PSIA
+    range:
+      min: 0
+      max: 16
+    resolution: 0.000488
+  - id: 1202
+    hex: '0x4B2'
+    group: Miscellaneous Data
+    title: Cabin altitude
+    name: cabinAltitude
+    messageType: NOD
+    dataType: SHORT
+    units: ft
+    range:
+      min: -4095
+      max: 32768
+    resolution: 1
+  - id: 1203
+    hex: '0x4B3'
+    group: Miscellaneous Data
+    title: Cabin temperature
+    name: cabinTemperature
+    messageType: NOD
+    dataType: SHORT
+    units: °C
+    range:
+      min: -64
+      max: 64
+    resolution: 0.001953
+  - id: 1204
+    hex: '0x4B4'
+    group: Miscellaneous Data
+    title: Longitudinal center of gravity
+    name: longitudinalCenterOfGravity
+    messageType: NOD
+    dataType: SHORT
+    units: '% MAC'
+    range:
+      min: -512
+      max: 512
+    resolution: 0.001953
+    notes: + Forward CG
+  - id: 1205
+    hex: '0x4B5'
+    group: Miscellaneous Data
+    title: Lateral center of gravity
+    name: lateralCenterOfGravity
+    messageType: NOD
+    dataType: SHORT
+    units: '% MAC'
+    range:
+      min: -512
+      max: 512
+    resolution: 0.001953
+    notes: + Right of CG
+  - id: 1206
+    hex: '0x4B6'
+    group: Miscellaneous Data
+    title: Date
+    name: date
+    messageType: NOD
+    dataType: CHAR4
+    notes: 'Format: 12. June 1987 -> bytes: 12 06 19 87'
+validation:
+  dlcMustBe: 8
+  unknownIds: allow
+  unknownDataType: 'treatAs: ULONG'
+identifierRanges:
+  - idRange:
+      min: 414
+      max: 417
+    hexRange:
+      min: '0x19E'
+      max: '0x1A1'
+    group: Flight Controls Data
+    titleTemplate: 'Engine #{n} throttle lever position (ECS channel A)'
+    dataType: USHORT
+    units: norm
+    range:
+      min: 0
+      max: 1
+    resolution: 1.525e-5
+    notes: n = 1..4
+  - idRange:
+      min: 422
+      max: 425
+    hexRange:
+      min: '0x1A6'
+      max: '0x1A9'
+    group: Flight Controls Data
+    titleTemplate: 'Engine #{n} throttle lever position (ECS channel B)'
+    dataType: USHORT
+    units: norm
+    range:
+      min: 0
+      max: 1
+    resolution: 1.525e-5
+    notes: n = 1..4
+  - idRange:
+      min: 430
+      max: 430
+    hexRange:
+      min: '0x1AE'
+      max: '0x1AE'
+    group: Flight Controls Data
+    titleTemplate: Flaps lever position
+    dataType: USHORT
+    units: norm
+    range:
+      min: 0
+      max: 1
+    resolution: 1.525e-5
+    notes: ''
+  - idRange:
+      min: 431
+      max: 431
+    hexRange:
+      min: '0x1AF'
+      max: '0x1AF'
+    group: Flight Controls Data
+    titleTemplate: Slats lever position
+    dataType: USHORT
+    units: norm
+    range:
+      min: 0
+      max: 1
+    resolution: 1.525e-5
+    notes: ''
+  - idRange:
+      min: 432
+      max: 432
+    hexRange:
+      min: '0x1B0'
+      max: '0x1B0'
+    group: Flight Controls Data
+    titleTemplate: Park brake lever position
+    dataType: USHORT
+    units: norm
+    range:
+      min: 0
+      max: 1
+    resolution: 1.525e-5
+    notes: ''
+  - idRange:
+      min: 433
+      max: 433
+    hexRange:
+      min: '0x1B1'
+      max: '0x1B1'
+    group: Flight Controls Data
+    titleTemplate: Speedbrake lever position
+    dataType: USHORT
+    units: norm
+    range:
+      min: 0
+      max: 1
+    resolution: 1.525e-5
+    notes: ''
+  - idRange:
+      min: 435
+      max: 435
+    hexRange:
+      min: '0x1B3'
+      max: '0x1B3'
+    group: Flight Controls Data
+    titleTemplate: Pilot left brake pedal position
+    dataType: USHORT
+    units: norm
+    range:
+      min: 0
+      max: 1
+    resolution: 1.525e-5
+    notes: ''
+  - idRange:
+      min: 436
+      max: 436
+    hexRange:
+      min: '0x1B4'
+      max: '0x1B4'
+    group: Flight Controls Data
+    titleTemplate: Pilot right brake pedal position
+    dataType: USHORT
+    units: norm
+    range:
+      min: 0
+      max: 1
+    resolution: 1.525e-5
+    notes: ''
+  - idRange:
+      min: 437
+      max: 437
+    hexRange:
+      min: '0x1B5'
+      max: '0x1B5'
+    group: Flight Controls Data
+    titleTemplate: Copilot left brake pedal position
+    dataType: USHORT
+    units: norm
+    range:
+      min: 0
+      max: 1
+    resolution: 1.525e-5
+    notes: ''
+  - idRange:
+      min: 438
+      max: 438
+    hexRange:
+      min: '0x1B6'
+      max: '0x1B6'
+    group: Flight Controls Data
+    titleTemplate: Copilot right brake pedal position
+    dataType: USHORT
+    units: norm
+    range:
+      min: 0
+      max: 1
+    resolution: 1.525e-5
+    notes: Table shows FLOAT/USHORT; using USHORT per range/resolution.
+  - idRange:
+      min: 500
+      max: 503
+    hexRange:
+      min: '0x1F4'
+      max: '0x1F7'
+    group: Aircraft Engine / Fuel Supply System Data
+    messageType: NOD
+    titleTemplate: 'Engine #{n} N1 (ECS channel A)'
+    dataType: VARIABLE3
+    units: 1/min
+    resolution: 0.152588
+    notes: N1 for jet engines; crankshaft RPM for piston engines. n=1..4
+  - idRange:
+      min: 504
+      max: 507
+    hexRange:
+      min: '0x1F8'
+      max: '0x1FB'
+    group: Aircraft Engine / Fuel Supply System Data
+    messageType: NOD
+    titleTemplate: 'Engine #{n} N2 (ECS channel A)'
+    dataType: UVARIABLE3
+    units: 1/min
+    resolution: 0.152588
+    notes: N2 for jet engines; propeller RPM for piston engines. n=1..4
+  - idRange:
+      min: 508
+      max: 511
+    hexRange:
+      min: '0x1FC'
+      max: '0x1FF'
+    group: Aircraft Engine / Fuel Supply System Data
+    messageType: NOD
+    titleTemplate: 'Engine #{n} torque (ECS channel A)'
+    dataType: SHORT
+    units: norm
+    range:
+      min: 0
+      max: 32768
+    resolution: 3.05e-5
+    notes: n=1..4
+  - idRange:
+      min: 512
+      max: 515
+    hexRange:
+      min: '0x200'
+      max: '0x203'
+    group: Aircraft Engine / Fuel Supply System Data
+    messageType: NOD
+    titleTemplate: 'Engine #{n} turbine inlet temperature (TIT) (ECS channel A)'
+    dataType: SHORT
+    units: °C
+    range:
+      min: 0
+      max: 2048
+    resolution: 0.0624
+    notes: n=1..4
+  - idRange:
+      min: 516
+      max: 519
+    hexRange:
+      min: '0x204'
+      max: '0x207'
+    group: Aircraft Engine / Fuel Supply System Data
+    messageType: NOD
+    titleTemplate: 'Engine #{n} inter turbine temperature (ITT) (ECS channel A)'
+    dataType: SHORT
+    units: °C
+    range:
+      min: 0
+      max: 2048
+    resolution: 0.0624
+    notes: n=1..4
+  - idRange:
+      min: 520
+      max: 523
+    hexRange:
+      min: '0x208'
+      max: '0x20B'
+    group: Aircraft Engine / Fuel Supply System Data
+    messageType: NOD
+    titleTemplate: 'Engine #{n} turbine outlet temperature (ECS channel A)'
+    dataType: SHORT
+    units: °C
+    range:
+      min: 0
+      max: 2048
+    resolution: 0.0624
+    notes: TOT for jet engines; exhaust gas temperature for piston engines. n=1..4
+  - idRange:
+      min: 524
+      max: 527
+    hexRange:
+      min: '0x20C'
+      max: '0x20F'
+    group: Aircraft Engine / Fuel Supply System Data
+    messageType: NOD
+    titleTemplate: 'Engine #{n} fuel flow rate (ECS channel A)'
+    dataType: SHORT
+    units: gal/hr
+    range:
+      min: 0
+      max: 512
+    resolution: 0.015625
+    notes: n=1..4
+  - idRange:
+      min: 528
+      max: 531
+    hexRange:
+      min: '0x210'
+      max: '0x213'
+    group: Aircraft Engine / Fuel Supply System Data
+    messageType: NOD
+    titleTemplate: 'Engine #{n} manifold pressure (ECS channel A)'
+    dataType: SHORT
+    units: inHg
+    range:
+      min: 0
+      max: 65.357
+    resolution: 1.525e-5
+    notes: Piston engines only. n=1..4
+  - idRange:
+      min: 532
+      max: 535
+    hexRange:
+      min: '0x214'
+      max: '0x217'
+    group: Aircraft Engine / Fuel Supply System Data
+    messageType: NOD
+    titleTemplate: 'Engine #{n} oil pressure (ECS channel A)'
+    dataType: SHORT
+    units: PSIG
+    range:
+      min: 0
+      max: 512
+    resolution: 0.015625
+    notes: n=1..4
+  - idRange:
+      min: 536
+      max: 539
+    hexRange:
+      min: '0x218'
+      max: '0x21B'
+    group: Aircraft Engine / Fuel Supply System Data
+    messageType: NOD
+    titleTemplate: 'Engine #{n} oil temperature (ECS channel A)'
+    dataType: SHORT
+    units: °C
+    range:
+      min: -1024
+      max: 1024
+    resolution: 0.03125
+    notes: n=1..4
+  - idRange:
+      min: 540
+      max: 543
+    hexRange:
+      min: '0x21C'
+      max: '0x21F'
+    group: Aircraft Engine / Fuel Supply System Data
+    messageType: NOD
+    titleTemplate: 'Engine #{n} cylinder head temperature (ECS channel A)'
+    dataType: SHORT
+    units: °C
+    range:
+      min: -1024
+      max: 1024
+    resolution: 0.03125
+    notes: Piston engines only. n=1..4
+  - idRange:
+      min: 544
+      max: 547
+    hexRange:
+      min: '0x220'
+      max: '0x223'
+    group: Aircraft Engine / Fuel Supply System Data
+    messageType: NOD
+    titleTemplate: 'Engine #{n} oil quantity (ECS channel A)'
+    dataType: SHORT
+    units: gal
+    range:
+      min: 0
+      max: 256
+    resolution: 0.007813
+    notes: n=1..4
+  - idRange:
+      min: 548
+      max: 551
+    hexRange:
+      min: '0x224'
+      max: '0x227'
+    group: Aircraft Engine / Fuel Supply System Data
+    messageType: NOD
+    titleTemplate: 'Engine #{n} coolant temperature (ECS channel A)'
+    dataType: SHORT
+    units: °C
+    range:
+      min: 0
+      max: 1024
+    resolution: 0.03125
+    notes: n=1..4
+  - idRange:
+      min: 552
+      max: 555
+    hexRange:
+      min: '0x228'
+      max: '0x22B'
+    group: Aircraft Engine / Fuel Supply System Data
+    messageType: NOD
+    titleTemplate: 'Engine #{n} power rating (ECS channel A)'
+    dataType: USHORT
+    units: norm
+    range:
+      min: 0
+      max: 1
+    resolution: 1.525e-5
+    notes: 1 is maximum. n=1..4
+  - idRange:
+      min: 556
+      max: 559
+    hexRange:
+      min: '0x22C'
+      max: '0x22F'
+    group: Aircraft Engine / Fuel Supply System Data
+    messageType: NOD
+    titleTemplate: 'Engine #{n} Status 1 (ECS channel A)'
+    dataType: BSHORT
+    notes: Bit encoding user defined. Alternative encoding BLONG noted in table. n=1..4
+  - idRange:
+      min: 560
+      max: 563
+    hexRange:
+      min: '0x230'
+      max: '0x233'
+    group: Aircraft Engine / Fuel Supply System Data
+    messageType: NOD
+    titleTemplate: 'Engine #{n} Status 2 (ECS channel A)'
+    dataType: BSHORT
+    notes: Bit encoding user defined. Alternative encoding BLONG noted in table. n=1..4
+  - idRange:
+      min: 564
+      max: 567
+    hexRange:
+      min: '0x234'
+      max: '0x237'
+    group: Aircraft Engine / Fuel Supply System Data
+    messageType: NOD
+    titleTemplate: 'Engine #{n} N1 (ECS channel B)'
+    dataType: UVARIABLE3
+    units: 1/min
+    resolution: 0.152588
+    notes: n=1..4
+  - idRange:
+      min: 568
+      max: 571
+    hexRange:
+      min: '0x238'
+      max: '0x23B'
+    group: Aircraft Engine / Fuel Supply System Data
+    messageType: NOD
+    titleTemplate: 'Engine #{n} N2 (ECS channel B)'
+    dataType: UVARIABLE3
+    units: 1/min
+    resolution: 0.152588
+    notes: n=1..4
+  - idRange:
+      min: 572
+      max: 575
+    hexRange:
+      min: '0x23C'
+      max: '0x23F'
+    group: Aircraft Engine / Fuel Supply System Data
+    messageType: NOD
+    titleTemplate: 'Engine #{n} torque (ECS channel B)'
+    dataType: SHORT
+    units: norm
+    range:
+      min: 0
+      max: 32768
+    resolution: 3.05e-5
+    notes: n=1..4
+  - idRange:
+      min: 576
+      max: 579
+    hexRange:
+      min: '0x240'
+      max: '0x243'
+    group: Aircraft Engine / Fuel Supply System Data
+    messageType: NOD
+    titleTemplate: 'Engine #{n} turbine inlet temperature (TIT) (ECS channel B)'
+    dataType: SHORT
+    units: °C
+    range:
+      min: 0
+      max: 2048
+    resolution: 0.0624
+    notes: n=1..4
+  - idRange:
+      min: 580
+      max: 583
+    hexRange:
+      min: '0x244'
+      max: '0x247'
+    group: Aircraft Engine / Fuel Supply System Data
+    messageType: NOD
+    titleTemplate: 'Engine #{n} inter turbine temperature (ITT) (ECS channel B)'
+    dataType: SHORT
+    units: °C
+    range:
+      min: 0
+      max: 2048
+    resolution: 0.0624
+    notes: n=1..4
+  - idRange:
+      min: 584
+      max: 587
+    hexRange:
+      min: '0x248'
+      max: '0x24B'
+    group: Aircraft Engine / Fuel Supply System Data
+    messageType: NOD
+    titleTemplate: 'Engine #{n} turbine outlet temperature (ECS channel B)'
+    dataType: SHORT
+    units: °C
+    range:
+      min: 0
+      max: 2048
+    resolution: 0.0624
+    notes: TOT for jet engines; exhaust gas temperature for piston engines. n=1..4
+  - idRange:
+      min: 588
+      max: 591
+    hexRange:
+      min: '0x24C'
+      max: '0x24F'
+    group: Aircraft Engine / Fuel Supply System Data
+    messageType: NOD
+    titleTemplate: 'Engine #{n} fuel flow rate (ECS channel B)'
+    dataType: SHORT
+    units: gal/hr
+    range:
+      min: 0
+      max: 512
+    resolution: 0.015625
+    notes: n=1..4
+  - idRange:
+      min: 592
+      max: 595
+    hexRange:
+      min: '0x250'
+      max: '0x253'
+    group: Aircraft Engine / Fuel Supply System Data
+    messageType: NOD
+    titleTemplate: 'Engine #{n} manifold pressure (ECS channel B)'
+    dataType: SHORT
+    units: inHg
+    range:
+      min: 0
+      max: 65.357
+    resolution: 1.525e-5
+    notes: Piston engines only. n=1..4
+  - idRange:
+      min: 596
+      max: 599
+    hexRange:
+      min: '0x254'
+      max: '0x257'
+    group: Aircraft Engine / Fuel Supply System Data
+    messageType: NOD
+    titleTemplate: 'Engine #{n} oil pressure (ECS channel B)'
+    dataType: SHORT
+    units: PSIG
+    range:
+      min: 0
+      max: 512
+    resolution: 0.015625
+    notes: n=1..4
+  - idRange:
+      min: 600
+      max: 603
+    hexRange:
+      min: '0x258'
+      max: '0x25B'
+    group: Aircraft Engine / Fuel Supply System Data
+    messageType: NOD
+    titleTemplate: 'Engine #{n} oil temperature (ECS channel B)'
+    dataType: SHORT
+    units: °C
+    range:
+      min: -1024
+      max: 1024
+    resolution: 0.03125
+    notes: n=1..4
+  - idRange:
+      min: 604
+      max: 607
+    hexRange:
+      min: '0x25C'
+      max: '0x25F'
+    group: Aircraft Engine / Fuel Supply System Data
+    messageType: NOD
+    titleTemplate: 'Engine #{n} cylinder head temperature (ECS channel B)'
+    dataType: SHORT
+    units: °C
+    range:
+      min: -1024
+      max: 1024
+    resolution: 0.03125
+    notes: Piston engines only. n=1..4
+  - idRange:
+      min: 608
+      max: 611
+    hexRange:
+      min: '0x260'
+      max: '0x263'
+    group: Aircraft Engine / Fuel Supply System Data
+    messageType: NOD
+    titleTemplate: 'Engine #{n} oil quantity (ECS channel B)'
+    dataType: SHORT
+    units: gal
+    range:
+      min: 0
+      max: 256
+    resolution: 0.007813
+    notes: n=1..4
+  - idRange:
+      min: 612
+      max: 615
+    hexRange:
+      min: '0x264'
+      max: '0x267'
+    group: Aircraft Engine / Fuel Supply System Data
+    messageType: NOD
+    titleTemplate: 'Engine #{n} coolant temperature (ECS channel B)'
+    dataType: SHORT
+    units: °C
+    range:
+      min: 0
+      max: 1024
+    resolution: 0.03125
+    notes: n=1..4
+  - idRange:
+      min: 616
+      max: 619
+    hexRange:
+      min: '0x268'
+      max: '0x26B'
+    group: Aircraft Engine / Fuel Supply System Data
+    messageType: NOD
+    titleTemplate: 'Engine #{n} power rating (ECS channel B)'
+    dataType: SHORT
+    units: norm
+    range:
+      min: 0
+      max: 1
+    resolution: 1.525e-5
+    notes: 1 is maximum. n=1..4
+  - idRange:
+      min: 620
+      max: 623
+    hexRange:
+      min: '0x26C'
+      max: '0x26F'
+    group: Aircraft Engine / Fuel Supply System Data
+    messageType: NOD
+    titleTemplate: 'Engine #{n} Status 1 (ECS channel B)'
+    dataType: BSHORT
+    notes: Bit encoding user defined. Alternative encoding BLONG noted in table. n=1..4
+  - idRange:
+      min: 624
+      max: 627
+    hexRange:
+      min: '0x270'
+      max: '0x273'
+    group: Aircraft Engine / Fuel Supply System Data
+    messageType: NOD
+    titleTemplate: 'Engine #{n} Status 2 (ECS channel B)'
+    dataType: BSHORT
+    notes: Bit encoding user defined. Alternative encoding BLONG noted in table. n=1..4
+  - idRange:
+      min: 660
+      max: 667
+    hexRange:
+      min: '0x294'
+      max: '0x29B'
+    group: Aircraft Engine / Fuel Supply System Data
+    messageType: NOD
+    titleTemplate: 'Fuel pump #{n} flow rate'
+    dataType: SHORT
+    units: gal/hr
+    range:
+      min: 0
+      max: 256
+    resolution: 0.007813
+    notes: n=1..8
+  - idRange:
+      min: 668
+      max: 675
+    hexRange:
+      min: '0x29C'
+      max: '0x2A3'
+    group: Aircraft Engine / Fuel Supply System Data
+    messageType: NOD
+    titleTemplate: 'Fuel tank #{n} quantity'
+    dataType: SHORT
+    units: gal
+    range:
+      min: 0
+      max: 1024
+    resolution: 0.03125
+    notes: n=1..8
+  - idRange:
+      min: 676
+      max: 683
+    hexRange:
+      min: '0x2A4'
+      max: '0x2AB'
+    group: Aircraft Engine / Fuel Supply System Data
+    messageType: NOD
+    titleTemplate: 'Fuel tank #{n} temperature'
+    dataType: SHORT
+    units: °C
+    range:
+      min: -256
+      max: 256
+    resolution: 0.007813
+    notes: n=1..8
+  - idRange:
+      min: 684
+      max: 691
+    hexRange:
+      min: '0x2AC'
+      max: '0x2B3'
+    group: Aircraft Engine / Fuel Supply System Data
+    messageType: NOD
+    titleTemplate: 'Fuel system #{n} pressure'
+    dataType: SHORT
+    units: PSIG
+    range:
+      min: 0
+      max: 512
+    resolution: 0.015625
+    notes: n=1..8
+  - idRange:
+      min: 704
+      max: 711
+    hexRange:
+      min: '0x2C0'
+      max: '0x2C7'
+    group: Power Transmission System Data
+    messageType: NOD
+    titleTemplate: 'Gearbox #{n} speed'
+    dataType: SHORT
+    units: 1/min
+    range:
+      min: 0
+      max: 16384
+    resolution: 0.5
+    notes: n=1..8
+  - idRange:
+      min: 712
+      max: 719
+    hexRange:
+      min: '0x2C8'
+      max: '0x2CF'
+    group: Power Transmission System Data
+    messageType: NOD
+    titleTemplate: 'Gearbox #{n} oil pressure'
+    dataType: SHORT
+    units: PSIG
+    range:
+      min: 0
+      max: 512
+    resolution: 0.015625
+    notes: n=1..8
+  - idRange:
+      min: 720
+      max: 727
+    hexRange:
+      min: '0x2D0'
+      max: '0x2D7'
+    group: Power Transmission System Data
+    messageType: NOD
+    titleTemplate: 'Gearbox #{n} oil temperature'
+    dataType: SHORT
+    units: °C
+    range:
+      min: 0
+      max: 1024
+    resolution: 0.03125
+    notes: n=1..8
+  - idRange:
+      min: 728
+      max: 735
+    hexRange:
+      min: '0x2D8'
+      max: '0x2DF'
+    group: Power Transmission System Data
+    messageType: NOD
+    titleTemplate: 'Gearbox #{n} oil quantity'
+    dataType: SHORT
+    units: gal
+    range:
+      min: 0
+      max: 256
+    resolution: 0.007813
+    notes: n=1..8
+  - idRange:
+      min: 800
+      max: 807
+    hexRange:
+      min: '0x320'
+      max: '0x327'
+    group: Hydraulic System Data
+    messageType: NOD
+    titleTemplate: 'Hydraulic system #{n} pressure'
+    dataType: SHORT
+    units: PSIG
+    range:
+      min: 0
+      max: 4096
+    resolution: 0.125
+    notes: n=1..8
+  - idRange:
+      min: 808
+      max: 815
+    hexRange:
+      min: '0x328'
+      max: '0x32F'
+    group: Hydraulic System Data
+    messageType: NOD
+    titleTemplate: 'Hydraulic system #{n} fluid temperature'
+    dataType: SHORT
+    units: °C
+    range:
+      min: 0
+      max: 1024
+    resolution: 0.03125
+    notes: n=1..8
+  - idRange:
+      min: 816
+      max: 823
+    hexRange:
+      min: '0x330'
+      max: '0x337'
+    group: Hydraulic System Data
+    messageType: NOD
+    titleTemplate: 'Hydraulic system #{n} fluid quantity'
+    dataType: SHORT
+    units: gal
+    range:
+      min: 0
+      max: 256
+    resolution: 0.007813
+    notes: n=1..8
+  - idRange:
+      min: 900
+      max: 909
+    hexRange:
+      min: '0x384'
+      max: '0x38D'
+    group: Electric System Data
+    messageType: NOD
+    titleTemplate: 'AC system #{n} voltage'
+    dataType: SHORT
+    units: V
+    range:
+      min: 0
+      max: 1024
+    resolution: 0.03125
+    notes: n=1..10
+  - idRange:
+      min: 910
+      max: 919
+    hexRange:
+      min: '0x38E'
+      max: '0x397'
+    group: Electric System Data
+    messageType: NOD
+    titleTemplate: 'AC system #{n} current'
+    dataType: SHORT
+    units: A
+    range:
+      min: 0
+      max: 512
+    resolution: 0.015625
+    notes: n=1..10
+  - idRange:
+      min: 920
+      max: 929
+    hexRange:
+      min: '0x398'
+      max: '0x3A1'
+    group: Electric System Data
+    messageType: NOD
+    titleTemplate: 'DC system #{n} voltage'
+    dataType: SHORT
+    units: V
+    range:
+      min: 0
+      max: 1024
+    resolution: 0.03125
+    notes: n=1..10
+  - idRange:
+      min: 930
+      max: 939
+    hexRange:
+      min: '0x3A2'
+      max: '0x3AB'
+    group: Electric System Data
+    messageType: NOD
+    titleTemplate: 'DC system #{n} current'
+    dataType: SHORT
+    units: A
+    range:
+      min: 0
+      max: 512
+    resolution: 0.015625
+    notes: n=1..10
+  - idRange:
+      min: 940
+      max: 949
+    hexRange:
+      min: '0x3AC'
+      max: '0x3B5'
+    group: Electric System Data
+    messageType: NOD
+    titleTemplate: 'Prop #{n} ice guard DC current'
+    dataType: SHORT
+    units: A
+    range:
+      min: 0
+      max: 32
+    resolution: 0.000977
+    notes: n=1..10
+  - idRange:
+      min: 1012
+      max: 1015
+    hexRange:
+      min: '0x3F4'
+      max: '0x3F7'
+    group: Navigation System Data
+    messageType: NOD
+    titleTemplate: NAV waypoint identifier (chars {seg})
+    dataType: ACHAR4
+    notes: 'Service code contains waypoint #. seg=0..3 maps to char blocks 0-3,4-7,8-11,12-15.'
+  - idRange:
+      min: 1071
+      max: 1074
+    hexRange:
+      min: '0x42F'
+      max: '0x432'
+    group: Navigation System Data
+    messageType: NOD
+    titleTemplate: 'DME #{n} distance'
+    dataType: SHORT
+    units: nm
+    range:
+      min: 0
+      max: 1024
+    resolution: 0.03125
+    notes: n=1..4
+  - idRange:
+      min: 1075
+      max: 1078
+    hexRange:
+      min: '0x433'
+      max: '0x436'
+    group: Navigation System Data
+    messageType: NOD
+    titleTemplate: 'DME #{n} time-to-go'
+    dataType: SHORT
+    units: min
+    range:
+      min: 0
+      max: 1440
+    resolution: 0.04395
+    notes: n=1..4
+  - idRange:
+      min: 1079
+      max: 1082
+    hexRange:
+      min: '0x437'
+      max: '0x43A'
+    group: Navigation System Data
+    messageType: NOD
+    titleTemplate: 'DME #{n} ground speed'
+    dataType: SHORT
+    units: nm/hr
+    range:
+      min: 0
+      max: 1024
+    resolution: 0.03125
+    notes: n=1..4
+  - idRange:
+      min: 1083
+      max: 1086
+    hexRange:
+      min: '0x43B'
+      max: '0x43E'
+    group: Navigation System Data
+    messageType: NOD
+    titleTemplate: 'ADF #{n} bearing'
+    dataType: USHORT
+    units: deg
+    range:
+      min: 0
+      max: 360
+    resolution: 0.005493
+    notes: n=1..4
+  - idRange:
+      min: 1087
+      max: 1090
+    hexRange:
+      min: '0x43F'
+      max: '0x442'
+    group: Navigation System Data
+    messageType: NOD
+    titleTemplate: 'ILS #{n} localizer deviation'
+    dataType: SHORT
+    units: deg
+    range:
+      min: -90
+      max: 90
+    resolution: 0.002747
+    notes: + is Right; n=1..4
+  - idRange:
+      min: 1091
+      max: 1094
+    hexRange:
+      min: '0x443'
+      max: '0x446'
+    group: Navigation System Data
+    messageType: NOD
+    titleTemplate: 'ILS #{n} glideslope deviation'
+    dataType: SHORT
+    units: ft
+    range:
+      min: -4096
+      max: 4096
+    resolution: 0.125
+    notes: + is above; n=1..4
+  - idRange:
+      min: 1095
+      max: 1096
+    hexRange:
+      min: '0x447'
+      max: '0x448'
+    group: Navigation System Data
+    messageType: NOD
+    titleTemplate: 'Flight director #{n} pitch deviation'
+    dataType: SHORT
+    units: deg
+    range:
+      min: -180
+      max: 180
+    resolution: 0.005493
+    notes: + is Nose Up; n=1..2
+  - idRange:
+      min: 1097
+      max: 1098
+    hexRange:
+      min: '0x449'
+      max: '0x44A'
+    group: Navigation System Data
+    messageType: NOD
+    titleTemplate: 'Flight director #{n} roll deviation'
+    dataType: SHORT
+    units: deg
+    range:
+      min: -180
+      max: 180
+    resolution: 0.005493
+    notes: + is RT Wing Down; n=1..2
+  - idRange:
+      min: 1100
+      max: 1103
+    hexRange:
+      min: '0x44C'
+      max: '0x44F'
+    group: Navigation System Data
+    messageType: NOD
+    titleTemplate: 'VHF #{n} COM frequency'
+    dataType: ACHAR4
+    units: MHz
+    notes: n=1..4
+  - idRange:
+      min: 1104
+      max: 1107
+    hexRange:
+      min: '0x450'
+      max: '0x453'
+    group: Navigation System Data
+    messageType: NOD
+    titleTemplate: 'VOR/ILS #{n} frequency'
+    dataType: ACHAR4
+    units: MHz
+    notes: n=1..4
+  - idRange:
+      min: 1108
+      max: 1111
+    hexRange:
+      min: '0x454'
+      max: '0x457'
+    group: Navigation System Data
+    messageType: NOD
+    titleTemplate: 'ADF #{n} frequency'
+    dataType: ACHAR4
+    units: kHz
+    notes: n=1..4
+  - idRange:
+      min: 1112
+      max: 1115
+    hexRange:
+      min: '0x458'
+      max: '0x45B'
+    group: Navigation System Data
+    messageType: NOD
+    titleTemplate: 'DME #{n} channel'
+    dataType: ACHAR4
+    notes: n=1..4
+  - idRange:
+      min: 1116
+      max: 1119
+    hexRange:
+      min: '0x45C'
+      max: '0x45F'
+    group: Navigation System Data
+    messageType: NOD
+    titleTemplate: 'Transponder #{n} code'
+    dataType: ACHAR4
+    notes: n=1..4
+  - idRange:
+      min: 1126
+      max: 1129
+    hexRange:
+      min: '0x466'
+      max: '0x469'
+    group: Navigation System Data
+    messageType: NOD
+    titleTemplate: 'VOR #{n} radial'
+    dataType: USHORT
+    units: deg
+    range:
+      min: 0
+      max: 360
+    resolution: 0.005493
+    notes: n=1..4
+  - idRange:
+      min: 1177
+      max: 1180
+    hexRange:
+      min: '0x499'
+      max: '0x49C'
+    group: Landing Gear System Data
+    messageType: NOD
+    titleTemplate: 'Landing gear #{n} tire pressure'
+    dataType: SHORT
+    units: PSIG
+    range:
+      min: 0
+      max: 256
+    resolution: 0.008
+    notes: Service code contains tire number; n=1..4
+  - idRange:
+      min: 1181
+      max: 1184
+    hexRange:
+      min: '0x49D'
+      max: '0x4A0'
+    group: Landing Gear System Data
+    messageType: NOD
+    titleTemplate: 'Landing gear #{n} brake pad thickness'
+    dataType: SHORT
+    units: in
+    range:
+      min: 0
+      max: 2
+    resolution: 6.104e-5
+    notes: Service code contains brake pad number; n=1..4
+  - idRange:
+      min: 1300
+      max: 1499
+    hexRange:
+      min: '0x514'
+      max: '0x5DB'
+    group: Reserved
+    messageType: NOD
+    titleTemplate: Reserved for future use
+    dataType: RESVD
+    notes: Table indicates 1300-1499 reserved (native format channels include some CAN-IDs within this area).
+nativeFormatChannels:
+  - channel: CPDLC
+    ddsRequestCanId: 398
+    ddsResponseCanId: 399
+  - channel: DGPS
+    ddsRequestCanId: 1140
+    ddsResponseCanId: 1141
+  - channel: ADS-B
+    ddsRequestCanId: 1150
+    ddsResponseCanId: 1151
+  - channel: FIS-B
+    ddsRequestCanId: 1300
+    ddsResponseCanId: 1301
+  - channel: TIS-B
+    ddsRequestCanId: 1302
+    ddsResponseCanId: 1303
+baselineNodeIdExamples:
+  - nodeId: 1
+    description: Attitude/heading reference system (AHRS)
+  - nodeId: 2
+    description: Air data computer (ADC)
+  - nodeId: 3
+    description: 'VHF communication transceiver #1'
+  - nodeId: 4
+    description: 'VHF communication transceiver #2'
+  - nodeId: 5
+    description: 'NAV/ILS/Marker receiver #1'
+  - nodeId: 6
+    description: 'NAV/ILS/Marker receiver #2'
+  - nodeId: 7
+    description: ATC transponder
+  - nodeId: 8
+    description: ADF receiver
+  - nodeId: 9
+    description: GPS receiver
+  - nodeId: 10
+    description: Distance measuring equipment (DME)
+  - nodeId: 11
+    description: Engine monitoring system (EMS)
+  - nodeId: 12
+    description: Electrical trim system
+  - nodeId: 13
+    description: Electric system
+timeSlotAllocationExamples:
+  - txSlot: A0
+    parameterName: Body longitudinal acceleration
+    units: g
+    transmissionIntervalMs: 12.5
+    canId: 300
+    dataType: FLOAT
+  - txSlot: A1
+    parameterName: Body lateral acceleration
+    units: g
+    transmissionIntervalMs: 12.5
+    canId: 301
+    dataType: FLOAT
+  - txSlot: A2
+    parameterName: Body normal acceleration
+    units: g
+    transmissionIntervalMs: 12.5
+    canId: 302
+    dataType: FLOAT
+  - txSlot: A3
+    parameterName: Body pitch rate
+    units: deg/s
+    transmissionIntervalMs: 12.5
+    canId: 303
+    dataType: FLOAT
+  - txSlot: A4
+    parameterName: Body roll rate
+    units: deg/s
+    transmissionIntervalMs: 12.5
+    canId: 304
+    dataType: FLOAT
+  - txSlot: A5
+    parameterName: Body yaw rate
+    units: deg/s
+    transmissionIntervalMs: 12.5
+    canId: 305
+    dataType: FLOAT

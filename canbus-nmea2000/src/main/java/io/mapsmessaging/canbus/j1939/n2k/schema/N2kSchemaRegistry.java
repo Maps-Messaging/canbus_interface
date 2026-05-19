@@ -1,20 +1,19 @@
 /*
+ *   Copyright [ 2024 -  2026 ] MapsMessaging B.V.
  *
- *  Copyright [ 2020 - 2024 ] Matthew Buckton
- *  Copyright [ 2024 - 2026 ] MapsMessaging B.V.
+ *   Licensed under the Apache License, Version 2.0 with the Commons Clause
+ *   (the "License"); you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at:
  *
- *  Licensed under the Apache License, Version 2.0 with the Commons Clause
- *  (the "License"); you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at:
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *       https://commonsclause.com/
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *      https://commonsclause.com/
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
  */
 
 package io.mapsmessaging.canbus.j1939.n2k.schema;
@@ -25,10 +24,9 @@ import io.mapsmessaging.canbus.j1939.n2k.compile.N2kCompiledField;
 import io.mapsmessaging.canbus.j1939.n2k.compile.N2kCompiledMessage;
 import io.mapsmessaging.canbus.j1939.n2k.compile.N2kCompiledRegistry;
 import io.mapsmessaging.canbus.j1939.n2k.model.N2kFieldType;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
+
+import java.util.*;
+
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
@@ -74,7 +72,7 @@ public class N2kSchemaRegistry {
 
   private Map<Integer, JsonObject> buildSchemas() {
     Map<Integer, N2kCompiledMessage> messages = registry.getMessagesByPgn();
-    java.util.HashMap<Integer, JsonObject> out = new java.util.HashMap<>(messages.size());
+    java.util.HashMap<Integer, JsonObject> out = HashMap.newHashMap(messages.size());
 
     for (N2kCompiledMessage message : messages.values()) {
       int pgn = message.getPgn();
@@ -151,20 +149,22 @@ public class N2kSchemaRegistry {
       }
 
       decodedProperties.add(id, fieldSchema);
-      required.add(id);
+      if(field.getFieldType() != N2kFieldType.REPEAT_MARKER) {
+        required.add(id);
+      }
     }
 
     decodedProperty.add("properties", decodedProperties);
     decodedProperty.add("required", required);
     decodedProperty.addProperty("additionalProperties", false);
 
-    properties.add("decoded", decodedProperty);
+    properties.add("packet", decodedProperty);
 
     root.add("properties", properties);
 
     JsonArray rootRequired = new JsonArray();
     rootRequired.add("pgn");
-    rootRequired.add("decoded");
+    rootRequired.add("packet");
     root.add("required", rootRequired);
 
     root.addProperty("additionalProperties", false);

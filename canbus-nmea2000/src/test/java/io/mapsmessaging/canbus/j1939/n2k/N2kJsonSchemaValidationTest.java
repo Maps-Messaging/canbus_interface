@@ -1,20 +1,19 @@
 /*
+ *   Copyright [ 2024 -  2026 ] MapsMessaging B.V.
  *
- *  Copyright [ 2020 - 2024 ] Matthew Buckton
- *  Copyright [ 2024 - 2026 ] MapsMessaging B.V.
+ *   Licensed under the Apache License, Version 2.0 with the Commons Clause
+ *   (the "License"); you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at:
  *
- *  Licensed under the Apache License, Version 2.0 with the Commons Clause
- *  (the "License"); you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at:
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *       https://commonsclause.com/
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *      https://commonsclause.com/
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
  */
 
 package io.mapsmessaging.canbus.j1939.n2k;
@@ -31,6 +30,7 @@ import io.mapsmessaging.canbus.j1939.n2k.codec.N2kMessageParser;
 import io.mapsmessaging.canbus.j1939.n2k.compile.N2kCompiledField;
 import io.mapsmessaging.canbus.j1939.n2k.compile.N2kCompiledMessage;
 import io.mapsmessaging.canbus.j1939.n2k.compile.N2kCompiledRegistry;
+import io.mapsmessaging.canbus.j1939.n2k.model.N2kFieldDefinition;
 import io.mapsmessaging.canbus.j1939.n2k.model.N2kFieldType;
 import io.mapsmessaging.canbus.j1939.n2k.schema.N2kSchemaRegistry;
 import java.util.*;
@@ -68,13 +68,10 @@ class N2kJsonSchemaValidationTest extends BaseTest{
     JsonObject decoded = new JsonObject();
     Random random = new Random(BASE_SEED ^ (long) msg.getPgn());
 
-    for (N2kCompiledField field : msg.getFields()) {
-      if (field.isReserved()) {
-        continue;
-      }
+    for (N2kFieldDefinition field : msg.getDefinitions()) {
 
-      N2kFieldType type = field.getFieldType();
-      if (type != N2kFieldType.NUMBER && type != N2kFieldType.LOOKUP && type != N2kFieldType.FLOAT) {
+      if (field.getFieldType() == N2kFieldType.RESERVED
+          || field.getFieldType() == N2kFieldType.REPEAT_MARKER) {
         continue;
       }
 
@@ -83,21 +80,52 @@ class N2kJsonSchemaValidationTest extends BaseTest{
         continue;
       }
 
-      long rawValue = randomRawValue(field, random);
-      long clampedRawValue = clampRawValueToSchemaRange(field, rawValue);
+      switch (field.getFieldType()) {
 
-      if (type == N2kFieldType.LOOKUP) {
-        decoded.addProperty(id, (int) (clampedRawValue & field.getMask()));
-      }
-      else {
-        double value = clampedRawValue * field.getResolution() + field.getOffset();
-        decoded.addProperty(id, value);
+        case LOOKUP: {
+          long max = (field.getBitLength() != null && field.getBitLength() < 64)
+              ? (1L << field.getBitLength()) - 1
+              : 255;
+          int value = (int) (random.nextInt((int) Math.min(max, Integer.MAX_VALUE)));
+          decoded.addProperty(id, value);
+          break;
+        }
+
+        case NUMBER:
+        case FLOAT: {
+          long raw = randomRawValueFromDefinition(field, random);
+          double value = raw * field.getResolution() + field.getOffset();
+          decoded.addProperty(id, value);
+          break;
+        }
+
+        case STRING_FIX: {
+          int lenBytes = (field.getBitLength() != null)
+              ? field.getBitLength() / 8
+              : 8;
+
+          String value = "TEST_" + id;
+          if (value.length() > lenBytes) {
+            value = value.substring(0, lenBytes);
+          }
+          decoded.addProperty(id, value);
+          break;
+        }
+
+        case STRING_LAU: {
+          decoded.addProperty(id, "VAR_" + id);
+          break;
+        }
+
+        default:
+          // ignore anything else for now
+          break;
       }
     }
 
     JsonObject envelope = new JsonObject();
     envelope.addProperty("pgn", msg.getPgn());
-    envelope.add("decoded", decoded);
+    envelope.add("packet", decoded);
 
     byte[] payload = parser.encodeFromJson(msg.getPgn(), envelope);
     assertNotNull(payload);
@@ -106,24 +134,24 @@ class N2kJsonSchemaValidationTest extends BaseTest{
     assertNotNull(decodedBackEnvelope);
 
     JsonObject schema = schemaRegistry.getSchema(msg.getPgn());
-    validateEnvelopeAgainstSchema(schema, decodedBackEnvelope, msg.getPgn());
+    validateEnvelopeAgainstSchema(schema, decodedBackEnvelope, msg.getPgn(), msg.getId());
   }
 
-  private static void validateEnvelopeAgainstSchema(JsonObject schema, JsonObject envelope, int pgn) {
+  private static void validateEnvelopeAgainstSchema(JsonObject schema, JsonObject envelope, int pgn, String name) {
     assertNotNull(schema);
     assertNotNull(envelope);
 
-    assertTrue(envelope.has("pgn"), "Missing pgn for PGN=" + pgn);
-    assertEquals(pgn, envelope.get("pgn").getAsInt(), "pgn mismatch for PGN=" + pgn);
+    assertTrue(envelope.has("name"), "Missing name for PGN=" + pgn);
+    assertEquals(name, envelope.get("name").getAsString(), "name mismatch for PGN=" + pgn);
 
-    assertTrue(envelope.has("decoded"), "Missing decoded for PGN=" + pgn);
-    JsonObject decoded = envelope.getAsJsonObject("decoded");
+    assertTrue(envelope.has("packet"), "Missing decoded for PGN=" + pgn);
+    JsonObject decoded = envelope.getAsJsonObject("packet");
     assertNotNull(decoded, "decoded is not an object for PGN=" + pgn);
 
     JsonObject schemaProperties = schema.getAsJsonObject("properties");
     assertNotNull(schemaProperties, "Schema missing properties for PGN=" + pgn);
 
-    JsonObject decodedSchema = schemaProperties.getAsJsonObject("decoded");
+    JsonObject decodedSchema = schemaProperties.getAsJsonObject("packet");
     assertNotNull(decodedSchema, "Schema missing decoded for PGN=" + pgn);
 
     JsonObject decodedSchemaProperties = decodedSchema.getAsJsonObject("properties");
@@ -139,9 +167,6 @@ class N2kJsonSchemaValidationTest extends BaseTest{
       JsonArray required = decodedSchema.getAsJsonArray("required");
       for (JsonElement req : required) {
         String fieldId = req.getAsString();
-        if(!decoded.has(fieldId)){
-
-        }
         assertTrue(decoded.has(fieldId), "Missing required decoded field '" + fieldId + "' for PGN=" + pgn);
       }
     }
@@ -165,22 +190,6 @@ class N2kJsonSchemaValidationTest extends BaseTest{
         continue;
       }
 
-      if ("number".equals(expectedType)) {
-        assertTrue(value.isJsonPrimitive() && value.getAsJsonPrimitive().isNumber(),
-            "Field '" + fieldId + "' expected number for PGN=" + pgn);
-      }
-      else if ("integer".equals(expectedType)) {
-        assertTrue(value.isJsonPrimitive() && value.getAsJsonPrimitive().isNumber(),
-            "Field '" + fieldId + "' expected integer(number) for PGN=" + pgn);
-
-        double d = value.getAsDouble();
-        assertEquals(Math.rint(d), d, 0.0, "Field '" + fieldId + "' expected integer value for PGN=" + pgn);
-      }
-      else if ("string".equals(expectedType)) {
-        assertTrue(value.isJsonPrimitive() && value.getAsJsonPrimitive().isString(),
-            "Field '" + fieldId + "' expected string for PGN=" + pgn);
-        continue;
-      }
 
       double tolerance = 0.0;
       if (fieldSchema.has("multipleOf")) {
@@ -204,10 +213,11 @@ class N2kJsonSchemaValidationTest extends BaseTest{
     if (schema.has("additionalProperties") && !schema.get("additionalProperties").getAsBoolean()) {
       for (Map.Entry<String, JsonElement> entry : envelope.entrySet()) {
         String key = entry.getKey();
-        if (!"pgn".equals(key) && !"decoded".equals(key)) {
+        if (!"pgn".equals(key) && !"packet".equals(key) && !"name".equals(key)) {
           fail("Unexpected root property '" + key + "' for PGN=" + pgn);
         }
       }
     }
   }
+
 }

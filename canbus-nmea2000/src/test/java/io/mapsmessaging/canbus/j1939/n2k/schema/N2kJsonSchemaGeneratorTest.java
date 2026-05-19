@@ -1,20 +1,19 @@
 /*
+ *   Copyright [ 2024 -  2026 ] MapsMessaging B.V.
  *
- *  Copyright [ 2020 - 2024 ] Matthew Buckton
- *  Copyright [ 2024 - 2026 ] MapsMessaging B.V.
+ *   Licensed under the Apache License, Version 2.0 with the Commons Clause
+ *   (the "License"); you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at:
  *
- *  Licensed under the Apache License, Version 2.0 with the Commons Clause
- *  (the "License"); you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at:
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *       https://commonsclause.com/
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *      https://commonsclause.com/
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
  */
 
 package io.mapsmessaging.canbus.j1939.n2k.schema;
@@ -55,7 +54,7 @@ class N2kJsonSchemaGeneratorTest {
     assertNotNull(required);
     assertEquals(2, required.size());
     assertEquals("pgn", required.get(0).getAsString());
-    assertEquals("decoded", required.get(1).getAsString());
+    assertEquals("packet", required.get(1).getAsString());
 
     JsonObject properties = schema.getAsJsonObject("properties");
     assertNotNull(properties);
@@ -65,7 +64,7 @@ class N2kJsonSchemaGeneratorTest {
     assertEquals("integer", pgn.get("type").getAsString());
     assertEquals(129025, pgn.get("const").getAsInt());
 
-    JsonObject decoded = properties.getAsJsonObject("decoded");
+    JsonObject decoded = properties.getAsJsonObject("packet");
     assertNotNull(decoded);
     assertEquals("object", decoded.get("type").getAsString());
     assertFalse(decoded.get("additionalProperties").getAsBoolean());
@@ -103,7 +102,7 @@ class N2kJsonSchemaGeneratorTest {
 
     JsonObject decodedProperties = schema
         .getAsJsonObject("properties")
-        .getAsJsonObject("decoded")
+        .getAsJsonObject("packet")
         .getAsJsonObject("properties");
 
     JsonObject prop = decodedProperties.getAsJsonObject("waterTemp");
@@ -252,7 +251,7 @@ class N2kJsonSchemaGeneratorTest {
 
     JsonObject decodedProperties = schema
         .getAsJsonObject("properties")
-        .getAsJsonObject("decoded")
+        .getAsJsonObject("packet")
         .getAsJsonObject("properties");
 
     assertTrue(decodedProperties.has("validNumber"));
@@ -311,7 +310,7 @@ class N2kJsonSchemaGeneratorTest {
 
     JsonObject decodedProperties = schema
         .getAsJsonObject("properties")
-        .getAsJsonObject("decoded")
+        .getAsJsonObject("packet")
         .getAsJsonObject("properties");
 
     Iterator<Map.Entry<String, JsonElement>> iterator = decodedProperties.entrySet().iterator();
@@ -373,7 +372,7 @@ class N2kJsonSchemaGeneratorTest {
 
     JsonObject decodedProperties = schema
         .getAsJsonObject("properties")
-        .getAsJsonObject("decoded")
+        .getAsJsonObject("packet")
         .getAsJsonObject("properties");
 
     assertFalse(decodedProperties.has("missingOffset"));
@@ -442,7 +441,7 @@ class N2kJsonSchemaGeneratorTest {
 
     JsonObject decodedProperties = schema
         .getAsJsonObject("properties")
-        .getAsJsonObject("decoded")
+        .getAsJsonObject("packet")
         .getAsJsonObject("properties");
 
     JsonObject nameOnlyProp = decodedProperties.getAsJsonObject("nameOnly");

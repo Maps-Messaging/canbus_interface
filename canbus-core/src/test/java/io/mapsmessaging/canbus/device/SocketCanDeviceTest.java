@@ -63,13 +63,13 @@ class SocketCanDeviceTest {
 
     CanFrame frame = device.readFrame();
 
-    Assertions.assertEquals(0x123, frame.getCanIdentifier());
-    Assertions.assertFalse(frame.isExtendedFrame());
-    Assertions.assertEquals(3, frame.getDataLengthCode());
-    Assertions.assertEquals(3, frame.getData().length);
-    Assertions.assertEquals(0x01, frame.getData()[0]);
-    Assertions.assertEquals(0x02, frame.getData()[1]);
-    Assertions.assertEquals(0x03, frame.getData()[2]);
+    Assertions.assertEquals(0x123, frame.canIdentifier());
+    Assertions.assertFalse(frame.extendedFrame());
+    Assertions.assertEquals(3, frame.dataLengthCode());
+    Assertions.assertEquals(3, frame.data().length);
+    Assertions.assertEquals(0x01, frame.data()[0]);
+    Assertions.assertEquals(0x02, frame.data()[1]);
+    Assertions.assertEquals(0x03, frame.data()[2]);
   }
 
 
@@ -103,11 +103,11 @@ class SocketCanDeviceTest {
 
     CanFrame frame = device.readFrame();
 
-    Assertions.assertEquals(0x456, frame.getCanIdentifier());
-    Assertions.assertEquals(12, frame.getDataLengthCode());
-    Assertions.assertEquals(12, frame.getData().length);
-    Assertions.assertEquals(1, frame.getData()[0]);
-    Assertions.assertEquals(12, frame.getData()[11]);
+    Assertions.assertEquals(0x456, frame.canIdentifier());
+    Assertions.assertEquals(12, frame.dataLengthCode());
+    Assertions.assertEquals(12, frame.data().length);
+    Assertions.assertEquals(1, frame.data()[0]);
+    Assertions.assertEquals(12, frame.data()[11]);
   }
 
   @Test

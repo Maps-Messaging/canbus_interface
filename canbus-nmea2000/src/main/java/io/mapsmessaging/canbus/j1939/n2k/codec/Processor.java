@@ -1,20 +1,19 @@
 /*
+ *   Copyright [ 2024 -  2026 ] MapsMessaging B.V.
  *
- *  Copyright [ 2020 - 2024 ] Matthew Buckton
- *  Copyright [ 2024 - 2026 ] MapsMessaging B.V.
+ *   Licensed under the Apache License, Version 2.0 with the Commons Clause
+ *   (the "License"); you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at:
  *
- *  Licensed under the Apache License, Version 2.0 with the Commons Clause
- *  (the "License"); you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at:
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *       https://commonsclause.com/
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *      https://commonsclause.com/
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
  */
 
 package io.mapsmessaging.canbus.j1939.n2k.codec;
@@ -24,11 +23,35 @@ import io.mapsmessaging.canbus.j1939.n2k.compile.N2kCompiledField;
 
 public interface Processor {
 
-  default void pack(N2kCompiledField field, byte[] payload, JsonObject decoded) {
-    // no-op
+  default int computePayloadLength(N2kCompiledField field, JsonObject decoded) {
+    if (field.isCompileTimeFixed()) {
+      return 0;
+    }
+
+    int bitLength = field.getBitLength();
+    if (bitLength <= 0) {
+      return 0;
+    }
+
+    return (bitLength + 7) >>> 3;
   }
 
-  default void unpack(N2kCompiledField field, byte[] payload, JsonObject decoded) {
-    // no-op
+  default int computePayloadLength(N2kCompiledField field, FieldValueSource source) {
+    return 0;
+  }
+
+  default int pack(N2kCompiledField field, byte[] payload, int cursor, JsonObject decoded) {
+    return cursor;
+  }
+
+  default int unpack(N2kCompiledField field, byte[] payload, int cursor, JsonObject decoded) {
+    return cursor;
+  }
+
+  default int pack(N2kCompiledField field, byte[] payload, int cursor, FieldValueSource decoded) {
+    return cursor;
+  }
+  default int unpack(N2kCompiledField field, byte[] payload, int cursor, FieldValueSource source) {
+    return cursor;
   }
 }

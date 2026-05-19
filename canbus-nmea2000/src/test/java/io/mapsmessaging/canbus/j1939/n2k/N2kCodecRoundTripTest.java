@@ -1,20 +1,19 @@
 /*
+ *   Copyright [ 2024 -  2026 ] MapsMessaging B.V.
  *
- *  Copyright [ 2020 - 2024 ] Matthew Buckton
- *  Copyright [ 2024 - 2026 ] MapsMessaging B.V.
+ *   Licensed under the Apache License, Version 2.0 with the Commons Clause
+ *   (the "License"); you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at:
  *
- *  Licensed under the Apache License, Version 2.0 with the Commons Clause
- *  (the "License"); you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at:
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *       https://commonsclause.com/
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *      https://commonsclause.com/
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
  */
 
 package io.mapsmessaging.canbus.j1939.n2k;
@@ -36,6 +35,47 @@ class N2kCodecRoundTripTest {
   }
 
   @Test
+  void pgn126998_configurationInformation_roundTrip() throws Exception {
+    N2kCompiledRegistry registry = buildRegistry();
+    N2kMessageParser parser = new N2kMessageParser(registry);
+
+    JsonObject decoded = new JsonObject();
+    decoded.addProperty("installationDescriptionField1", "Maps Messaging Server");
+    decoded.addProperty("installationDescriptionField2", "AIS Source Bridge");
+    decoded.addProperty("manufacturerInformationField3", "MapsMessaging B.V.");
+
+    JsonObject envelope = new JsonObject();
+    envelope.addProperty("pgn", 126998);
+    envelope.add("packet", decoded);
+
+    byte[] payload = parser.encodeFromJson(126998, envelope);
+
+    // sanity: payload should not be empty anymore
+    assertTrue(payload.length > 0);
+
+    JsonObject decodedBack = parser.decodeToJson(126998, payload);
+
+    assertEquals("configurationInformation", decodedBack.get("name").getAsString());
+
+    JsonObject decodedFields = decodedBack.getAsJsonObject("packet");
+
+    assertEquals(
+        "Maps Messaging Server",
+        decodedFields.get("installationDescriptionField1").getAsString()
+    );
+
+    assertEquals(
+        "AIS Source Bridge",
+        decodedFields.get("installationDescriptionField2").getAsString()
+    );
+
+    assertEquals(
+        "MapsMessaging B.V.",
+        decodedFields.get("manufacturerInformationField3").getAsString()
+    );
+  }
+
+  @Test
   void pgn127245_rudder_roundTrip() throws Exception {
     N2kCompiledRegistry registry = buildRegistry();
     N2kMessageParser parser = new N2kMessageParser(registry);
@@ -48,14 +88,14 @@ class N2kCodecRoundTripTest {
 
     JsonObject envelope = new JsonObject();
     envelope.addProperty("pgn", 127245);
-    envelope.add("decoded", decoded);
+    envelope.add("packet", decoded);
 
     byte[] payload = parser.encodeFromJson(127245, envelope);
     JsonObject decodedBack = parser.decodeToJson(127245, payload);
 
-    assertEquals(127245, decodedBack.get("pgn").getAsInt());
+    assertEquals("rudder", decodedBack.get("name").getAsString());
 
-    JsonObject decodedFields = decodedBack.getAsJsonObject("decoded");
+    JsonObject decodedFields = decodedBack.getAsJsonObject("packet");
     assertEquals(1, decodedFields.get("rudderInstance").getAsInt());
     assertEquals(3, decodedFields.get("directionOrder").getAsInt());
 
@@ -77,14 +117,14 @@ class N2kCodecRoundTripTest {
 
     JsonObject envelope = new JsonObject();
     envelope.addProperty("pgn", 127250);
-    envelope.add("decoded", decoded);
+    envelope.add("packet", decoded);
 
     byte[] payload = parser.encodeFromJson(127250, envelope);
     JsonObject decodedBack = parser.decodeToJson(127250, payload);
 
-    assertEquals(127250, decodedBack.get("pgn").getAsInt());
+    assertEquals("vesselHeading", decodedBack.get("name").getAsString());
 
-    JsonObject decodedFields = decodedBack.getAsJsonObject("decoded");
+    JsonObject decodedFields = decodedBack.getAsJsonObject("packet");
     assertEquals(9, decodedFields.get("sid").getAsInt());
     assertEquals(2, decodedFields.get("headingSensorReference").getAsInt());
 
