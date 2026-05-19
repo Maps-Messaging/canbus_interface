@@ -28,8 +28,8 @@ public interface Processor {
       return 0;
     }
 
-    Integer bitLength = field.getBitLength();
-    if (bitLength == null || bitLength <= 0) {
+    int bitLength = field.getBitLength();
+    if (bitLength <= 0) {
       return 0;
     }
 
