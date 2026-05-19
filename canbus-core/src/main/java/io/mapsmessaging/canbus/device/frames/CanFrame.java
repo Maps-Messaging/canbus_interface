@@ -145,4 +145,38 @@ public record CanFrame(int canIdentifier, boolean extendedFrame, int dataLengthC
       throw new IllegalArgumentException("Data length must not exceed 64 bytes");
     }
   }
+
+  @Override
+  public boolean equals(Object object) {
+    if (this == object) {
+      return true;
+    }
+    if (!(object instanceof CanFrame other)) {
+      return false;
+    }
+    return canIdentifier == other.canIdentifier
+        && extendedFrame == other.extendedFrame
+        && dataLengthCode == other.dataLengthCode
+        && Arrays.equals(data, other.data);
+  }
+
+  @Override
+  public int hashCode() {
+    int result = Integer.hashCode(canIdentifier);
+    result = 31 * result + Boolean.hashCode(extendedFrame);
+    result = 31 * result + Integer.hashCode(dataLengthCode);
+    result = 31 * result + Arrays.hashCode(data);
+    return result;
+  }
+
+  @SuppressWarnings("NullableProblems")
+  @Override
+  public String toString() {
+    return "CanFrame{"
+        + "canIdentifier=0x" + Integer.toHexString(canIdentifier)
+        + ", extendedFrame=" + extendedFrame
+        + ", dataLengthCode=" + dataLengthCode
+        + ", data=" + Arrays.toString(data)
+        + '}';
+  }
 }
