@@ -66,7 +66,15 @@ public class SlcanCanFrameStreamCodec implements CanFrameStreamCodec {
       throw new IOException("Invalid SLCAN frame: " + trimmed);
     }
 
-    int canIdentifier = Integer.parseUnsignedInt(trimmed.substring(1, 1 + identifierLength), 16);
+    final int canIdentifier;
+    try {
+      canIdentifier = Integer.parseUnsignedInt(
+          trimmed.substring(1, 1 + identifierLength),
+          16);
+    } catch (NumberFormatException exception) {
+      throw new IOException("Invalid SLCAN CAN identifier: " + trimmed, exception);
+    }
+
     int dataLengthCode = Character.digit(trimmed.charAt(1 + identifierLength), 16);
     if (dataLengthCode < 0 || dataLengthCode > 8) {
       throw new IOException("Invalid SLCAN DLC: " + trimmed);
@@ -81,7 +89,13 @@ public class SlcanCanFrameStreamCodec implements CanFrameStreamCodec {
     int offset = 1 + identifierLength + 1;
     for (int index = 0; index < dataLengthCode; index++) {
       int start = offset + (index * 2);
-      data[index] = (byte) Integer.parseInt(trimmed.substring(start, start + 2), 16);
+      String payloadByte = trimmed.substring(start, start + 2);
+
+      try {
+        data[index] = (byte) Integer.parseInt(payloadByte, 16);
+      } catch (NumberFormatException exception) {
+        throw new IOException("Invalid SLCAN payload byte: " + payloadByte, exception);
+      }
     }
 
     return new CanFrame(canIdentifier, extendedFrame, dataLengthCode, data);
@@ -100,8 +114,7 @@ public class SlcanCanFrameStreamCodec implements CanFrameStreamCodec {
     if (canFrame.extendedFrame()) {
       stringBuilder.append('T');
       stringBuilder.append(String.format("%08X", canFrame.canIdentifier()));
-    }
-    else {
+    } else {
       stringBuilder.append('t');
       stringBuilder.append(String.format("%03X", canFrame.canIdentifier()));
     }
