@@ -60,10 +60,12 @@ public final class SerialCanDevice implements CanDevice, Closeable {
     this.canFrameStreamCodec.initialise(this.inputStream, this.outputStream);
   }
 
+  @Override
   public CanFrame readFrame() throws IOException {
     return canFrameStreamCodec.read(inputStream);
   }
 
+  @Override
   public void writeFrame(CanFrame canFrame) throws IOException {
     if (canFrame == null) {
       throw new IllegalArgumentException("canFrame must not be null");
