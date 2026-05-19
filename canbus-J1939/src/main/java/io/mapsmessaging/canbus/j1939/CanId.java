@@ -33,41 +33,53 @@ public class CanId {
   private static final int DATA_PAGE_MASK = 0x1;
 
   private static final int PDU_FORMAT_SHIFT = 16;
+  private static final int PDU_SPECIFIC_SHIFT = 8;
   private static final int BYTE_MASK = 0xFF;
 
-  private static final int PDU1_MAX_PF = 239;
+  private static final int PDU1_MAX_PDU_FORMAT = 239;
   private static final int BROADCAST_ADDRESS = 255;
 
   private final int priority;
   private final int pgn;
   private final int sourceAddress;
   private final int destinationAddress;
+  private final int pduFormat;
+  private final int groupExtension;
 
   public static CanId parse(int canIdentifier) {
     int identifier = canIdentifier & EXTENDED_ID_MASK;
 
     int priority = (identifier >> PRIORITY_SHIFT) & PRIORITY_MASK;
-    int pduFormat = (identifier >> PDU_FORMAT_SHIFT) & BYTE_MASK;
-    int pduSpecific = (identifier >> 8) & BYTE_MASK;
-    int sourceAddress = identifier & BYTE_MASK;
     int dataPage = (identifier >> DATA_PAGE_SHIFT) & DATA_PAGE_MASK;
+    int pduFormat = (identifier >> PDU_FORMAT_SHIFT) & BYTE_MASK;
+    int pduSpecific = (identifier >> PDU_SPECIFIC_SHIFT) & BYTE_MASK;
+    int sourceAddress = identifier & BYTE_MASK;
 
     int pgn;
     int destinationAddress;
+    int groupExtension;
 
-    if (pduFormat <= PDU1_MAX_PF) {
+    if (pduFormat <= PDU1_MAX_PDU_FORMAT) {
       destinationAddress = pduSpecific;
+      groupExtension = -1;
       pgn = (dataPage << 16) | (pduFormat << 8);
     } else {
       destinationAddress = BROADCAST_ADDRESS;
-      pgn = (dataPage << 16) | (pduFormat << 8) | pduSpecific;
+      groupExtension = pduSpecific;
+      pgn = (dataPage << 16) | (pduFormat << 8) | groupExtension;
     }
 
-    return new CanId(priority, pgn, sourceAddress, destinationAddress);
+    return new CanId(
+        priority,
+        pgn,
+        sourceAddress,
+        destinationAddress,
+        pduFormat,
+        groupExtension);
   }
 
   public boolean isPdu1() {
-    return (pgn & BYTE_MASK) == 0;
+    return pduFormat <= PDU1_MAX_PDU_FORMAT;
   }
 
   public boolean isPdu2() {
@@ -87,7 +99,7 @@ public class CanId {
 
   public Integer getGroupExtensionOrNull() {
     if (isPdu2()) {
-      return pgn & BYTE_MASK;
+      return groupExtension;
     }
     return null;
   }
