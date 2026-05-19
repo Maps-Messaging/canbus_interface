@@ -30,7 +30,7 @@
 
     <name>CanBus</name>
     <description>CAN bus protocol stack and device interfaces</description>
-    <url>http://www.mapsmessaging.io</url>
+    <url>https://www.mapsmessaging.io</url>
 
     <modules>
         <module>canbus-core</module>
@@ -70,9 +70,9 @@
     </licenses>
 
     <scm>
-        <url>https://github.com/Maps-Messaging/canbus-interface</url>
+        <url>https://github.com/Maps-Messaging/canbus_interface</url>
         <connection>scm:git:https://github.com/Maps-Messaging/canbus_interface.git</connection>
-        <developerConnection>scm:git:git@github.com:Maps-Messaging/canbus-interface</developerConnection>
+        <developerConnection>scm:git:git@github.com:Maps-Messaging/canbus_interface.git</developerConnection>
         <tag>HEAD</tag>
     </scm>
 
@@ -98,6 +98,7 @@
         <version.junit>6.0.1</version.junit>
         <version.mockito>5.21.0</version.mockito>
         <version.jsonSchemaValidator>1.5.1</version.jsonSchemaValidator>
+        <version.snakeyaml>2.2</version.snakeyaml>
 
         <version.mavenCompilerPlugin>3.14.1</version.mavenCompilerPlugin>
         <version.mavenSurefirePlugin>3.5.4</version.mavenSurefirePlugin>
@@ -113,6 +114,12 @@
     </properties>
 
     <distributionManagement>
+        <repository>
+            <id>central</id>
+            <name>Sonatype Central</name>
+            <url>https://central.sonatype.com/api/v1/publisher</url>
+        </repository>
+
         <snapshotRepository>
             <id>maps_snapshots</id>
             <name>maps_snapshot_repository</name>
@@ -132,6 +139,12 @@
 
             <dependency>
                 <groupId>io.mapsmessaging</groupId>
+                <artifactId>canbus-events</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.mapsmessaging</groupId>
                 <artifactId>canbus-J1939</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -142,47 +155,53 @@
                 <version>${project.version}</version>
             </dependency>
 
-            <!-- External deps (optional but recommended if you want versions centralized) -->
+            <!-- External dependencies -->
             <dependency>
                 <groupId>com.google.code.gson</groupId>
                 <artifactId>gson</artifactId>
-                <version>2.13.2</version>
+                <version>${version.gson}</version>
             </dependency>
 
             <dependency>
                 <groupId>net.java.dev.jna</groupId>
                 <artifactId>jna</artifactId>
-                <version>5.18.1</version>
+                <version>${version.jna}</version>
             </dependency>
 
             <dependency>
                 <groupId>com.networknt</groupId>
                 <artifactId>json-schema-validator</artifactId>
-                <version>1.5.1</version>
+                <version>${version.jsonSchemaValidator}</version>
             </dependency>
 
             <dependency>
                 <groupId>org.mockito</groupId>
                 <artifactId>mockito-core</artifactId>
-                <version>5.21.0</version>
+                <version>${version.mockito}</version>
             </dependency>
 
             <dependency>
                 <groupId>org.junit.jupiter</groupId>
                 <artifactId>junit-jupiter-api</artifactId>
-                <version>6.0.1</version>
+                <version>${version.junit}</version>
             </dependency>
 
             <dependency>
                 <groupId>org.junit.jupiter</groupId>
                 <artifactId>junit-jupiter-engine</artifactId>
-                <version>6.0.1</version>
+                <version>${version.junit}</version>
             </dependency>
 
             <dependency>
                 <groupId>org.projectlombok</groupId>
                 <artifactId>lombok</artifactId>
-                <version>1.18.38</version>
+                <version>${version.lombok}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.yaml</groupId>
+                <artifactId>snakeyaml</artifactId>
+                <version>${version.snakeyaml}</version>
             </dependency>
 
         </dependencies>
@@ -216,7 +235,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
-                    <version>3.5.4</version>
+                    <version>${version.mavenSurefirePlugin}</version>
                 </plugin>
 
                 <plugin>
@@ -253,6 +272,7 @@
                     <executions>
                         <execution>
                             <id>attach-sources</id>
+                            <phase>verify</phase>
                             <goals>
                                 <goal>jar-no-fork</goal>
                             </goals>
@@ -268,26 +288,24 @@
                         <charset>UTF-8</charset>
                         <encoding>UTF-8</encoding>
                         <javadocExecutable>${java.home}/bin/javadoc</javadocExecutable>
-                        <outputDirectory>${project.build.directory}/site/docs</outputDirectory>
                         <show>public</show>
+                        <failOnError>false</failOnError>
                         <sourceFileExcludes>
                             <sourceFileExclude>**/*Test.java</sourceFileExclude>
                             <sourceFileExclude>**/Test*.java</sourceFileExclude>
                             <sourceFileExclude>**/*IT.java</sourceFileExclude>
                         </sourceFileExcludes>
+                        <additionalJOptions>
+                            <additionalJOption>-Xdoclint:none</additionalJOption>
+                        </additionalJOptions>
                     </configuration>
                     <executions>
                         <execution>
                             <id>attach-javadocs</id>
+                            <phase>verify</phase>
                             <goals>
                                 <goal>jar</goal>
                             </goals>
-                            <configuration>
-                                <failOnError>false</failOnError>
-                                <additionalJOptions>
-                                    <additionalJOption>-Xdoclint:none</additionalJOption>
-                                </additionalJOptions>
-                            </configuration>
                         </execution>
                     </executions>
                 </plugin>
@@ -376,6 +394,21 @@
             </properties>
             <build>
                 <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                    </plugin>
+
                     <plugin>
                         <groupId>org.sonatype.central</groupId>
                         <artifactId>central-publishing-maven-plugin</artifactId>

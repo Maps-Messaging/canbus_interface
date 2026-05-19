@@ -34,7 +34,7 @@
     <packaging>jar</packaging>
 
     <name>NMEA 2000 parser, message formatter and schema</name>
-    <description>Loads NMEA2000 XML and provides NMEA2000 to/from JSON parsing</description>
+    <description>Loads NMEA 2000 XML and provides NMEA 2000 to/from JSON parsing</description>
 
     <dependencies>
         <dependency>

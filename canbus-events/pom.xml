@@ -16,15 +16,13 @@
     <packaging>jar</packaging>
 
     <name>Raw CanBus event handler</name>
-    <description>Parses raw canbus using the supplied config file frames from canbus packets</description>
+    <description>Parses raw CAN bus frames using the supplied configuration file</description>
 
     <dependencies>
         <dependency>
             <groupId>org.yaml</groupId>
             <artifactId>snakeyaml</artifactId>
-            <version>2.2</version>
         </dependency>
-
 
         <dependency>
             <groupId>com.google.code.gson</groupId>
