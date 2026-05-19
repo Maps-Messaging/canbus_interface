@@ -70,7 +70,8 @@ public class LookupProcessor implements Processor {
             field.isSigned(),
             field.getBitLength());
 
-    decoded.addProperty(field.getId(), (int) (raw & field.getMask()));
+    long maskValue = (raw & field.getMask());
+    decoded.addProperty(field.getId(), maskValue);
     return field.isCompileTimeFixed() ? cursor : cursor + bytesToRead;
   }
 
