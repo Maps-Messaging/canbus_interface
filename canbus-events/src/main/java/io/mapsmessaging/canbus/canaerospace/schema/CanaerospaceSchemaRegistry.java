@@ -31,6 +31,9 @@ import java.util.*;
 public class CanaerospaceSchemaRegistry {
 
   public static final String DEFAULT_SCHEMA_RESOURCE = "canaerospace_schema.yaml";
+  private static final int MIN_CANAEROSPACE_IDENTIFIER = 0;
+  private static final int MAX_CANAEROSPACE_IDENTIFIER = 0x7FF; // ( max 11 bits)
+  private static final int MAX_IDENTIFIER_RANGE_EXPANSION = MAX_CANAEROSPACE_IDENTIFIER + 1;
 
   @Getter
   private final CanaerospaceSchema schema;
@@ -158,6 +161,23 @@ public class CanaerospaceSchemaRegistry {
 
         int min = idRange.getMin();
         int max = idRange.getMax();
+
+        if (min < MIN_CANAEROSPACE_IDENTIFIER || max > MAX_CANAEROSPACE_IDENTIFIER || max < min) {
+          throw new IllegalArgumentException(
+              "Invalid CANaerospace identifier range: "
+                  + min
+                  + " to "
+                  + max
+                  + ". Expected range within 0 to "
+                  + MAX_CANAEROSPACE_IDENTIFIER);
+        }
+
+        int rangeSize = max - min + 1;
+        if (rangeSize > MAX_IDENTIFIER_RANGE_EXPANSION) {
+          throw new IllegalArgumentException(
+              "CANaerospace identifier range expansion exceeds maximum allowed size: "
+                  + rangeSize);
+        }
 
         for (int canId = min; canId <= max; canId++) {
           if (!result.containsKey(canId)) {
