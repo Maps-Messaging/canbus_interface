@@ -99,7 +99,7 @@ public class N2kCompiler {
     boolean reserved = fieldType == N2kFieldType.RESERVED;
 
     String id = fieldDefinition.getId();
-    if (!reserved && id == null || id.isBlank() ||!seenIds.add(id)) {
+    if (!reserved && (id == null || id.isBlank() ||!seenIds.add(id))) {
       return isPositionFixed;
     }
     if (fieldType == N2kFieldType.STRING_LAU) {
