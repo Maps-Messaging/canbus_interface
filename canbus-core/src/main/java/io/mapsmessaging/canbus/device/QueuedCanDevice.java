@@ -35,7 +35,7 @@ public final class QueuedCanDevice implements CanDevice, Closeable {
   private static final int DEFAULT_QUEUE_DEPTH = 128;
   private static final int DEFAULT_BITRATE_BITS_PER_SECOND = 250_000;
   private static final double DEFAULT_MAX_BUS_USAGE_PERCENT = 20.0;
-  private static final long DEFAULT_WRITE_FAILURE_BACKOFF_MILLISECONDS  = 25L;
+  private static final long DEFAULT_WRITE_FAILURE_BACKOFF_MILLISECONDS = 25L;
 
   private static final int CLASSIC_CAN_MAX_PAYLOAD = 8;
   private static final int STANDARD_IDENTIFIER_BITS = 11;
@@ -44,6 +44,7 @@ public final class QueuedCanDevice implements CanDevice, Closeable {
   private static final int FD_BASE_BITS = 67;
   private static final double BIT_STUFFING_FACTOR = 1.2;
 
+  private final Object lifecycleLock;
   private final CanDevice delegate;
   private final BlockingDeque<CanWriteMessage> queue;
   private final QueueFullPolicy queueFullPolicy;
@@ -90,8 +91,8 @@ public final class QueuedCanDevice implements CanDevice, Closeable {
         queueFullPolicy,
         DEFAULT_WRITE_FAILURE_BACKOFF_MILLISECONDS
     );
-
   }
+
   public QueuedCanDevice(CanDevice delegate,
                          int queueDepth,
                          int bitrateBitsPerSecond,
@@ -117,6 +118,8 @@ public final class QueuedCanDevice implements CanDevice, Closeable {
     if (writeFailureBackoffMilliseconds < 0) {
       throw new IllegalArgumentException("writeFailureBackoffMilliseconds must be >= 0");
     }
+
+    this.lifecycleLock = new Object();
     this.delegate = delegate;
     this.queueDepth = queueDepth;
     this.bitrateBitsPerSecond = bitrateBitsPerSecond;
@@ -160,37 +163,41 @@ public final class QueuedCanDevice implements CanDevice, Closeable {
     if (canFrames.isEmpty()) {
       throw new IllegalArgumentException("canFrames must not be empty");
     }
-    if (closed.get()) {
-      throw new IOException("QueuedCanDevice is closed");
-    }
 
     int estimatedBits = estimateMessageBits(canFrames);
     CanWriteMessage canWriteMessage = new CanWriteMessage(canFrames, estimatedBits);
 
-    boolean queued = queue.offerLast(canWriteMessage);
-    if (queued) {
-      pendingWriteCount.incrementAndGet();
-      stats.incrementQueuedCount();
-      return;
-    }
-
-    if (queueFullPolicy == QueueFullPolicy.REJECT_NEW) {
-      stats.incrementRejectedCount();
-      throw new IOException("CAN write queue is full");
-    }
-
-    while (!queued) {
-      CanWriteMessage droppedMessage = queue.pollFirst();
-      if (droppedMessage != null) {
-        pendingWriteCount.decrementAndGet();
-        stats.incrementDroppedCount();
+    synchronized (lifecycleLock) {
+      if (closed.get()) {
+        throw new IOException("QueuedCanDevice is closed");
       }
 
-      queued = queue.offerLast(canWriteMessage);
-    }
+      pendingWriteCount.incrementAndGet();
 
-    pendingWriteCount.incrementAndGet();
-    stats.incrementQueuedCount();
+      boolean queued = queue.offerLast(canWriteMessage);
+      if (queued) {
+        stats.incrementQueuedCount();
+        return;
+      }
+
+      if (queueFullPolicy == QueueFullPolicy.REJECT_NEW) {
+        pendingWriteCount.decrementAndGet();
+        stats.incrementRejectedCount();
+        throw new IOException("CAN write queue is full");
+      }
+
+      while (!queued) {
+        CanWriteMessage droppedMessage = queue.pollFirst();
+        if (droppedMessage != null) {
+          pendingWriteCount.decrementAndGet();
+          stats.incrementDroppedCount();
+        }
+
+        queued = queue.offerLast(canWriteMessage);
+      }
+
+      stats.incrementQueuedCount();
+    }
   }
 
   @Override
@@ -208,12 +215,14 @@ public final class QueuedCanDevice implements CanDevice, Closeable {
 
   @Override
   public void close() throws IOException {
-    if (!closed.compareAndSet(false, true)) {
-      return;
-    }
+    synchronized (lifecycleLock) {
+      if (!closed.compareAndSet(false, true)) {
+        return;
+      }
 
-    running.set(false);
-    writerThread.interrupt();
+      running.set(false);
+      writerThread.interrupt();
+    }
 
     try {
       writerThread.join(TimeUnit.SECONDS.toMillis(2));
