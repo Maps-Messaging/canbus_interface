@@ -87,7 +87,7 @@ public class CanId {
   }
 
   public boolean isBroadcast() {
-    return isPdu2();
+    return isPdu2() || (isPdu1() && destinationAddress == BROADCAST_ADDRESS);
   }
 
   public Integer getDestinationAddressOrNull() {
