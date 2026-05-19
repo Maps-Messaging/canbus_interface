@@ -67,7 +67,7 @@ public class CanLogToJsonDecoder {
     ) {
       String line;
       long lineNumber = 0;
-
+      writer.write("[\n");
       while ((line = reader.readLine()) != null) {
         lineNumber++;
 
@@ -82,9 +82,10 @@ public class CanLogToJsonDecoder {
         trackFastPacket(writer, frame);
         handleFrame(writer, frame);
       }
-
       flushIncompleteFastPackets(writer);
+      writer.write("]");
     }
+
   }
 
   private Optional<CandumpFrame> parseLine(long lineNumber, String line) {
@@ -358,6 +359,7 @@ public class CanLogToJsonDecoder {
     output.add("data", knownMessage.getDecoded());
 
     writer.write(gson.toJson(output));
+    writer.write(",");
     writer.newLine();
   }
 
@@ -374,6 +376,7 @@ public class CanLogToJsonDecoder {
     output.addProperty("detail", unknownMessage.getDetail());
 
     writer.write(gson.toJson(output));
+    writer.write(",");
     writer.newLine();
   }
 
@@ -403,6 +406,7 @@ public class CanLogToJsonDecoder {
     output.addProperty("nextExpectedFrameIndex", state.nextExpectedFrameIndex());
 
     writer.write(gson.toJson(output));
+    writer.write(",");
     writer.newLine();
   }
 
@@ -426,6 +430,7 @@ public class CanLogToJsonDecoder {
     output.addProperty("reason", "Fast-packet continuation without matching start frame");
 
     writer.write(gson.toJson(output));
+    writer.write(",");
     writer.newLine();
   }
 
@@ -442,6 +447,7 @@ public class CanLogToJsonDecoder {
     output.addProperty("error", "Unexpected message type returned by frame handler");
 
     writer.write(gson.toJson(output));
+    writer.write(",");
     writer.newLine();
   }
 
@@ -457,6 +463,7 @@ public class CanLogToJsonDecoder {
     output.addProperty("error", exception.getMessage());
 
     writer.write(gson.toJson(output));
+    writer.write(",");
     writer.newLine();
   }
 
@@ -474,6 +481,7 @@ public class CanLogToJsonDecoder {
     output.addProperty("line", line);
 
     writer.write(gson.toJson(output));
+    writer.write(",");
     writer.newLine();
   }
 
