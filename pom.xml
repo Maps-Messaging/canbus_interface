@@ -107,6 +107,7 @@
         <version.mavenJavadocPlugin>3.12.0</version.mavenJavadocPlugin>
         <version.mavenSourcePlugin>3.3.1</version.mavenSourcePlugin>
         <version.jacoco>0.8.14</version.jacoco>
+        <version.sonarMavenPlugin>5.7.0.6970</version.sonarMavenPlugin>
         <version.cyclonedx>2.9.1</version.cyclonedx>
         <version.buildHelper>3.6.1</version.buildHelper>
         <version.dependencyCheck>12.1.8</version.dependencyCheck>
@@ -384,6 +385,19 @@
                 </plugin>
             </plugins>
         </pluginManagement>
+
+        <plugins>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <groupId>org.sonarsource.scanner.maven</groupId>
+                <artifactId>sonar-maven-plugin</artifactId>
+                <version>${version.sonarMavenPlugin}</version>
+            </plugin>
+        </plugins>
     </build>
 
     <profiles>
