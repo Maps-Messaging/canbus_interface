@@ -4,8 +4,7 @@ steps:
       - export SONAR_TOKEN=$(buildkite-agent secret get SONAR_TOKEN)
       - export NVD_API_KEY=$(buildkite-agent secret get nvd_api_key)
       - mvn -Dgpg.skip=true clean deploy sonar:sonar -Psnapshot
-    env:
-      BUILDKITE_ANALYTICS_TOKEN: "$(buildkite-agent secret get SchemasBuildkiteAnalytics)"
-      SONAR_TOKEN: "${SONAR_TOKEN}"
+    secrets:
+      BUILDKITE_ANALYTICS_TOKEN: "SchemasBuildkiteAnalytics"
     agents:
       queue: "java_build_queue_aws"
