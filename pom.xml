@@ -408,7 +408,12 @@
                 <artifactId>sonar-maven-plugin</artifactId>
                 <version>${version.sonarMavenPlugin}</version>
             </plugin>
-        </plugins>
+        
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-gpg-plugin</artifactId>
+      </plugin>
+</plugins>
     </build>
 
     <profiles>
