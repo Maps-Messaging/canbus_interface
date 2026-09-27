@@ -111,9 +111,10 @@ public class DataTypeCodec {
       case "NODATA" -> {
         return null;
       }
+      default -> {
+        return dataBytes;
+      }
     }
-
-    return dataBytes;
   }
 
   public static byte[] encode(String schemaDataTypeName, Object value) {
