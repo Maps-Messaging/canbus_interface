@@ -35,6 +35,26 @@ import static org.mockito.Mockito.*;
 class SocketCanDeviceTest {
 
   @Test
+  void constructorClosesSocketWhenInterfaceLookupFails() throws Exception {
+    LibCFacade libC = mock(LibCFacade.class);
+    when(libC.socket(anyInt(), anyInt(), anyInt())).thenReturn(42);
+
+    InterfaceIndexResolver resolver =
+        (socketFileDescriptor, interfaceName) -> {
+          throw new IOException("lookup failed");
+        };
+
+    IOException exception = Assertions.assertThrows(
+        IOException.class,
+        () -> new SocketCanDevice("can0", libC, resolver)
+    );
+
+    Assertions.assertTrue(exception.getMessage().contains("lookup failed"));
+    verify(libC).close(42);
+    verify(libC, never()).bind(anyInt(), any(), anyInt());
+  }
+
+  @Test
   void readFrame_classic_returnsCanFrame() throws Exception {
     LibCFacade libC = mock(LibCFacade.class);
 
