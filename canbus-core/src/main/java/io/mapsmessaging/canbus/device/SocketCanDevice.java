@@ -21,7 +21,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.sun.jna.Memory;
-import com.sun.jna.Native;
 import com.sun.jna.ptr.IntByReference;
 import io.mapsmessaging.canbus.device.frames.CanFrame;
 import io.mapsmessaging.canbus.device.frames.NativeCanFdFrame;
@@ -91,7 +90,13 @@ public final class SocketCanDevice implements CanDevice, Closeable {
       throw new IOException("socket(AF_CAN,SOCK_RAW,CAN_RAW) failed errno=" + libC.getLastError());
     }
 
-    int interfaceIndex = interfaceIndexResolver.resolveInterfaceIndex(fileDescriptor, interfaceName);
+    int interfaceIndex;
+    try {
+      interfaceIndex = interfaceIndexResolver.resolveInterfaceIndex(fileDescriptor, interfaceName);
+    } catch (IOException | RuntimeException exception) {
+      libC.close(fileDescriptor);
+      throw exception;
+    }
 
     SockAddrCan socketAddress = new SockAddrCan();
     socketAddress.canFamily = ((short) AF_CAN);
@@ -101,7 +106,7 @@ public final class SocketCanDevice implements CanDevice, Closeable {
 
     int bindResult = libC.bind(fileDescriptor, socketAddress, socketAddress.size());
     if (bindResult != 0) {
-      int errno = Native.getLastError();
+      int errno = libC.getLastError();
       libC.close(fileDescriptor);
       throw new IOException("bind(" + interfaceName + ") failed errno=" + errno);
     }
