@@ -347,9 +347,19 @@ public final class SocketCanDevice implements CanDevice, Closeable {
     return value.getValue() != 0;
   }
 
+  private static String resolveIpCommand() throws IOException {
+    for (String candidate : new String[]{"/usr/sbin/ip", "/usr/bin/ip", "/sbin/ip", "/bin/ip"}) {
+      Path executable = Path.of(candidate);
+      if (Files.isRegularFile(executable) && Files.isExecutable(executable)) {
+        return candidate;
+      }
+    }
+    throw new IOException("The ip command was not found in a system directory");
+  }
+
   private static String runIpJsonLinkShow(String interfaceName) throws IOException {
     ProcessBuilder processBuilder = new ProcessBuilder(
-        "ip",
+        resolveIpCommand(),
         "-details",
         "-statistics",
         "-json",

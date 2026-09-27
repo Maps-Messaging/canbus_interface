@@ -96,25 +96,25 @@ public final class SerialCanDevice implements CanDevice, Closeable {
     try {
       inputStream.close();
     } catch (IOException e) {
-      if (closeException == null) {
-        closeException = e;
-      } else {
-        closeException.addSuppressed(e);
-      }
+      closeException = appendCloseException(closeException, e);
     }
 
     try {
       outputStream.close();
     } catch (IOException e) {
-      if (closeException == null) {
-        closeException = e;
-      } else {
-        closeException.addSuppressed(e);
-      }
+      closeException = appendCloseException(closeException, e);
     }
 
     if (closeException != null) {
       throw closeException;
     }
+  }
+
+  private static IOException appendCloseException(IOException first, IOException next) {
+    if (first == null) {
+      return next;
+    }
+    first.addSuppressed(next);
+    return first;
   }
 }

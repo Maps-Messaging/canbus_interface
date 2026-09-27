@@ -34,16 +34,10 @@ public class N2kSchemaRegistry {
 
   private final N2kCompiledRegistry registry;
 
-  private volatile Map<Integer, JsonObject> schemasByPgn;
+  private Map<Integer, JsonObject> schemasByPgn;
 
   public JsonObject getSchema(int pgn) {
-    Map<Integer, JsonObject> local = schemasByPgn;
-    if (local == null) {
-      local = buildSchemas();
-      schemasByPgn = local;
-    }
-
-    JsonObject schema = local.get(pgn);
+    JsonObject schema = schemas().get(pgn);
     if (schema == null) {
       throw new IllegalArgumentException("Unknown PGN: " + pgn);
     }
@@ -51,17 +45,18 @@ public class N2kSchemaRegistry {
   }
 
   public List<JsonObject> getSchemas() {
-    Map<Integer, JsonObject> local = schemasByPgn;
-    if (local == null) {
-      local = buildSchemas();
-      schemasByPgn = local;
-    }
-
-    List<JsonObject> list = new ArrayList<>(local.values());
+    List<JsonObject> list = new ArrayList<>(schemas().values());
     list.sort(Comparator.comparingInt(o -> o.get("properties").getAsJsonObject()
         .get("pgn").getAsJsonObject()
         .get("const").getAsInt()));
     return List.copyOf(list);
+  }
+
+  private synchronized Map<Integer, JsonObject> schemas() {
+    if (schemasByPgn == null) {
+      schemasByPgn = buildSchemas();
+    }
+    return schemasByPgn;
   }
 
   public List<Integer> listPgns() {
