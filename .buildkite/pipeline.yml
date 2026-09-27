@@ -2,7 +2,7 @@ steps:
   - label: ":maven: Build and Deploy"
     command:
       - export SONAR_TOKEN=$(buildkite-agent secret get SONAR_TOKEN)
-      - mvn clean deploy sonar:sonar -Psnapshot
+      - mvn clean deploy sonar:sonar -Psnapshot -Dsonar.token=$${SONAR_TOKEN} -Dsonar.branch.name=development
     secrets:
       BUILDKITE_ANALYTICS_TOKEN: "SchemasBuildkiteAnalytics"
     agents:
