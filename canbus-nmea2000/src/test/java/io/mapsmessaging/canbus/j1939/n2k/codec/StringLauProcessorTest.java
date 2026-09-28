@@ -81,6 +81,7 @@ class StringLauProcessorTest {
     assertEquals(1, processor.unpack(field, new byte[]{2}, 0, decoded));
     assertFalse(decoded.has("Text"));
   }
+
   @Test
   void fieldValueSourceUsesSameUtf8WireFormat() {
     FieldValueSource source = org.mockito.Mockito.mock(FieldValueSource.class);
@@ -104,6 +105,4 @@ class StringLauProcessorTest {
     assertEquals(0, processor.computePayloadLength(field, source));
     assertEquals(2, processor.pack(field, payload, 2, source));
   }
-
-
 }
