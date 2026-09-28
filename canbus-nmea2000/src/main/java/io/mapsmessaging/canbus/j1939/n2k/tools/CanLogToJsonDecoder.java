@@ -529,6 +529,35 @@ public class CanLogToJsonDecoder {
       int canIdentifier,
       byte[] payload
   ) {
+    @Override
+    public boolean equals(Object other) {
+      if (this == other) {
+        return true;
+      }
+      if (!(other instanceof CandumpFrame frame)) {
+        return false;
+      }
+      return lineNumber == frame.lineNumber
+          && Double.compare(timestamp, frame.timestamp) == 0
+          && canIdentifier == frame.canIdentifier
+          && Objects.equals(interfaceName, frame.interfaceName)
+          && Arrays.equals(payload, frame.payload);
+    }
+
+    @Override
+    public int hashCode() {
+      int result = Objects.hash(lineNumber, timestamp, interfaceName, canIdentifier);
+      return 31 * result + Arrays.hashCode(payload);
+    }
+
+    @Override
+    public String toString() {
+      return "CandumpFrame[lineNumber=" + lineNumber
+          + ", timestamp=" + timestamp
+          + ", interfaceName=" + interfaceName
+          + ", canIdentifier=" + canIdentifier
+          + ", payload=" + Arrays.toString(payload) + "]";
+    }
   }
 
   private record CanIdentifierFields(
