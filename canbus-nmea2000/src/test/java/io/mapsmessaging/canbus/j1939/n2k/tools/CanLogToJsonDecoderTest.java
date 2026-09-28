@@ -116,6 +116,80 @@ class CanLogToJsonDecoderTest {
     org.junit.jupiter.api.Assertions.assertTrue(first.toString().contains("[1, 2]"));
   }
 
+  @Test
+  void emitsDecodedPayloadFromKnownMessage() throws Exception {
+    FrameHandler handler = mock(FrameHandler.class);
+    JsonObject payload = new JsonObject();
+    payload.addProperty("heading", 42);
+    when(handler.onFrame(anyInt(), anyBoolean(), anyInt(), any(byte[].class)))
+        .thenReturn(Optional.of(new io.mapsmessaging.canbus.j1939.n2k.framing.message.KnownMessage(
+            io.mapsmessaging.canbus.j1939.CanId.parse(0x09F80101),
+            0x09F80101, new byte[]{1}, payload)));
+
+    JsonArray events = decode(handler, "(1.25) can0 09F80101#01");
+
+    assertEquals(1, events.size());
+    JsonObject decoded = events.get(0).getAsJsonObject();
+    assertEquals("decodedMessage", decoded.get("eventType").getAsString());
+    assertEquals(42, decoded.getAsJsonObject("data").get("heading").getAsInt());
+  }
+
+  @Test
+  void reportsFrameHandlerFailureWithoutLosingFollowingFrames() throws Exception {
+    FrameHandler handler = mock(FrameHandler.class);
+    when(handler.onFrame(anyInt(), anyBoolean(), anyInt(), any(byte[].class)))
+        .thenThrow(new IllegalStateException("bad frame"));
+
+    JsonArray events = decode(handler,
+        "(1.25) can0 09F80101#01",
+        "(1.26) can0 09F80101#02");
+
+    assertEquals(2, events.size());
+    assertEquals("frameHandlerError", events.get(0).getAsJsonObject().get("eventType").getAsString());
+    assertEquals("bad frame", events.get(0).getAsJsonObject().get("error").getAsString());
+    assertEquals(2, events.get(1).getAsJsonObject().get("lineNumber").getAsInt());
+  }
+
+  @Test
+  void sequenceChangeReportsIncompletePacketAndOrphanContinuation() throws Exception {
+    JsonArray events = decode(emptyHandler(),
+        "(1.25) can0 09F01401#0008010203040506",
+        "(1.26) can0 09F01401#210708090A0B0C0D");
+
+    assertEquals(2, events.size());
+    assertEquals("incompleteFastPacket", events.get(0).getAsJsonObject().get("eventType").getAsString());
+    assertEquals("Fast-packet sequence changed before packet completed",
+        events.get(0).getAsJsonObject().get("reason").getAsString());
+    assertEquals("orphanFastPacketContinuation",
+        events.get(1).getAsJsonObject().get("eventType").getAsString());
+  }
+
+  @Test
+  void missingFrameIndexReportsGapAndOrphanContinuation() throws Exception {
+    JsonArray events = decode(emptyHandler(),
+        "(1.25) can0 09F01401#0008010203040506",
+        "(1.26) can0 09F01401#020708090A0B0C0D");
+
+    assertEquals(2, events.size());
+    assertEquals("Fast-packet frame index gap",
+        events.get(0).getAsJsonObject().get("reason").getAsString());
+    assertEquals(2, events.get(1).getAsJsonObject().get("frameIndex").getAsInt());
+  }
+
+  @Test
+  void newPacketStartReportsPreviousPacketAsIncomplete() throws Exception {
+    JsonArray events = decode(emptyHandler(),
+        "(1.25) can0 09F01401#0008010203040506",
+        "(1.26) can0 09F01401#2008010203040506");
+
+    assertEquals(2, events.size());
+    assertEquals("New fast-packet start before previous packet completed",
+        events.get(0).getAsJsonObject().get("reason").getAsString());
+    assertEquals("End of file before fast-packet completed",
+        events.get(1).getAsJsonObject().get("reason").getAsString());
+    assertEquals(1, events.get(1).getAsJsonObject().get("sequenceIdentifier").getAsInt());
+  }
+
   private FrameHandler emptyHandler() {
     FrameHandler handler = mock(FrameHandler.class);
     when(handler.onFrame(anyInt(), anyBoolean(), anyInt(), any(byte[].class)))
