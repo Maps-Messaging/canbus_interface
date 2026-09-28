@@ -51,6 +51,7 @@ public class CanLogToJsonDecoder {
   private final FrameHandler frameHandler;
   private final Gson gson;
   private final Map<FastPacketKey, FastPacketState> fastPacketStates;
+  private boolean firstEvent;
 
   public CanLogToJsonDecoder(FrameHandler frameHandler) {
     this.frameHandler = frameHandler;
@@ -61,6 +62,7 @@ public class CanLogToJsonDecoder {
   }
 
   public void decode(Path inputPath, Path outputPath) throws IOException {
+    firstEvent = true;
     try (
         BufferedReader reader = Files.newBufferedReader(inputPath);
         BufferedWriter writer = Files.newBufferedWriter(outputPath)
@@ -83,7 +85,7 @@ public class CanLogToJsonDecoder {
         handleFrame(writer, frame);
       }
       flushIncompleteFastPackets(writer);
-      writer.write("]");
+      writer.write("\n]");
     }
 
   }
@@ -358,9 +360,7 @@ public class CanLogToJsonDecoder {
     output.addProperty("decoded", true);
     output.add("data", knownMessage.getDecoded());
 
-    writer.write(gson.toJson(output));
-    writer.write(",");
-    writer.newLine();
+    writeEvent(writer, output);
   }
 
   private void writeUnknownMessage(
@@ -375,9 +375,7 @@ public class CanLogToJsonDecoder {
     output.addProperty("reason", unknownMessage.getReason().toString());
     output.addProperty("detail", unknownMessage.getDetail());
 
-    writer.write(gson.toJson(output));
-    writer.write(",");
-    writer.newLine();
+    writeEvent(writer, output);
   }
 
   private void writeIncompleteFastPacket(
@@ -405,9 +403,7 @@ public class CanLogToJsonDecoder {
     output.addProperty("receivedFrameCount", state.receivedFrameCount());
     output.addProperty("nextExpectedFrameIndex", state.nextExpectedFrameIndex());
 
-    writer.write(gson.toJson(output));
-    writer.write(",");
-    writer.newLine();
+    writeEvent(writer, output);
   }
 
   private void writeOrphanFastPacketContinuation(
@@ -429,9 +425,7 @@ public class CanLogToJsonDecoder {
     output.addProperty("frameIndex", frameIndex);
     output.addProperty("reason", "Fast-packet continuation without matching start frame");
 
-    writer.write(gson.toJson(output));
-    writer.write(",");
-    writer.newLine();
+    writeEvent(writer, output);
   }
 
   private void writeUnexpectedMessage(
@@ -446,9 +440,7 @@ public class CanLogToJsonDecoder {
     output.addProperty("messageType", message.getClass().getName());
     output.addProperty("error", "Unexpected message type returned by frame handler");
 
-    writer.write(gson.toJson(output));
-    writer.write(",");
-    writer.newLine();
+    writeEvent(writer, output);
   }
 
   private void writeFrameHandlerError(
@@ -462,9 +454,7 @@ public class CanLogToJsonDecoder {
     output.addProperty("decoded", false);
     output.addProperty("error", exception.getMessage());
 
-    writer.write(gson.toJson(output));
-    writer.write(",");
-    writer.newLine();
+    writeEvent(writer, output);
   }
 
   private void writeInvalidLine(
@@ -480,9 +470,16 @@ public class CanLogToJsonDecoder {
     output.addProperty("error", "Invalid candump line");
     output.addProperty("line", line);
 
-    writer.write(gson.toJson(output));
-    writer.write(",");
-    writer.newLine();
+    writeEvent(writer, output);
+  }
+
+  private void writeEvent(BufferedWriter writer, JsonObject event) throws IOException {
+    if (!firstEvent) {
+      writer.write(",");
+      writer.newLine();
+    }
+    writer.write(gson.toJson(event));
+    firstEvent = false;
   }
 
   private JsonObject createBaseFrameJson(CandumpFrame frame) {
