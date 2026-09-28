@@ -30,6 +30,7 @@ import java.util.Comparator;
 import java.util.List;
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import lombok.experimental.UtilityClass;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -78,7 +79,7 @@ public class N2kXmlDialectParser {
     return List.copyOf(messageDefinitions);
   }
 
-  private static DocumentBuilderFactory createSecureDocumentBuilderFactory() throws Exception {
+  private static DocumentBuilderFactory createSecureDocumentBuilderFactory() throws ParserConfigurationException {
     DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
     factory.setNamespaceAware(false);
     factory.setIgnoringComments(true);

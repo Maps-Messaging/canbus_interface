@@ -534,14 +534,16 @@ public class CanLogToJsonDecoder {
       if (this == other) {
         return true;
       }
-      if (!(other instanceof CandumpFrame frame)) {
+      if (!(other instanceof CandumpFrame(
+          var otherLineNumber, var otherTimestamp, var otherInterfaceName,
+          var otherCanIdentifier, var otherPayload))) {
         return false;
       }
-      return lineNumber == frame.lineNumber
-          && Double.compare(timestamp, frame.timestamp) == 0
-          && canIdentifier == frame.canIdentifier
-          && Objects.equals(interfaceName, frame.interfaceName)
-          && Arrays.equals(payload, frame.payload);
+      return lineNumber == otherLineNumber
+          && Double.compare(timestamp, otherTimestamp) == 0
+          && canIdentifier == otherCanIdentifier
+          && Objects.equals(interfaceName, otherInterfaceName)
+          && Arrays.equals(payload, otherPayload);
     }
 
     @Override
