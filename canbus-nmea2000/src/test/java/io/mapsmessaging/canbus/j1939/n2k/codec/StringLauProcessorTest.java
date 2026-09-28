@@ -81,4 +81,29 @@ class StringLauProcessorTest {
     assertEquals(1, processor.unpack(field, new byte[]{2}, 0, decoded));
     assertFalse(decoded.has("Text"));
   }
+  @Test
+  void fieldValueSourceUsesSameUtf8WireFormat() {
+    FieldValueSource source = org.mockito.Mockito.mock(FieldValueSource.class);
+    org.mockito.Mockito.when(source.getString("Text")).thenReturn("µ");
+    byte[] payload = new byte[5];
+
+    assertEquals(4, processor.computePayloadLength(field, source));
+    assertEquals(5, processor.pack(field, payload, 1, source));
+    assertArrayEquals(new byte[]{0, 3, 1, (byte) 0xC2, (byte) 0xB5}, payload);
+  }
+
+  @Test
+  void fieldValueSourceMissingAndEmptyTextProduceNoPayload() {
+    FieldValueSource source = org.mockito.Mockito.mock(FieldValueSource.class);
+    byte[] payload = new byte[4];
+
+    assertEquals(0, processor.computePayloadLength(field, source));
+    assertEquals(2, processor.pack(field, payload, 2, source));
+
+    org.mockito.Mockito.when(source.getString("Text")).thenReturn("");
+    assertEquals(0, processor.computePayloadLength(field, source));
+    assertEquals(2, processor.pack(field, payload, 2, source));
+  }
+
+
 }
