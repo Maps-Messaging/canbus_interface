@@ -100,6 +100,7 @@ class SerialCanDeviceTest {
     assertEquals(1, thrown.getSuppressed().length);
     assertSame(outputFailure, thrown.getSuppressed()[0]);
   }
+
   @Test
   void rejectsNullOutputStreamBeforeCodecOrClose() {
     IllegalArgumentException failure = assertThrows(IllegalArgumentException.class,
@@ -108,5 +109,4 @@ class SerialCanDeviceTest {
 
     assertEquals("outputStream must not be null", failure.getMessage());
   }
-
 }
