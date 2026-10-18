@@ -34,7 +34,7 @@ Use the module relevant to your integration, for example:
 <dependency>
   <groupId>io.mapsmessaging</groupId>
   <artifactId>canbus-nmea2000</artifactId>
-  <version>1.0.1</version>
+  <version>1.1.0-SNAPSHOT</version>
 </dependency>
 ~~~
 
