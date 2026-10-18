@@ -1,5 +1,7 @@
 # Canbus Interface
 
+[Release notes](RELEASE_NOTES.md)
+
 This repository provides a modular Java implementation for working with **CAN bus–based protocols**,
 including **native CAN socket device support**, with current, production-ready support for
 **J1939** and **NMEA 2000 (N2K)**.
