@@ -35,6 +35,26 @@ import static org.mockito.Mockito.*;
 class SocketCanDeviceTest {
 
   @Test
+  void constructorClosesSocketWhenInterfaceLookupFails() throws Exception {
+    LibCFacade libC = mock(LibCFacade.class);
+    when(libC.socket(anyInt(), anyInt(), anyInt())).thenReturn(42);
+
+    InterfaceIndexResolver resolver =
+        (socketFileDescriptor, interfaceName) -> {
+          throw new IOException("lookup failed");
+        };
+
+    IOException exception = Assertions.assertThrows(
+        IOException.class,
+        () -> new SocketCanDevice("can0", libC, resolver)
+    );
+
+    Assertions.assertTrue(exception.getMessage().contains("lookup failed"));
+    verify(libC).close(42);
+    verify(libC, never()).bind(anyInt(), any(), anyInt());
+  }
+
+  @Test
   void readFrame_classic_returnsCanFrame() throws Exception {
     LibCFacade libC = mock(LibCFacade.class);
 
@@ -477,6 +497,68 @@ class SocketCanDeviceTest {
 
     IOException ex = Assertions.assertThrows(IOException.class, () -> device.writeFrame(0x777, false,12, data));
     Assertions.assertTrue(ex.getMessage().contains("Short write"), ex.getMessage());
+  }
+
+  @Test
+  void constructorRejectsNullInterfaceWithoutOpeningSocket() {
+    LibCFacade libC = mock(LibCFacade.class);
+
+    Assertions.assertThrows(IllegalArgumentException.class,
+        () -> new SocketCanDevice(null, libC, (socket, name) -> 1));
+
+    verify(libC, never()).socket(anyInt(), anyInt(), anyInt());
+  }
+
+  @Test
+  void constructorReportsSocketFailureWithErrno() {
+    LibCFacade libC = mock(LibCFacade.class);
+    when(libC.socket(anyInt(), anyInt(), anyInt())).thenReturn(-1);
+    when(libC.getLastError()).thenReturn(97);
+
+    IOException failure = Assertions.assertThrows(IOException.class,
+        () -> new SocketCanDevice("vcan0", libC, (socket, name) -> 1));
+
+    Assertions.assertTrue(failure.getMessage().contains("errno=97"));
+    verify(libC, never()).close(anyInt());
+  }
+
+  @Test
+  void constructorClosesSocketWhenResolverThrowsRuntimeException() {
+    LibCFacade libC = mock(LibCFacade.class);
+    when(libC.socket(anyInt(), anyInt(), anyInt())).thenReturn(42);
+    IllegalArgumentException failure = new IllegalArgumentException("invalid interface");
+
+    Assertions.assertSame(failure, Assertions.assertThrows(IllegalArgumentException.class,
+        () -> new SocketCanDevice("bad", libC, (socket, name) -> {
+          throw failure;
+        })));
+    verify(libC).close(42);
+  }
+
+  @Test
+  void constructorClosesSocketWhenBindFails() {
+    LibCFacade libC = mock(LibCFacade.class);
+    when(libC.socket(anyInt(), anyInt(), anyInt())).thenReturn(42);
+    when(libC.bind(eq(42), any(), anyInt())).thenReturn(-1);
+    when(libC.getLastError()).thenReturn(19);
+
+    IOException failure = Assertions.assertThrows(IOException.class,
+        () -> new SocketCanDevice("vcan0", libC, (socket, name) -> 5));
+
+    Assertions.assertTrue(failure.getMessage().contains("errno=19"));
+    verify(libC).close(42);
+  }
+
+  @Test
+  void writeFrameRejectsIdentifiersOutsideFrameWidth() {
+    LibCFacade libC = mock(LibCFacade.class);
+    SocketCanDevice device = newDevice(libC, new CanCapabilities(true, true, 64, 64), 42, "can0");
+
+    Assertions.assertThrows(IllegalArgumentException.class,
+        () -> device.writeFrame(0x800, false, 1, new byte[]{1}));
+    Assertions.assertThrows(IllegalArgumentException.class,
+        () -> device.writeFrame(0x20000000, true, 1, new byte[]{1}));
+    verify(libC, never()).write(anyInt(), any(Pointer.class), anyInt());
   }
 
   private static SocketCanDevice newDevice(

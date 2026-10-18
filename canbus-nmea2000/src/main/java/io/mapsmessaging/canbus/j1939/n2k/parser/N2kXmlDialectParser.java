@@ -28,7 +28,9 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import lombok.experimental.UtilityClass;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -62,10 +64,7 @@ public class N2kXmlDialectParser {
   }
 
   public static List<N2kMessageDefinition> parse(InputStream inputStream) throws Exception {
-    DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
-    documentBuilderFactory.setNamespaceAware(false);
-    documentBuilderFactory.setIgnoringComments(true);
-
+    DocumentBuilderFactory documentBuilderFactory = createSecureDocumentBuilderFactory();
     Document document = documentBuilderFactory.newDocumentBuilder().parse(inputStream);
     Element rootElement = document.getDocumentElement();
 
@@ -78,6 +77,21 @@ public class N2kXmlDialectParser {
 
     messageDefinitions.sort(Comparator.comparingInt(N2kMessageDefinition::getPgn));
     return List.copyOf(messageDefinitions);
+  }
+
+  private static DocumentBuilderFactory createSecureDocumentBuilderFactory() throws ParserConfigurationException {
+    DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+    factory.setNamespaceAware(false);
+    factory.setIgnoringComments(true);
+    factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+    factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+    factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+    factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+    factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
+    factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
+    factory.setXIncludeAware(false);
+    factory.setExpandEntityReferences(false);
+    return factory;
   }
 
   private static N2kMessageDefinition parsePgnInfo(Element pgnElement) {

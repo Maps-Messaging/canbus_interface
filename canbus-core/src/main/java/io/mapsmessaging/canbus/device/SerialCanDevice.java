@@ -25,6 +25,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Objects;
 
 public final class SerialCanDevice implements CanDevice, Closeable {
 
@@ -85,10 +86,11 @@ public final class SerialCanDevice implements CanDevice, Closeable {
 
   @Override
   public void close() throws IOException {
+    OutputStream nonNullOutput = Objects.requireNonNull(outputStream, "outputStream");
     IOException closeException = null;
 
     try {
-      canFrameStreamCodec.close(inputStream, outputStream);
+      canFrameStreamCodec.close(inputStream, nonNullOutput);
     } catch (IOException e) {
       closeException = e;
     }
@@ -96,25 +98,25 @@ public final class SerialCanDevice implements CanDevice, Closeable {
     try {
       inputStream.close();
     } catch (IOException e) {
-      if (closeException == null) {
-        closeException = e;
-      } else {
-        closeException.addSuppressed(e);
-      }
+      closeException = appendCloseException(closeException, e);
     }
 
     try {
-      outputStream.close();
+      nonNullOutput.close();
     } catch (IOException e) {
-      if (closeException == null) {
-        closeException = e;
-      } else {
-        closeException.addSuppressed(e);
-      }
+      closeException = appendCloseException(closeException, e);
     }
 
     if (closeException != null) {
       throw closeException;
     }
+  }
+
+  private static IOException appendCloseException(IOException first, IOException next) {
+    if (first == null) {
+      return next;
+    }
+    first.addSuppressed(next);
+    return first;
   }
 }

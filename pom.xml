@@ -25,7 +25,7 @@
 
     <groupId>io.mapsmessaging</groupId>
     <artifactId>canbus</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>CanBus</name>
@@ -82,8 +82,10 @@
 
         <maven.compiler.release>21</maven.compiler.release>
 
-        <nvd.api.key>${env.NVD_API_KEY}</nvd.api.key>
-        <gpg.keyname>matthew.buckton@mapsmessaging.io</gpg.keyname>
+        <dependency.check.autoUpdate>true</dependency.check.autoUpdate>
+
+        <dependency.check.dataDirectory>${user.home}/.m2/repository/org/owasp/dependency-check-data/</dependency.check.dataDirectory>
+        <gpg.keyname>admin@mapsmessaging.io</gpg.keyname>
 
         <runSuite>**/*Suite.class</runSuite>
 
@@ -107,9 +109,10 @@
         <version.mavenJavadocPlugin>3.12.0</version.mavenJavadocPlugin>
         <version.mavenSourcePlugin>3.3.1</version.mavenSourcePlugin>
         <version.jacoco>0.8.14</version.jacoco>
+        <version.sonarMavenPlugin>5.7.0.6970</version.sonarMavenPlugin>
         <version.cyclonedx>2.9.1</version.cyclonedx>
         <version.buildHelper>3.6.1</version.buildHelper>
-        <version.dependencyCheck>12.1.8</version.dependencyCheck>
+        <version.dependencyCheck>13.0.0</version.dependencyCheck>
         <version.centralPublishing>0.9.0</version.centralPublishing>
     </properties>
 
@@ -323,8 +326,12 @@
                             </goals>
                             <configuration>
                                 <keyname>${gpg.keyname}</keyname>
-                                <passphraseServerId>${gpg.keyname}</passphraseServerId>
-                            </configuration>
+                                <passphraseEnvName>MAVEN_GPG_PASSPHRASE</passphraseEnvName>
+                                <gpgArguments>
+                                    <arg>--pinentry-mode</arg>
+                                    <arg>loopback</arg>
+                                </gpgArguments>
+</configuration>
                         </execution>
                     </executions>
                 </plugin>
@@ -368,7 +375,8 @@
                     <artifactId>dependency-check-maven</artifactId>
                     <version>${version.dependencyCheck}</version>
                     <configuration>
-                        <nvdApiKey>${nvd.api.key}</nvdApiKey>
+                        <autoUpdate>${dependency.check.autoUpdate}</autoUpdate>
+                        <dataDirectory>${dependency.check.dataDirectory}</dataDirectory>
                         <failBuildOnCVSS>10</failBuildOnCVSS>
                         <failOnError>false</failOnError>
                         <skipArtifactType>test-jar</skipArtifactType>
@@ -384,9 +392,45 @@
                 </plugin>
             </plugins>
         </pluginManagement>
+
+        <plugins>
+            <plugin>
+                <groupId>org.owasp</groupId>
+                <artifactId>dependency-check-maven</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <groupId>org.sonarsource.scanner.maven</groupId>
+                <artifactId>sonar-maven-plugin</artifactId>
+                <version>${version.sonarMavenPlugin}</version>
+            </plugin>
+        
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-gpg-plugin</artifactId>
+      </plugin>
+</plugins>
     </build>
 
     <profiles>
+    <profile>
+      <id>buildkite-dependency-check-cache</id>
+      <activation>
+        <property>
+          <name>env.BUILDKITE</name>
+          <value>true</value>
+        </property>
+      </activation>
+      <properties>
+        <dependency.check.autoUpdate>false</dependency.check.autoUpdate>
+        <dependency.check.dataDirectory>/var/cache/dependency-check/13</dependency.check.dataDirectory>
+      </properties>
+    </profile>
+
         <profile>
             <id>release</id>
             <properties>
@@ -435,8 +479,7 @@
         <profile>
             <id>snapshot</id>
             <properties>
-                <gpg.skip>true</gpg.skip>
-            </properties>
+</properties>
             <repositories>
                 <repository>
                     <id>maps_snapshots</id>

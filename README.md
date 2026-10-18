@@ -1,11 +1,17 @@
 # Canbus Interface
 
+[Release notes](RELEASE_NOTES.md)
+
 This repository provides a modular Java implementation for working with **CAN bus–based protocols**,
 including **native CAN socket device support**, with current, production-ready support for
 **J1939** and **NMEA 2000 (N2K)**.
 
 The project is structured as a **multi-module Maven build**, allowing protocol layers to evolve
 independently while sharing a common CAN framing and device-access core.
+
+**CANboat acknowledgement:** The NMEA 2000 PGN definitions used by this project come from [CANboat](https://github.com/canboat/canboat), developed through years of reverse engineering by its contributors and licensed under the Apache License, Version 2.0.
+
+The NMEA 2000 module **parses CANboat-format PGN XML at runtime**, rather than generating Java code or baking the PGN definitions into the library at build time. It can load definitions from an XML file, a classpath resource, or an input stream. Applications can adopt an updated compatible CANboat database without rebuilding the library by reloading the XML and constructing a new compiled registry. Existing registries are not automatically refreshed when the XML file changes.
 
 ---
 
