@@ -9,6 +9,8 @@ including **native CAN socket device support**, with current, production-ready s
 The project is structured as a **multi-module Maven build**, allowing protocol layers to evolve
 independently while sharing a common CAN framing and device-access core.
 
+**CANboat acknowledgement:** The NMEA 2000 PGN definitions used by this project come from [CANboat](https://github.com/canboat/canboat), developed through years of reverse engineering by its contributors and licensed under the Apache License, Version 2.0.
+
 ---
 
 ## What This Project Is
