@@ -21,17 +21,157 @@ import io.mapsmessaging.canbus.device.frames.CanFrame;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class QueuedCanDeviceTest {
+
+  @Test
+  void shouldKeepConcurrentGroupsAndSingleFramesContiguousThroughTheQueue() throws Exception {
+    BlockingTestCanDevice delegate = new BlockingTestCanDevice();
+    QueuedCanDevice queuedCanDevice = new QueuedCanDevice(delegate, 128, 250_000, 20.0, QueueFullPolicy.REJECT_NEW);
+    ExecutorService producers = Executors.newFixedThreadPool(4);
+    CountDownLatch ready = new CountDownLatch(4);
+    CountDownLatch start = new CountDownLatch(1);
+    List<Future<Void>> submissions = new ArrayList<>();
+    List<Integer> expectedIdentifiers = new ArrayList<>();
+
+    try {
+      queuedCanDevice.writeFrame(createFrame(0));
+      assertEventually(() -> delegate.getWriteAttempts() == 1);
+
+      for (int producer = 0; producer < 4; producer++) {
+        int producerIndex = producer;
+        for (int message = 0; message < 8; message++) {
+          int firstIdentifier = (producer * 8 + message + 1) * 10;
+          expectedIdentifiers.addAll(List.of(firstIdentifier, firstIdentifier + 1, firstIdentifier + 2, firstIdentifier + 9));
+        }
+        submissions.add(producers.submit(() -> {
+          ready.countDown();
+          assertTrue(start.await(5, TimeUnit.SECONDS));
+          for (int message = 0; message < 8; message++) {
+            int firstIdentifier = (producerIndex * 8 + message + 1) * 10;
+            queuedCanDevice.writeFrames(List.of(createFrame(firstIdentifier), createFrame(firstIdentifier + 1), createFrame(firstIdentifier + 2)));
+            queuedCanDevice.writeFrame(createFrame(firstIdentifier + 9));
+          }
+          return null;
+        }));
+      }
+
+      assertTrue(ready.await(5, TimeUnit.SECONDS));
+      start.countDown();
+      for (Future<Void> submission : submissions) {
+        submission.get(5, TimeUnit.SECONDS);
+      }
+      delegate.releaseWrites();
+      assertEventually(() -> queuedCanDevice.getPendingWriteCount() == 0, 5_000);
+
+      List<Integer> identifiers = delegate.getWrittenFrames().stream().map(CanFrame::canIdentifier).toList();
+      assertEquals(0, identifiers.getFirst());
+      assertEquals(expectedIdentifiers.stream().sorted().toList(), identifiers.subList(1, identifiers.size()).stream().sorted().toList());
+      for (int position = 1; position < identifiers.size(); position++) {
+        int identifier = identifiers.get(position);
+        if (identifier % 10 == 0) {
+          assertEquals(List.of(identifier, identifier + 1, identifier + 2), identifiers.subList(position, position + 3));
+          position += 2;
+        } else {
+          assertEquals(9, identifier % 10, "Only a complete group or a single frame may start here");
+        }
+      }
+      assertEquals(65, queuedCanDevice.getStats().getWrittenCount());
+      assertEquals(0, queuedCanDevice.getStats().getWriteFailureCount());
+    } finally {
+      start.countDown();
+      delegate.releaseWrites();
+      producers.shutdownNow();
+      try {
+        assertTrue(producers.awaitTermination(5, TimeUnit.SECONDS));
+      } finally {
+        queuedCanDevice.close();
+      }
+    }
+  }
+
+  @Test
+  void shouldRecordPartialGroupFailureWithoutRetryingItsPrefixOrWritingItsTail() throws Exception {
+    FailingMidGroupTestCanDevice delegate = new FailingMidGroupTestCanDevice();
+    QueuedCanDevice queuedCanDevice = new QueuedCanDevice(delegate, 10, 250_000, 100.0, QueueFullPolicy.REJECT_NEW, 0);
+
+    try {
+      queuedCanDevice.writeFrames(List.of(createFrame(10), createFrame(11), createFrame(12)));
+      queuedCanDevice.writeFrames(List.of(createFrame(20), createFrame(21)));
+      assertEventually(() -> queuedCanDevice.getPendingWriteCount() == 0);
+
+      assertEquals(List.of(10, 20, 21), delegate.getWrittenFrames().stream().map(CanFrame::canIdentifier).toList());
+      assertEquals(1, queuedCanDevice.getStats().getWriteFailureCount());
+      assertSame(delegate.failure, queuedCanDevice.getStats().getLastWriteException());
+      assertEquals(1, queuedCanDevice.getStats().getWrittenCount());
+    } finally {
+      queuedCanDevice.close();
+    }
+  }
+
+  @Test
+  void shouldCancelAGroupWaitingForBandwidthWhenClosed() throws Exception {
+    TestCanDevice delegate = new TestCanDevice();
+    QueuedCanDevice queuedCanDevice = new QueuedCanDevice(delegate, 10, 250_000, 0.000001, QueueFullPolicy.REJECT_NEW);
+
+    try {
+      queuedCanDevice.writeFrames(List.of(createFrame(10), createFrame(11), createFrame(12), createFrame(13)));
+      Field writerThreadField = QueuedCanDevice.class.getDeclaredField("writerThread");
+      writerThreadField.setAccessible(true);
+      Thread writerThread = (Thread) writerThreadField.get(queuedCanDevice);
+      assertEventually(() -> isWaitingForBandwidth(writerThread));
+      assertEquals(1, queuedCanDevice.getPendingWriteCount());
+
+      queuedCanDevice.close();
+
+      assertTrue(delegate.isClosed());
+      assertEquals(List.of(), delegate.getWrittenFrames());
+      assertEquals(0, queuedCanDevice.getPendingWriteCount());
+      assertEquals(0, queuedCanDevice.getStats().getWrittenCount());
+      assertEquals(0, queuedCanDevice.getStats().getWriteFailureCount());
+    } finally {
+      queuedCanDevice.close();
+    }
+  }
+
+  @Test
+  void shouldWriteGroupLargerThanBandwidthBucketAndContinueWithNextMessage() throws Exception {
+    TestCanDevice delegate = new TestCanDevice();
+    QueuedCanDevice queuedCanDevice = new QueuedCanDevice(delegate, 10, 250_000, 0.1, QueueFullPolicy.REJECT_NEW);
+    List<CanFrame> group = List.of(createFrame(10), createFrame(11), createFrame(12), createFrame(13));
+    CanFrame followingFrame = createFrame(20);
+
+    try {
+      // Four extended eight-byte frames exceed the minimum 512-bit bucket.
+      queuedCanDevice.writeFrames(group);
+      queuedCanDevice.writeFrame(followingFrame);
+
+      assertEventually(() -> queuedCanDevice.getPendingWriteCount() == 0, 6_000);
+
+      List<CanFrame> expected = new ArrayList<>(group);
+      expected.add(followingFrame);
+      assertEquals(expected, delegate.getWrittenFrames());
+      assertEquals(2, queuedCanDevice.getStats().getWrittenCount());
+      assertEquals(0, queuedCanDevice.getStats().getWriteFailureCount());
+    } finally {
+      queuedCanDevice.close();
+    }
+  }
 
   @Test
   void shouldWriteQueuedFrameToDelegate() throws Exception {
@@ -646,6 +786,18 @@ class QueuedCanDeviceTest {
     return new CanFrame(canIdentifier, true, data.length, data);
   }
 
+  private static boolean isWaitingForBandwidth(Thread writerThread) {
+    if (writerThread.getState() != Thread.State.TIMED_WAITING) {
+      return false;
+    }
+    for (StackTraceElement frame : writerThread.getStackTrace()) {
+      if (frame.getClassName().equals(QueuedCanDevice.class.getName()) && frame.getMethodName().equals("waitForBandwidth")) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   private static void assertEventually(BooleanSupplier condition) throws InterruptedException {
     assertEventually(condition, 2_000);
   }
@@ -787,6 +939,19 @@ class QueuedCanDeviceTest {
         throw new IOException("Synthetic write failure");
       }
 
+      super.writeFrame(canFrame);
+    }
+  }
+
+  private static final class FailingMidGroupTestCanDevice extends TestCanDevice {
+
+    private final IOException failure = new IOException("Synthetic failure after the first frame");
+
+    @Override
+    public void writeFrame(CanFrame canFrame) throws IOException {
+      if (canFrame.canIdentifier() == 11) {
+        throw failure;
+      }
       super.writeFrame(canFrame);
     }
   }

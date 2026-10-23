@@ -37,7 +37,7 @@ final class QueuedCanBandwidthLimiter {
   }
 
   synchronized long reserveOrDelayNanos(int requiredBits) {
-    refill();
+    refill(requiredBits);
 
     if (availableTokenBits >= requiredBits) {
       availableTokenBits -= requiredBits;
@@ -49,7 +49,7 @@ final class QueuedCanBandwidthLimiter {
     return (long) Math.ceil(waitSeconds * TimeUnit.SECONDS.toNanos(1));
   }
 
-  private void refill() {
+  private void refill(int requiredBits) {
     long currentNanos = System.nanoTime();
     long elapsedNanos = currentNanos - lastRefillNanos;
 
@@ -60,7 +60,9 @@ final class QueuedCanBandwidthLimiter {
     double elapsedSeconds = elapsedNanos / (double) TimeUnit.SECONDS.toNanos(1);
     double refillBits = elapsedSeconds * allowedBitsPerSecond;
 
-    availableTokenBits = Math.min(maximumTokenBits, availableTokenBits + refillBits);
+    // A complete group must fit before it can be reserved; ordinary requests retain the normal burst limit.
+    double effectiveMaximumTokenBits = Math.max(maximumTokenBits, requiredBits);
+    availableTokenBits = Math.min(effectiveMaximumTokenBits, availableTokenBits + refillBits);
     lastRefillNanos = currentNanos;
   }
 }
