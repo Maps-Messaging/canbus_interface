@@ -289,6 +289,7 @@ public final class QueuedCanDevice implements CanDevice, Closeable {
         throw new InterruptedException();
       }
     }
+    throw new InterruptedException("QueuedCanDevice is closing");
   }
 
   private static int estimateMessageBits(List<CanFrame> canFrames) {

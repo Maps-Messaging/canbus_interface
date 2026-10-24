@@ -29,6 +29,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 
@@ -38,6 +39,44 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class QueuedCanDeviceTest {
+
+  @Test
+  void shouldCancelDequeuedGroupWhenClosedBeforeBandwidthWaitStarts() throws Exception {
+    TestCanDevice delegate = new TestCanDevice();
+    QueuedCanDevice queuedCanDevice = new QueuedCanDevice(delegate, 10, 250_000, 100.0, QueueFullPolicy.REJECT_NEW);
+    PausingWriteQueue queue = new PausingWriteQueue();
+    Field queueField = QueuedCanDevice.class.getDeclaredField("queue");
+    queueField.setAccessible(true);
+    queueField.set(queuedCanDevice, queue);
+    ExecutorService closer = Executors.newSingleThreadExecutor();
+
+    try {
+      queuedCanDevice.writeFrames(List.of(createFrame(10), createFrame(11), createFrame(12)));
+      assertTrue(queue.dequeued.await(5, TimeUnit.SECONDS));
+
+      Future<Void> closeResult = closer.submit(() -> {
+        queuedCanDevice.close();
+        return null;
+      });
+      assertTrue(queue.interrupted.await(5, TimeUnit.SECONDS));
+      queue.release.countDown();
+      closeResult.get(5, TimeUnit.SECONDS);
+
+      assertTrue(delegate.isClosed());
+      assertEquals(List.of(), delegate.getWrittenFrames());
+      assertEquals(0, queuedCanDevice.getPendingWriteCount());
+      assertEquals(0, queuedCanDevice.getStats().getWrittenCount());
+      assertEquals(0, queuedCanDevice.getStats().getWriteFailureCount());
+    } finally {
+      queue.release.countDown();
+      closer.shutdownNow();
+      try {
+        assertTrue(closer.awaitTermination(5, TimeUnit.SECONDS));
+      } finally {
+        queuedCanDevice.close();
+      }
+    }
+  }
 
   @Test
   void shouldKeepConcurrentGroupsAndSingleFramesContiguousThroughTheQueue() throws Exception {
@@ -814,6 +853,41 @@ class QueuedCanDeviceTest {
     }
 
     assertTrue(condition.getAsBoolean());
+  }
+
+  private static final class PausingWriteQueue extends LinkedBlockingDeque<CanWriteMessage> {
+
+    private final CountDownLatch dequeued = new CountDownLatch(1);
+    private final CountDownLatch interrupted = new CountDownLatch(1);
+    private final CountDownLatch release = new CountDownLatch(1);
+
+    @Override
+    public CanWriteMessage poll(long timeout, TimeUnit unit) throws InterruptedException {
+      CanWriteMessage message = super.poll(timeout, unit);
+      if (message == null) {
+        return null;
+      }
+
+      // Reproduce shutdown after a successful dequeue, before waitForBandwidth is entered.
+      dequeued.countDown();
+      boolean restoreInterrupt = false;
+      boolean released = false;
+      while (!released) {
+        try {
+          if (!release.await(5, TimeUnit.SECONDS)) {
+            throw new AssertionError("Timed out releasing the dequeued group");
+          }
+          released = true;
+        } catch (InterruptedException exception) {
+          restoreInterrupt = true;
+          interrupted.countDown();
+        }
+      }
+      if (restoreInterrupt) {
+        Thread.currentThread().interrupt();
+      }
+      return message;
+    }
   }
 
   private static class TestCanDevice implements CanDevice {
