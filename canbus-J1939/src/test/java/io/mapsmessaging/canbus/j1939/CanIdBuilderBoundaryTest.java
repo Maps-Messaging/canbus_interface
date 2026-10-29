@@ -93,10 +93,21 @@ class CanIdBuilderBoundaryTest {
 
   @Test
   void build_rejects_out_of_range_pgn_instead_of_aliasing_valid_pgn() {
-    // Bit 18 is outside the J1939 PGN space; bit 17 is not exercised here.
-    for (int pgn : new int[]{-1, 0x40000, Integer.MAX_VALUE}) {
+    // This builder encodes one data-page bit, so its supported PGN maximum is 0x1FFFF.
+    for (int pgn : new int[]{Integer.MIN_VALUE, -1, 0x20000, 0x3FFFF, 0x40000, Integer.MAX_VALUE}) {
       assertThrows(IllegalArgumentException.class, () -> CanIdBuilder.build(pgn, 6, 42, 77),
           "PGN " + pgn);
     }
   }
+  @Test
+  void build_pdu2_validates_addresses_even_when_destination_is_not_encoded() {
+    for (int address : new int[]{Integer.MIN_VALUE, -1, 256, 300, Integer.MAX_VALUE}) {
+      assertAll("address " + address,
+          () -> assertThrows(IllegalArgumentException.class,
+              () -> CanIdBuilder.build(0x01F112, 6, address, 77)),
+          () -> assertThrows(IllegalArgumentException.class,
+              () -> CanIdBuilder.build(0x01F112, 6, 42, address)));
+    }
+  }
+
 }

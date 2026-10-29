@@ -84,16 +84,12 @@ class CanIdBuilderTest {
 
 
   @Test
-  void build_sourceAndDestinationAreMaskedTo8Bits() {
-    int pgn = 0x00EA00; // PF < 240 => destination used
-    int priority = 1;
-    int sourceAddress = 0x123;       // low byte = 0x23
-    int destinationAddress = 0x1FE;  // low byte = 0xFE
-
-    int id = CanIdBuilder.build(pgn, priority, sourceAddress, destinationAddress);
-
-    assertEquals(0x23, extractSa(id));
-    assertEquals(0xFE, extractPs(id));
+  void build_sourceAndDestinationOutside8BitsAreRejected() {
+    assertAll(
+        () -> assertThrows(IllegalArgumentException.class,
+            () -> CanIdBuilder.build(0x00EA00, 1, 0x123, 0x55)),
+        () -> assertThrows(IllegalArgumentException.class,
+            () -> CanIdBuilder.build(0x00EA00, 1, 0x23, 0x1FE)));
   }
 
   @Test
