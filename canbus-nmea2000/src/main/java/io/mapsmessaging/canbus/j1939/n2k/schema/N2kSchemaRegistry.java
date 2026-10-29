@@ -20,6 +20,7 @@ package io.mapsmessaging.canbus.j1939.n2k.schema;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import io.mapsmessaging.canbus.j1939.n2k.canboat.CanboatSchemas;
 import io.mapsmessaging.canbus.j1939.n2k.compile.N2kCompiledField;
 import io.mapsmessaging.canbus.j1939.n2k.compile.N2kCompiledMessage;
 import io.mapsmessaging.canbus.j1939.n2k.compile.N2kCompiledRegistry;
@@ -66,6 +67,9 @@ public class N2kSchemaRegistry {
   }
 
   private Map<Integer, JsonObject> buildSchemas() {
+    if (registry.getDatabase() != null) {
+      return CanboatSchemas.build(registry.getDatabase());
+    }
     Map<Integer, N2kCompiledMessage> messages = registry.getMessagesByPgn();
     java.util.HashMap<Integer, JsonObject> out = HashMap.newHashMap(messages.size());
 

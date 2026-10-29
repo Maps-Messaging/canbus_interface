@@ -18,6 +18,9 @@
 
 package io.mapsmessaging.canbus.j1939.n2k.parser;
 
+import io.mapsmessaging.canbus.j1939.n2k.canboat.CanboatDatabase;
+import io.mapsmessaging.canbus.j1939.n2k.canboat.CanboatDefinitions;
+
 import io.mapsmessaging.canbus.j1939.n2k.model.N2kFieldDefinition;
 import io.mapsmessaging.canbus.j1939.n2k.model.N2kFieldType;
 import io.mapsmessaging.canbus.j1939.n2k.model.N2kMessageDefinition;
@@ -40,7 +43,7 @@ import org.w3c.dom.Node;
 public class N2kXmlDialectParser {
 
   public static List<N2kMessageDefinition> parseFromClasspath() throws Exception {
-    return parseFromClasspath("n2k/NMEA_database_1_300.xml");
+    return parseFromClasspath("n2k/canboat.xml");
   }
 
   public static List<N2kMessageDefinition> parseFromClasspath(String resourcePath) throws Exception {
@@ -68,15 +71,16 @@ public class N2kXmlDialectParser {
     Document document = documentBuilderFactory.newDocumentBuilder().parse(inputStream);
     Element rootElement = document.getDocumentElement();
 
+    CanboatDatabase database = CanboatDatabase.child(rootElement, "SchemaVersion") == null ? null : CanboatDatabase.parse(rootElement);
     List<Element> pgnInfoElements = findElementsByTagName(rootElement, "PGNInfo");
 
     List<N2kMessageDefinition> messageDefinitions = new ArrayList<>(pgnInfoElements.size());
     for (Element pgnElement : pgnInfoElements) {
-      messageDefinitions.add(parsePgnInfo(pgnElement));
+      messageDefinitions.add(parsePgnInfo(pgnElement, database != null));
     }
 
     messageDefinitions.sort(Comparator.comparingInt(N2kMessageDefinition::getPgn));
-    return List.copyOf(messageDefinitions);
+    return database == null ? List.copyOf(messageDefinitions) : new CanboatDefinitions(messageDefinitions, database);
   }
 
   private static DocumentBuilderFactory createSecureDocumentBuilderFactory() throws ParserConfigurationException {
@@ -94,7 +98,7 @@ public class N2kXmlDialectParser {
     return factory;
   }
 
-  private static N2kMessageDefinition parsePgnInfo(Element pgnElement) {
+  private static N2kMessageDefinition parsePgnInfo(Element pgnElement, boolean modern) {
     int pgn = parseIntChildRequired(pgnElement, "PGN", "PGNInfo");
 
     String id = parseStringChild(pgnElement, "Id", null);
@@ -112,7 +116,7 @@ public class N2kXmlDialectParser {
     if (fieldsElement != null) {
       List<Element> fieldElements = directChildElements(fieldsElement, "Field");
       for (Element fieldElement : fieldElements) {
-        fieldDefinitions.add(parseField(fieldElement, pgn));
+        fieldDefinitions.add(parseField(fieldElement, pgn, modern));
       }
     }
 
@@ -151,7 +155,7 @@ public class N2kXmlDialectParser {
     }
   }
 
-  private static N2kFieldDefinition parseField(Element fieldElement, int pgn) {
+  private static N2kFieldDefinition parseField(Element fieldElement, int pgn, boolean modern) {
     int order = parseIntChildOptional(fieldElement, "Order", 0);
 
     String id = normalizeFieldId(parseStringChild(fieldElement, "Id", null));
@@ -161,6 +165,10 @@ public class N2kXmlDialectParser {
 
     String fieldTypeText = parseStringChild(fieldElement, "FieldType", null);
     N2kFieldType fieldType = resolveFieldType(fieldTypeText, typeInPdf, name);
+    if (!modern && switch (fieldType) {
+      case NUMBER, FLOAT, LOOKUP, RESERVED, STRING_FIX, STRING_LAU, REPEAT_MARKER -> false;
+      default -> true;
+    }) { fieldType = N2kFieldType.NUMBER; }
 
     Integer bitOffset = parseNullableIntChild(fieldElement, "BitOffset");
     Integer bitLength = parseNullableIntChild(fieldElement, "BitLength");

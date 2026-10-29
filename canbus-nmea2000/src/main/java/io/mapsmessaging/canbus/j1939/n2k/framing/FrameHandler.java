@@ -91,14 +91,20 @@ public class FrameHandler {
 
     CanId parsedCanId = CanId.parse(canIdentifier);
 
-    byte[] payload = tryAssemblePayload(parsedCanId, dataLengthCode, data);
+    byte[] payload;
+    try {
+      payload = tryAssemblePayload(parsedCanId, dataLengthCode, data);
+    } catch (UnsupportedOperationException exception) {
+      return Optional.of(new UnknownMessage(UnknownReason.UNSUPPORTED_PGN, parsedCanId,
+          canIdentifier, dataLengthCode, Arrays.copyOf(data, dataLengthCode), exception.getMessage()));
+    }
     if (payload == null) {
       return Optional.empty();
     }
 
     int pgn = parsedCanId.getPgn();
 
-    if (!payloadParser.getRegistry().getMessagesByPgn().containsKey(pgn)) {
+    if (payloadParser.getRegistry().getRequiredMessage(pgn) == null) {
       return Optional.of(new UnknownMessage(
           UnknownReason.UNSUPPORTED_PGN,
           parsedCanId,
