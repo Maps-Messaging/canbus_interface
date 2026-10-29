@@ -28,6 +28,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import lombok.experimental.UtilityClass;
+import io.mapsmessaging.canbus.j1939.n2k.canboat.CanboatDefinitions;
+import io.mapsmessaging.canbus.j1939.n2k.canboat.CanboatDatabase;
 
 @UtilityClass
 public class N2kCompiler {
@@ -35,12 +37,18 @@ public class N2kCompiler {
   public static N2kCompiledRegistry compile(List<N2kMessageDefinition> messageDefinitions) {
     Map<Integer, N2kCompiledMessage> messagesByPgn = HashMap.newHashMap(messageDefinitions.size());
 
+    Map<Integer, List<N2kCompiledMessage>> variants = new HashMap<>();
+    CanboatDatabase database = messageDefinitions instanceof CanboatDefinitions definitions ? definitions.getDatabase() : null;
     for (N2kMessageDefinition messageDefinition : messageDefinitions) {
       N2kCompiledMessage compiledMessage = compileMessage(messageDefinition);
-      messagesByPgn.put(compiledMessage.getPgn(), compiledMessage);
+      variants.computeIfAbsent(compiledMessage.getPgn(), ignored -> new ArrayList<>()).add(compiledMessage);
+      if (database == null) { messagesByPgn.put(compiledMessage.getPgn(), compiledMessage); }
+      else { messagesByPgn.putIfAbsent(compiledMessage.getPgn(), compiledMessage); }
     }
 
-    return new N2kCompiledRegistry(Map.copyOf(messagesByPgn));
+    Map<Integer, List<N2kCompiledMessage>> immutableVariants = new HashMap<>();
+    variants.forEach((key, value) -> immutableVariants.put(key, List.copyOf(value)));
+    return new N2kCompiledRegistry(messagesByPgn, immutableVariants, database);
   }
 
   private static int computeMinimumLengthBytes(List<N2kCompiledField> compiledFields) {

@@ -37,5 +37,17 @@ public class N2kParserFactory {
     return registry.get();
   }
 
+  private static final AtomicReference<N2kCompiledRegistry> j1939Registry = new AtomicReference<>();
+
+  /** J1939 definitions/codecs only; this does not install a transport protocol. */
+  public static N2kCompiledRegistry getJ1939Parser() throws Exception {
+    N2kCompiledRegistry current = j1939Registry.get();
+    if (current == null) {
+      current = N2kCompiler.compile(N2kXmlDialectParser.parseFromClasspath("n2k/canboat-j1939.xml"));
+      j1939Registry.compareAndSet(null, current);
+    }
+    return j1939Registry.get();
+  }
+
   private N2kParserFactory() {}
 }

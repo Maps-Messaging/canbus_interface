@@ -27,6 +27,7 @@ import java.util.Arrays;
 
 import io.mapsmessaging.canbus.j1939.n2k.model.N2kMessageLengthType;
 import lombok.Getter;
+import io.mapsmessaging.canbus.j1939.n2k.canboat.CanboatCodec;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
@@ -48,6 +49,7 @@ public class N2kMessageParser {
   private final N2kCompiledRegistry registry;
 
   public JsonObject decodeToJson(int pgn, byte[] payload) {
+    if (registry.getDatabase() != null) { return new CanboatCodec(registry.getDatabase()).decode(pgn, payload); }
     N2kCompiledMessage message = registry.getRequiredMessage(pgn);
     if (message == null) {
       return null;
@@ -80,6 +82,7 @@ public class N2kMessageParser {
   }
 
   public byte[] encodeFromJson(int pgn, JsonObject envelope) {
+    if (registry.getDatabase() != null) { return new CanboatCodec(registry.getDatabase()).encode(pgn, envelope); }
     N2kCompiledMessage message = registry.getRequiredMessage(pgn);
     if (message == null) {
       return new byte[0];
@@ -112,6 +115,7 @@ public class N2kMessageParser {
   }
 
   public byte[] encodeFromSource(int pgn, FieldValueSource source) {
+    if (registry.getDatabase() != null) { return new CanboatCodec(registry.getDatabase()).encode(pgn, source); }
     N2kCompiledMessage message = registry.getRequiredMessage(pgn);
     if (message == null) {
       return new byte[0];

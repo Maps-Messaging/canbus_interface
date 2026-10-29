@@ -35,7 +35,7 @@ class N2kCodecRoundTripTest {
   }
 
   @Test
-  void unknownPgn_decodesToJsonWithoutRegisteredMessage() throws Exception {
+  void unknownPgn_uses_canboat_range_fallback_without_losing_payload() throws Exception {
     N2kCompiledRegistry registry = buildRegistry();
     N2kMessageParser parser = new N2kMessageParser(registry);
 
@@ -52,7 +52,8 @@ class N2kCodecRoundTripTest {
     };
 
     JsonObject decodedBack = parser.decodeToJson(unknownPgn, payload);
-    assertNull(decodedBack);
+    assertNotNull(decodedBack);
+    assertArrayEquals(payload, java.util.Base64.getDecoder().decode(decodedBack.getAsJsonObject("packet").get("data").getAsString()));
   }
 
   @Test
@@ -61,9 +62,9 @@ class N2kCodecRoundTripTest {
     N2kMessageParser parser = new N2kMessageParser(registry);
 
     JsonObject decoded = new JsonObject();
-    decoded.addProperty("installationDescriptionField1", "Maps Messaging Server");
-    decoded.addProperty("installationDescriptionField2", "AIS Source Bridge");
-    decoded.addProperty("manufacturerInformationField3", "MapsMessaging B.V.");
+    decoded.addProperty("installationDescription1", "Maps Messaging Server");
+    decoded.addProperty("installationDescription2", "AIS Source Bridge");
+    decoded.addProperty("manufacturerInformation", "MapsMessaging B.V.");
 
     JsonObject envelope = new JsonObject();
     envelope.addProperty("pgn", 126998);
@@ -82,17 +83,17 @@ class N2kCodecRoundTripTest {
 
     assertEquals(
         "Maps Messaging Server",
-        decodedFields.get("installationDescriptionField1").getAsString()
+        decodedFields.get("installationDescription1").getAsString()
     );
 
     assertEquals(
         "AIS Source Bridge",
-        decodedFields.get("installationDescriptionField2").getAsString()
+        decodedFields.get("installationDescription2").getAsString()
     );
 
     assertEquals(
         "MapsMessaging B.V.",
-        decodedFields.get("manufacturerInformationField3").getAsString()
+        decodedFields.get("manufacturerInformation").getAsString()
     );
   }
 
@@ -102,7 +103,7 @@ class N2kCodecRoundTripTest {
     N2kMessageParser parser = new N2kMessageParser(registry);
 
     JsonObject decoded = new JsonObject();
-    decoded.addProperty("rudderInstance", 1);
+    decoded.addProperty("instance", 1);
     decoded.addProperty("directionOrder", 3);
     decoded.addProperty("angleOrder", 0.1234);
     decoded.addProperty("position", -0.2500);
@@ -117,7 +118,7 @@ class N2kCodecRoundTripTest {
     assertEquals("rudder", decodedBack.get("name").getAsString());
 
     JsonObject decodedFields = decodedBack.getAsJsonObject("packet");
-    assertEquals(1, decodedFields.get("rudderInstance").getAsInt());
+    assertEquals(1, decodedFields.get("instance").getAsInt());
     assertEquals(3, decodedFields.get("directionOrder").getAsInt());
 
     assertEquals(0.1234, decodedFields.get("angleOrder").getAsDouble(), 0.00005);
@@ -131,10 +132,10 @@ class N2kCodecRoundTripTest {
 
     JsonObject decoded = new JsonObject();
     decoded.addProperty("sid", 9);
-    decoded.addProperty("headingSensorReading", 1.2345);
+    decoded.addProperty("heading", 1.2345);
     decoded.addProperty("deviation", -0.1000);
     decoded.addProperty("variation", 0.2000);
-    decoded.addProperty("headingSensorReference", 2);
+    decoded.addProperty("reference", 2);
 
     JsonObject envelope = new JsonObject();
     envelope.addProperty("pgn", 127250);
@@ -147,9 +148,9 @@ class N2kCodecRoundTripTest {
 
     JsonObject decodedFields = decodedBack.getAsJsonObject("packet");
     assertEquals(9, decodedFields.get("sid").getAsInt());
-    assertEquals(2, decodedFields.get("headingSensorReference").getAsInt());
+    assertEquals(2, decodedFields.get("reference").getAsInt());
 
-    assertEquals(1.2345, decodedFields.get("headingSensorReading").getAsDouble(), 0.00005);
+    assertEquals(1.2345, decodedFields.get("heading").getAsDouble(), 0.00005);
     assertEquals(-0.1000, decodedFields.get("deviation").getAsDouble(), 0.00005);
     assertEquals(0.2000, decodedFields.get("variation").getAsDouble(), 0.00005);
   }
