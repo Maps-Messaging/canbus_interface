@@ -19,6 +19,8 @@ package io.mapsmessaging.canbus.j1939.n2k.framing;
 
 import com.google.gson.JsonObject;
 import io.mapsmessaging.canbus.j1939.n2k.codec.N2kMessageParser;
+import io.mapsmessaging.canbus.j1939.n2k.framing.message.KnownMessage;
+import io.mapsmessaging.canbus.j1939.n2k.framing.message.Message;
 import io.mapsmessaging.canbus.j1939.n2k.compile.N2kCompiledRegistry;
 import io.mapsmessaging.canbus.j1939.n2k.compile.N2kCompiler;
 import io.mapsmessaging.canbus.device.frames.CanFrame;
@@ -29,6 +31,7 @@ import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -119,6 +122,54 @@ class RegistryTransportDetectionTest {
     assertThrows(UnsupportedOperationException.class, () -> packer.pack(130000, 6, 42, 77, envelope()));
     N2kCompiledRegistry registry = registry(130000, "Unrecognised", 3);
     assertThrows(UnsupportedOperationException.class, () -> registry.getTransportType(130000, 3));
+  }
+
+  @Test
+  void receiver_reassembles_short_fast_packets_instead_of_decoding_headers() throws Exception {
+    for (int length : new int[]{1, 3, 4, 6, 7, 8}) {
+      N2kMessageParser parser = new N2kMessageParser(registry(130000, "Fast", length));
+      FrameHandler handler = new FrameHandler(parser);
+      byte[] payload = new byte[length];
+      for (int index = 0; index < length; index++) {
+        payload[index] = (byte) (index + 1);
+      }
+      List<CanFrame> frames = new FramePacker(parser)
+          .packFastPacket(130000, 0x19FBD02A, 42, 255, payload);
+      for (int index = 0; index < frames.size(); index++) {
+        CanFrame frame = frames.get(index);
+        Optional<Message> result = handler.onFrame(frame.canIdentifier(), true, frame.dataLengthCode(), frame.data());
+        if (index < frames.size() - 1) {
+          assertTrue(result.isEmpty(), "Incomplete fast packet, length " + length);
+        } else {
+          KnownMessage message = assertInstanceOf(KnownMessage.class, result.orElseThrow());
+          assertArrayEquals(payload, message.getPayload(), "Fast packet length " + length);
+        }
+      }
+    }
+  }
+
+  @Test
+  void receiver_preserves_inverter_ac_instance_from_short_fast_packet() throws Exception {
+    N2kMessageParser parser = new N2kMessageParser(N2kCompiler.compile(N2kXmlDialectParser.parseFromClasspath()));
+    FrameHandler handler = new FrameHandler(parser);
+    byte[] frame = {0, 4, 1, 0, 3, 0x54, 0, 0};
+
+    KnownMessage message = assertInstanceOf(KnownMessage.class,
+        handler.onFrame(0x19F2152A, true, 8, frame).orElseThrow());
+
+    assertArrayEquals(new byte[]{1, 0, 3, 0x54}, message.getPayload());
+    assertEquals(0, message.getDecoded().getAsJsonObject("packet").get("acInstance").getAsInt());
+  }
+
+  @Test
+  void receiver_keeps_single_frame_payload_that_resembles_fast_packet_header() throws Exception {
+    FrameHandler handler = new FrameHandler(new N2kMessageParser(registry()));
+    byte[] payload = {0, 9, 1};
+
+    KnownMessage message = assertInstanceOf(KnownMessage.class,
+        handler.onFrame(0x18EA4D2A, true, 3, payload).orElseThrow());
+
+    assertArrayEquals(payload, message.getPayload());
   }
 
   private static void assertFastPacket(List<CanFrame> frames, int payloadLength, int identifier) {
