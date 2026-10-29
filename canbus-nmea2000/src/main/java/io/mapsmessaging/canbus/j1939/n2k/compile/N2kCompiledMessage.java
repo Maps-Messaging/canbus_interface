@@ -32,6 +32,7 @@ public class N2kCompiledMessage {
   int pgn;
   String id;
   String description;
+  String type;
 
   N2kMessageLengthType lengthType;
   Integer fixedLengthBytes;

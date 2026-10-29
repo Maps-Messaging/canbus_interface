@@ -18,6 +18,8 @@
 
 package io.mapsmessaging.canbus.j1939.n2k.compile;
 
+import io.mapsmessaging.canbus.j1939.n2k.model.N2kTransportType;
+import java.util.Locale;
 import java.util.Map;
 import lombok.Value;
 
@@ -27,6 +29,28 @@ public class N2kCompiledRegistry {
 
   public N2kCompiledMessage getRequiredMessage(int pgn) {
     return messagesByPgn.get(pgn);
+  }
+
+  /** Resolve transport from registry metadata; only unknown short payloads have a fallback. */
+  public N2kTransportType getTransportType(int pgn, int payloadLength) {
+    if (payloadLength < 0) {
+      throw new IllegalArgumentException("Negative payload length for PGN " + pgn);
+    }
+    N2kCompiledMessage message = getRequiredMessage(pgn);
+    String type = message == null ? null : message.getType();
+    N2kTransportType transport = N2kTransportType.SINGLE_FRAME;
+    if (type != null && !type.isBlank()) {
+      transport = switch (type.trim().toLowerCase(Locale.ROOT)) {
+        case "single", "single_frame" -> N2kTransportType.SINGLE_FRAME;
+        case "fast", "fast_packet" -> N2kTransportType.FAST_PACKET;
+        case "iso", "transport_protocol" -> N2kTransportType.TRANSPORT_PROTOCOL;
+        default -> throw new UnsupportedOperationException("Unsupported transport '" + type + "' for PGN " + pgn);
+      };
+    }
+    if (transport == N2kTransportType.SINGLE_FRAME && payloadLength > 8) {
+      throw new IllegalArgumentException("PGN " + pgn + " requires single-frame payload length <= 8, got " + payloadLength);
+    }
+    return transport;
   }
 
 }

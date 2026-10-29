@@ -22,6 +22,7 @@ public class CanIdBuilder {
   private static final int EXTENDED_ID_MASK = 0x1FFFFFFF;
   private static final int PRIORITY_MASK = 0x07;
   private static final int BYTE_MASK = 0xFF;
+  private static final int MAX_PGN = 0x1FFFF;
   private static final int PDU1_MAX_PF = 239;
 
   private CanIdBuilder() {
@@ -37,13 +38,27 @@ public class CanIdBuilder {
    * - PS: bits 8..15 (dest for PDU1, or PGN low byte for PDU2)
    * - SA: bits 0..7
    *
+   * Supported PGN range: 0..0x1FFFF (one data-page bit).
+   *
    * PGN rules:
    * - PF < 240 => PDU1 => PS is destination, PGN low byte must be 0x00
    * - PF >= 240 => PDU2 => PS comes from PGN low byte, destination implied global
+   *
+   * @throws IllegalArgumentException if an input is outside its supported range or a PDU1 PGN has a nonzero low byte
    */
   public static int build(int pgn, int priority, int sourceAddress, int destinationAddress) {
     if (priority < 0 || priority > PRIORITY_MASK) {
       throw new IllegalArgumentException("priority must be in range 0..7, got " + priority);
+    }
+
+    if (pgn < 0 || pgn > MAX_PGN) {
+      throw new IllegalArgumentException("pgn must be in range 0.." + MAX_PGN + ", got " + pgn);
+    }
+    if (sourceAddress < 0 || sourceAddress > BYTE_MASK) {
+      throw new IllegalArgumentException("sourceAddress must be in range 0.." + BYTE_MASK + ", got " + sourceAddress);
+    }
+    if (destinationAddress < 0 || destinationAddress > BYTE_MASK) {
+      throw new IllegalArgumentException("destinationAddress must be in range 0.." + BYTE_MASK + ", got " + destinationAddress);
     }
 
     int prio = priority & PRIORITY_MASK;
