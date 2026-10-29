@@ -27,6 +27,7 @@ import io.mapsmessaging.canbus.j1939.n2k.framing.message.Message;
 import io.mapsmessaging.canbus.j1939.n2k.framing.message.UnknownMessage;
 import io.mapsmessaging.canbus.j1939.n2k.framing.message.UnknownReason;
 import io.mapsmessaging.canbus.j1939.n2k.model.N2kMessageLengthType;
+import io.mapsmessaging.canbus.j1939.n2k.model.N2kTransportType;
 import io.mapsmessaging.canbus.j1939.CanId;
 
 import java.util.Arrays;
@@ -143,9 +144,12 @@ public class FrameHandler {
     int firstByte = frameData[0] & 0xFF;
     int frameIndex = firstByte & 0x1F;
     int sequenceId = (firstByte >> 5) & 0x07;
+    N2kCompiledMessage compiled = payloadParser.getRegistry().getRequiredMessage(parsedCanId.getPgn());
+    if (compiled != null && payloadParser.getRegistry().getTransportType(parsedCanId.getPgn(), 0) == N2kTransportType.FAST_PACKET) {
+      return fastPacketAssembler.accept(parsedCanId, sequenceId, frameIndex, frameData);
+    }
     boolean looksLikeFastPacketStart = frameIndex == 0 && frameData.length >= 2 && ((frameData[1] & 0xFF) > 8);
     if (looksLikeFastPacketStart) {
-      N2kCompiledMessage compiled = payloadParser.getRegistry().getRequiredMessage(parsedCanId.getPgn());
       if (compiled != null) {
         if (compiled.getLengthType() == N2kMessageLengthType.FIXED && compiled.getFixedLengthBytes() <= 8) {
           looksLikeFastPacketStart = false;

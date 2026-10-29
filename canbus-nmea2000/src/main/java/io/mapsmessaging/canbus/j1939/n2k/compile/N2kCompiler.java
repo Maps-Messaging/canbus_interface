@@ -86,6 +86,7 @@ public class N2kCompiler {
         .pgn(messageDefinition.getPgn())
         .id(messageDefinition.getId())
         .description(messageDefinition.getDescription())
+        .type(messageDefinition.getType())
         .lengthType(messageDefinition.getLengthType())
         .fixedLengthBytes(messageDefinition.getFixedLengthBytes())
         .minimumLengthBytes(minimumLengthBytes)
