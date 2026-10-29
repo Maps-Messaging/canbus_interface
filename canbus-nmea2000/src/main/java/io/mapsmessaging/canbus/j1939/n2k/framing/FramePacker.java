@@ -22,6 +22,7 @@ import com.google.gson.JsonObject;
 import io.mapsmessaging.canbus.device.frames.CanFrame;
 import io.mapsmessaging.canbus.j1939.n2k.codec.N2kMessageParser;
 import io.mapsmessaging.canbus.j1939.CanIdBuilder;
+import io.mapsmessaging.canbus.j1939.n2k.model.N2kTransportType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -61,13 +62,15 @@ public class FramePacker {
 
     int canIdentifier = CanIdBuilder.build(pgn, priority, sourceAddress, destinationAddress);
 
-    if (payload.length <= 8) {
-      byte[] data = new byte[payload.length];
-      System.arraycopy(payload, 0, data, 0, payload.length);
-      return List.of(new CanFrame(canIdentifier, true, payload.length, data));
-    }
+    return switch (getTransportType(pgn, payload.length)) {
+      case SINGLE_FRAME -> List.of(new CanFrame(canIdentifier, true, payload.length, payload));
+      case FAST_PACKET -> packFastPacket(pgn, canIdentifier, sourceAddress, destinationAddress, payload);
+      case TRANSPORT_PROTOCOL -> throw new UnsupportedOperationException("Transport protocol is not supported for PGN " + pgn);
+    };
+  }
 
-    return packFastPacket(pgn, canIdentifier, sourceAddress, destinationAddress, payload);
+  public N2kTransportType getTransportType(int pgn, int payloadLength) {
+    return payloadEncoder.getRegistry().getTransportType(pgn, payloadLength);
   }
 
   public List<CanFrame> packFastPacket(

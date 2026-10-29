@@ -23,6 +23,7 @@ import io.mapsmessaging.canbus.j1939.n2k.compile.N2kCompiledRegistry;
 import io.mapsmessaging.canbus.j1939.n2k.compile.N2kCompiler;
 import io.mapsmessaging.canbus.device.frames.CanFrame;
 import io.mapsmessaging.canbus.j1939.n2k.model.N2kMessageDefinition;
+import io.mapsmessaging.canbus.j1939.n2k.model.N2kTransportType;
 import io.mapsmessaging.canbus.j1939.n2k.parser.N2kXmlDialectParser;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
@@ -89,6 +90,35 @@ class RegistryTransportDetectionTest {
         () -> packer.pack(130000, 6, 42, 77, envelope()));
     assertTrue(failure instanceof IllegalArgumentException || failure instanceof UnsupportedOperationException,
         "Expected an explicit unsupported transport rejection: " + failure);
+  }
+
+  @Test
+  void bundled_registry_transport_metadata_matches_required_pgns() throws Exception {
+    N2kCompiledRegistry registry = N2kCompiler.compile(N2kXmlDialectParser.parseFromClasspath());
+    for (int pgn : new int[]{59904, 60928, 126993}) {
+      assertEquals(N2kTransportType.SINGLE_FRAME, registry.getTransportType(pgn, 8));
+      assertThrows(IllegalArgumentException.class, () -> registry.getTransportType(pgn, 9));
+    }
+    for (int pgn : new int[]{126996, 126998}) {
+      assertEquals(N2kTransportType.FAST_PACKET, registry.getTransportType(pgn, 3));
+    }
+  }
+
+  @Test
+  void unknown_pgn_fallback_is_limited_to_single_frame_payloads() throws Exception {
+    N2kCompiledRegistry registry = registry();
+    for (int length : new int[]{0, 1, 8}) {
+      assertEquals(N2kTransportType.SINGLE_FRAME, registry.getTransportType(130001, length));
+    }
+    assertThrows(IllegalArgumentException.class, () -> registry.getTransportType(130001, 9));
+  }
+
+  @Test
+  void unsupported_type_is_rejected_even_for_short_payloads() throws Exception {
+    FramePacker packer = new FramePacker(new N2kMessageParser(registry(130000, "ISO", 3)));
+    assertThrows(UnsupportedOperationException.class, () -> packer.pack(130000, 6, 42, 77, envelope()));
+    N2kCompiledRegistry registry = registry(130000, "Unrecognised", 3);
+    assertThrows(UnsupportedOperationException.class, () -> registry.getTransportType(130000, 3));
   }
 
   private static void assertFastPacket(List<CanFrame> frames, int payloadLength, int identifier) {
