@@ -1,0 +1,1984 @@
+{
+  "upstreamCommit": "5b8340403e009b935f6a398b1ef0244a03e3d128",
+  "vectors": [
+    {
+      "id": "pgn-unit-coverage:1",
+      "protocol": "nmea2000",
+      "pgn": 65006,
+      "name": "utilityPhaseCAcReactivePower",
+      "transport": "Single",
+      "priority": 3,
+      "sourceAddress": 1,
+      "destinationAddress": 255,
+      "hex": "dc9935776676ffff",
+      "upstreamInput": "pgn-unit-coverage.in",
+      "upstreamOutput": "pgn-unit-coverage-si.out",
+      "line": 1,
+      "expected": {
+        "reactivePower": 1500,
+        "powerFactor": 0.8499756
+      },
+      "tolerances": {
+        "powerFactor": 5e-08
+      },
+      "normalization": {}
+    },
+    {
+      "id": "pgn-unit-coverage:2",
+      "protocol": "nmea2000",
+      "pgn": 65007,
+      "name": "utilityPhaseCAcPower",
+      "transport": "Single",
+      "priority": 3,
+      "sourceAddress": 1,
+      "destinationAddress": 255,
+      "hex": "10bb3577e0c23577",
+      "upstreamInput": "pgn-unit-coverage.in",
+      "upstreamOutput": "pgn-unit-coverage-si.out",
+      "line": 2,
+      "expected": {
+        "realPower": 10000,
+        "apparentPower": 12000
+      },
+      "tolerances": {},
+      "normalization": {}
+    },
+    {
+      "id": "pgn-unit-coverage:3",
+      "protocol": "nmea2000",
+      "pgn": 65008,
+      "name": "utilityPhaseCBasicAcQuantities",
+      "transport": "Single",
+      "priority": 3,
+      "sourceAddress": 1,
+      "destinationAddress": 255,
+      "hex": "9001e60000192000",
+      "upstreamInput": "pgn-unit-coverage.in",
+      "upstreamOutput": "pgn-unit-coverage-si.out",
+      "line": 3,
+      "expected": {
+        "lineLineAcRmsVoltage": 400,
+        "lineNeutralAcRmsVoltage": 230,
+        "acFrequency": 50,
+        "acRmsCurrent": 32
+      },
+      "tolerances": {
+        "acFrequency": 5e-06
+      },
+      "normalization": {}
+    },
+    {
+      "id": "pgn-unit-coverage:4",
+      "protocol": "nmea2000",
+      "pgn": 126720,
+      "name": "airmarCalibrateCompass",
+      "transport": "Fast",
+      "priority": 6,
+      "sourceAddress": 1,
+      "destinationAddress": 255,
+      "hex": "87982100000a6400640064001900ceff64007d000a001e00",
+      "upstreamInput": "pgn-unit-coverage.in",
+      "upstreamOutput": "pgn-unit-coverage-si.out",
+      "line": 4,
+      "expected": {
+        "verifyScore": 10,
+        "xAxisGainValue": 1,
+        "yAxisGainValue": 1,
+        "zAxisGainValue": 1,
+        "xAxisLinearOffset": 0.25,
+        "yAxisLinearOffset": -0.5,
+        "zAxisLinearOffset": 1,
+        "xAxisAngularOffset": 12.50022021636917,
+        "pitchAndRollDamping": 0.5,
+        "compassRateGyroDamping": 1.5
+      },
+      "tolerances": {
+        "xAxisGainValue": 0.005,
+        "yAxisGainValue": 0.005,
+        "zAxisGainValue": 0.005,
+        "xAxisLinearOffset": 0.005,
+        "yAxisLinearOffset": 0.005,
+        "zAxisLinearOffset": 0.005,
+        "xAxisAngularOffset": 0.00028647889756541165,
+        "pitchAndRollDamping": 0.005,
+        "compassRateGyroDamping": 0.005
+      },
+      "normalization": {
+        "xAxisAngularOffset": "CANboat SI -> declared deg"
+      }
+    },
+    {
+      "id": "pgn-unit-coverage:5",
+      "protocol": "nmea2000",
+      "pgn": 129027,
+      "name": "positionDeltaRapidUpdate",
+      "transport": "Single",
+      "priority": 2,
+      "sourceAddress": 1,
+      "destinationAddress": 255,
+      "hex": "0164407e058003f5",
+      "upstreamInput": "pgn-unit-coverage.in",
+      "upstreamOutput": "pgn-unit-coverage-si.out",
+      "line": 5,
+      "expected": {
+        "sid": 1,
+        "timeDelta": 0.5,
+        "latitudeDelta": 0.001,
+        "longitudeDelta": -0.002
+      },
+      "tolerances": {
+        "timeDelta": 0.0005,
+        "latitudeDelta": 5e-12,
+        "longitudeDelta": 5e-12
+      },
+      "normalization": {}
+    },
+    {
+      "id": "pgn-unit-coverage:6",
+      "protocol": "nmea2000",
+      "pgn": 129541,
+      "name": "gpsAlmanacData",
+      "transport": "Fast",
+      "priority": 6,
+      "sourceAddress": 1,
+      "destinationAddress": 255,
+      "hex": "05fc08ffc3640f713d7cf8cd0ca1000040cdcc4ccdcccc6998c8",
+      "upstreamInput": "pgn-unit-coverage.in",
+      "upstreamOutput": "pgn-unit-coverage-si.out",
+      "line": 6,
+      "expected": {
+        "prn": 5,
+        "gpsWeekNumber": 2300,
+        "svHealthBits": "/w==",
+        "eccentricity": 0.012300014,
+        "almanacReferenceTime": 61440,
+        "inclinationAngle": 0.0300006876742291,
+        "rateOfRightAscension": -6.9994752422384655e-09,
+        "rootOfSemiMajorAxis": 5153.600098,
+        "argumentOfPerigee": 0.5000000000652864,
+        "longitudeOfAscensionNode": 0.6000000238242613,
+        "meanAnomaly": -0.3999999763063117,
+        "clockParameter1": 0.000100136,
+        "clockParameter2": 1.00044e-09
+      },
+      "tolerances": {
+        "eccentricity": 5e-10,
+        "inclinationAngle": 1.5915494309189535e-09,
+        "rateOfRightAscension": 1e-12,
+        "rootOfSemiMajorAxis": 5e-07,
+        "argumentOfPerigee": 1.5915494309189535e-10,
+        "longitudeOfAscensionNode": 1.5915494309189535e-10,
+        "meanAnomaly": 1.5915494309189535e-10,
+        "clockParameter1": 5e-10,
+        "clockParameter2": 1e-12
+      },
+      "normalization": {
+        "inclinationAngle": "CANboat SI -> declared semi-circle",
+        "rateOfRightAscension": "CANboat SI -> declared semi-circle/s",
+        "argumentOfPerigee": "CANboat SI -> declared semi-circle",
+        "longitudeOfAscensionNode": "CANboat SI -> declared semi-circle",
+        "meanAnomaly": "CANboat SI -> declared semi-circle"
+      }
+    },
+    {
+      "id": "pgn-unit-coverage:7",
+      "protocol": "nmea2000",
+      "pgn": 130321,
+      "name": "salinityStationData",
+      "transport": "Fast",
+      "priority": 6,
+      "sourceAddress": 1,
+      "destinationAddress": 255,
+      "hex": "f0ffffffffffffffffff7fffffff7f00000e42577102010201",
+      "upstreamInput": "pgn-unit-coverage.in",
+      "upstreamOutput": "pgn-unit-coverage-si.out",
+      "line": 7,
+      "expected": {
+        "salinity": 35.5,
+        "waterTemperature": 290.15
+      },
+      "tolerances": {
+        "salinity": 0.05,
+        "waterTemperature": 0.005
+      },
+      "normalization": {
+        "salinity": "CANboat SI -> declared ppt"
+      }
+    },
+    {
+      "id": "pgn-unit-coverage:8",
+      "protocol": "nmea2000",
+      "pgn": 61184,
+      "name": "victronVeCanRegister",
+      "transport": "Single",
+      "priority": 7,
+      "sourceAddress": 227,
+      "destinationAddress": 255,
+      "hex": "669900032efbffff",
+      "upstreamInput": "pgn-unit-coverage.in",
+      "upstreamOutput": "pgn-unit-coverage-si.out",
+      "line": 8,
+      "expected": {
+        "value": -123.4
+      },
+      "tolerances": {
+        "value": 1e-12
+      },
+      "normalization": {
+        "value": "CANboat SI -> declared Ah"
+      }
+    },
+    {
+      "id": "pgn-unit-coverage:9",
+      "protocol": "nmea2000",
+      "pgn": 61184,
+      "name": "victronVeCanRegister",
+      "transport": "Single",
+      "priority": 7,
+      "sourceAddress": 227,
+      "destinationAddress": 255,
+      "hex": "66992803ff00ffff",
+      "upstreamInput": "pgn-unit-coverage.in",
+      "upstreamOutput": "pgn-unit-coverage-si.out",
+      "line": 9,
+      "expected": {
+        "value": 25.5
+      },
+      "tolerances": {
+        "value": 0.05
+      },
+      "normalization": {
+        "value": "CANboat SI -> declared %"
+      }
+    },
+    {
+      "id": "pgn-unit-coverage:10",
+      "protocol": "nmea2000",
+      "pgn": 61184,
+      "name": "victronVeCanRegister",
+      "transport": "Single",
+      "priority": 7,
+      "sourceAddress": 227,
+      "destinationAddress": 255,
+      "hex": "66990302a000ffff",
+      "upstreamInput": "pgn-unit-coverage.in",
+      "upstreamOutput": "pgn-unit-coverage-si.out",
+      "line": 10,
+      "expected": {
+        "value": 16
+      },
+      "tolerances": {
+        "value": 0.05
+      },
+      "normalization": {}
+    },
+    {
+      "id": "pgn-unit-coverage:11",
+      "protocol": "nmea2000",
+      "pgn": 61184,
+      "name": "victronVeCanRegister",
+      "transport": "Single",
+      "priority": 7,
+      "sourceAddress": 227,
+      "destinationAddress": 255,
+      "hex": "66990603e2040000",
+      "upstreamInput": "pgn-unit-coverage.in",
+      "upstreamOutput": "pgn-unit-coverage-si.out",
+      "line": 11,
+      "expected": {
+        "value": 12.5
+      },
+      "tolerances": {
+        "value": 0.005
+      },
+      "normalization": {}
+    },
+    {
+      "id": "pgn-unit-coverage:12",
+      "protocol": "nmea2000",
+      "pgn": 61184,
+      "name": "victronVeCanRegister",
+      "transport": "Single",
+      "priority": 7,
+      "sourceAddress": 227,
+      "destinationAddress": 255,
+      "hex": "66992a03b36affff",
+      "upstreamInput": "pgn-unit-coverage.in",
+      "upstreamOutput": "pgn-unit-coverage-si.out",
+      "line": 12,
+      "expected": {
+        "value": 273.15
+      },
+      "tolerances": {
+        "value": 0.005
+      },
+      "normalization": {}
+    },
+    {
+      "id": "pgn-unit-coverage:13",
+      "protocol": "nmea2000",
+      "pgn": 61184,
+      "name": "victronVeCanRegister",
+      "transport": "Single",
+      "priority": 7,
+      "sourceAddress": 227,
+      "destinationAddress": 255,
+      "hex": "66996eed0cfeffff",
+      "upstreamInput": "pgn-unit-coverage.in",
+      "upstreamOutput": "pgn-unit-coverage-si.out",
+      "line": 13,
+      "expected": {
+        "value": -500
+      },
+      "tolerances": {},
+      "normalization": {}
+    },
+    {
+      "id": "pgn-unit-coverage:14",
+      "protocol": "nmea2000",
+      "pgn": 130824,
+      "name": "mercuryEngineKeyValueData",
+      "transport": "Fast",
+      "priority": 3,
+      "sourceAddress": 16,
+      "destinationAddress": 255,
+      "hex": "9098b04140e201002021c801",
+      "upstreamInput": "pgn-unit-coverage.in",
+      "upstreamOutput": "pgn-unit-coverage-si.out",
+      "line": 14,
+      "expected": {
+        "list": [
+          {
+            "length": 4,
+            "value": 12.3456
+          },
+          {
+            "length": 2,
+            "value": 45.6
+          }
+        ]
+      },
+      "tolerances": {
+        "list/0/value": 5e-05,
+        "list/1/value": 0.05
+      },
+      "normalization": {
+        "list/0/value": "CANboat SI -> declared L",
+        "list/1/value": "CANboat SI -> declared %"
+      }
+    },
+    {
+      "id": "pgn-unit-coverage:15",
+      "protocol": "nmea2000",
+      "pgn": 130824,
+      "name": "bGKeyValueData",
+      "transport": "Fast",
+      "priority": 3,
+      "sourceAddress": 16,
+      "destinationAddress": 255,
+      "hex": "7d991c208f703220db03",
+      "upstreamInput": "pgn-unit-coverage.in",
+      "upstreamOutput": "pgn-unit-coverage-si.out",
+      "line": 15,
+      "expected": {
+        "list": [
+          {
+            "length": 2,
+            "value": 288.15
+          },
+          {
+            "length": 2,
+            "value": 98.7
+          }
+        ]
+      },
+      "tolerances": {
+        "list/0/value": 0.005,
+        "list/1/value": 0.05
+      },
+      "normalization": {
+        "list/1/value": "CANboat SI -> declared %"
+      }
+    },
+    {
+      "id": "pgn-si-units:1",
+      "protocol": "nmea2000",
+      "pgn": 65005,
+      "name": "utilityTotalAcEnergy",
+      "transport": "Single",
+      "priority": 3,
+      "sourceAddress": 130,
+      "destinationAddress": 255,
+      "hex": "111000002c010000",
+      "upstreamInput": "pgn-si-units.in",
+      "upstreamOutput": "pgn-si-units.out",
+      "line": 1,
+      "expected": {
+        "totalEnergyExport": 4113,
+        "totalEnergyImport": 300
+      },
+      "tolerances": {},
+      "normalization": {
+        "totalEnergyExport": "CANboat SI -> declared kWh",
+        "totalEnergyImport": "CANboat SI -> declared kWh"
+      }
+    },
+    {
+      "id": "pgn-si-units:2",
+      "protocol": "nmea2000",
+      "pgn": 127506,
+      "name": "dcDetailedStatus",
+      "transport": "Fast",
+      "priority": 6,
+      "sourceAddress": 1,
+      "destinationAddress": 255,
+      "hex": "0001003264ffffffff6400",
+      "upstreamInput": "pgn-si-units.in",
+      "upstreamOutput": "pgn-si-units.out",
+      "line": 2,
+      "expected": {
+        "sid": 0,
+        "instance": 1,
+        "stateOfCharge": 50,
+        "stateOfHealth": 100,
+        "remainingCapacity": 100
+      },
+      "tolerances": {
+        "stateOfCharge": 0.5,
+        "stateOfHealth": 0.5
+      },
+      "normalization": {
+        "stateOfCharge": "CANboat SI -> declared %",
+        "stateOfHealth": "CANboat SI -> declared %",
+        "remainingCapacity": "CANboat SI -> declared Ah"
+      }
+    },
+    {
+      "id": "pgn-si-units:3",
+      "protocol": "nmea2000",
+      "pgn": 127513,
+      "name": "batteryConfigurationStatus",
+      "transport": "Fast",
+      "priority": 6,
+      "sourceAddress": 1,
+      "destinationAddress": 255,
+      "hex": "000111c80005645aff",
+      "upstreamInput": "pgn-si-units.in",
+      "upstreamOutput": "pgn-si-units.out",
+      "line": 3,
+      "expected": {
+        "instance": 0,
+        "capacity": 200,
+        "temperatureCoefficient": 5,
+        "peukertExponent": 1.2,
+        "chargeEfficiencyFactor": 90
+      },
+      "tolerances": {
+        "temperatureCoefficient": 0.5,
+        "peukertExponent": 0.0005,
+        "chargeEfficiencyFactor": 0.5
+      },
+      "normalization": {
+        "capacity": "CANboat SI -> declared Ah",
+        "temperatureCoefficient": "CANboat SI -> declared %",
+        "chargeEfficiencyFactor": "CANboat SI -> declared %"
+      }
+    },
+    {
+      "id": "pgn-si-units:4",
+      "protocol": "nmea2000",
+      "pgn": 127505,
+      "name": "fluidLevel",
+      "transport": "Single",
+      "priority": 6,
+      "sourceAddress": 16,
+      "destinationAddress": 255,
+      "hex": "00405fffffffffff",
+      "upstreamInput": "pgn-si-units.in",
+      "upstreamOutput": "pgn-si-units.out",
+      "line": 4,
+      "expected": {
+        "instance": 0,
+        "level": 97.536
+      },
+      "tolerances": {
+        "level": 0.0005
+      },
+      "normalization": {
+        "level": "CANboat SI -> declared %"
+      }
+    },
+    {
+      "id": "pgn-si-units:5",
+      "protocol": "nmea2000",
+      "pgn": 130576,
+      "name": "smallCraftStatus",
+      "transport": "Single",
+      "priority": 2,
+      "sourceAddress": 1,
+      "destinationAddress": 255,
+      "hex": "ce19ffffffffffff",
+      "upstreamInput": "pgn-si-units.in",
+      "upstreamOutput": "pgn-si-units.out",
+      "line": 5,
+      "expected": {
+        "portTrimTab": -50,
+        "starboardTrimTab": 25
+      },
+      "tolerances": {
+        "portTrimTab": 0.5,
+        "starboardTrimTab": 0.5
+      },
+      "normalization": {
+        "portTrimTab": "CANboat SI -> declared %",
+        "starboardTrimTab": "CANboat SI -> declared %"
+      }
+    },
+    {
+      "id": "pgn-si-units:6",
+      "protocol": "nmea2000",
+      "pgn": 127488,
+      "name": "engineParametersRapidUpdate",
+      "transport": "Single",
+      "priority": 2,
+      "sourceAddress": 1,
+      "destinationAddress": 255,
+      "hex": "00201cffff7fffff",
+      "upstreamInput": "pgn-si-units.in",
+      "upstreamOutput": "pgn-si-units.out",
+      "line": 6,
+      "expected": {
+        "speed": 1800
+      },
+      "tolerances": {
+        "speed": 0.0003
+      },
+      "normalization": {
+        "speed": "CANboat SI -> declared rpm"
+      }
+    },
+    {
+      "id": "pgn-si-units:7",
+      "protocol": "nmea2000",
+      "pgn": 127489,
+      "name": "engineParametersDynamic",
+      "transport": "Fast",
+      "priority": 2,
+      "sourceAddress": 1,
+      "destinationAddress": 255,
+      "hex": "00ffffffffffffff7f7d00ffffffffffffffffffffffffff7f7f",
+      "upstreamInput": "pgn-si-units.in",
+      "upstreamOutput": "pgn-si-units.out",
+      "line": 7,
+      "expected": {
+        "fuelRate": 12.49992
+      },
+      "tolerances": {
+        "fuelRate": 0.00018
+      },
+      "normalization": {
+        "fuelRate": "CANboat SI -> declared L/h"
+      }
+    },
+    {
+      "id": "pgn-si-units:8",
+      "protocol": "nmea2000",
+      "pgn": 127496,
+      "name": "tripParametersVessel",
+      "transport": "Fast",
+      "priority": 5,
+      "sourceAddress": 1,
+      "destinationAddress": 255,
+      "hex": "ffffffffffffffff7b00ffffffff",
+      "upstreamInput": "pgn-si-units.in",
+      "upstreamOutput": "pgn-si-units.out",
+      "line": 8,
+      "expected": {
+        "estimatedFuelRemaining": 123
+      },
+      "tolerances": {
+        "estimatedFuelRemaining": 0.5
+      },
+      "normalization": {
+        "estimatedFuelRemaining": "CANboat SI -> declared L"
+      }
+    },
+    {
+      "id": "pgn-si-units:9",
+      "protocol": "nmea2000",
+      "pgn": 127497,
+      "name": "tripParametersEngine",
+      "transport": "Fast",
+      "priority": 5,
+      "sourceAddress": 1,
+      "destinationAddress": 255,
+      "hex": "002d006900ff7fff7f",
+      "upstreamInput": "pgn-si-units.in",
+      "upstreamOutput": "pgn-si-units.out",
+      "line": 9,
+      "expected": {
+        "tripFuelUsed": 45,
+        "fuelRateAverage": 10.50012
+      },
+      "tolerances": {
+        "tripFuelUsed": 0.5,
+        "fuelRateAverage": 0.00018
+      },
+      "normalization": {
+        "tripFuelUsed": "CANboat SI -> declared L",
+        "fuelRateAverage": "CANboat SI -> declared L/h"
+      }
+    },
+    {
+      "id": "pgn-si-units:10",
+      "protocol": "nmea2000",
+      "pgn": 129541,
+      "name": "gpsAlmanacData",
+      "transport": "Fast",
+      "priority": 6,
+      "sourceAddress": 1,
+      "destinationAddress": 255,
+      "hex": "05ffffffffffff7b14ff7fffffff0000c0000060000010fffbdf",
+      "upstreamInput": "pgn-si-units.in",
+      "upstreamOutput": "pgn-si-units.out",
+      "line": 10,
+      "expected": {
+        "prn": 5,
+        "svHealthBits": "/w==",
+        "inclinationAngle": 0.010000230285775989,
+        "argumentOfPerigee": -0.5000000000652864,
+        "longitudeOfAscensionNode": 0.7499999999387748,
+        "meanAnomaly": 0.1250000000958991
+      },
+      "tolerances": {
+        "inclinationAngle": 1.5915494309189535e-09,
+        "argumentOfPerigee": 1.5915494309189535e-10,
+        "longitudeOfAscensionNode": 1.5915494309189535e-10,
+        "meanAnomaly": 1.5915494309189535e-10
+      },
+      "normalization": {
+        "inclinationAngle": "CANboat SI -> declared semi-circle",
+        "argumentOfPerigee": "CANboat SI -> declared semi-circle",
+        "longitudeOfAscensionNode": "CANboat SI -> declared semi-circle",
+        "meanAnomaly": "CANboat SI -> declared semi-circle"
+      }
+    },
+    {
+      "id": "pgn-si-units:11",
+      "protocol": "nmea2000",
+      "pgn": 130324,
+      "name": "mooredBuoyStationData",
+      "transport": "Fast",
+      "priority": 6,
+      "sourceAddress": 1,
+      "destinationAddress": 255,
+      "hex": "ffffffffffffffffffff7fffffff7fffffffffffffffffffffffffff2400ffffffff0201",
+      "upstreamInput": "pgn-si-units.in",
+      "upstreamOutput": "pgn-si-units.out",
+      "line": 11,
+      "expected": {
+        "pressureTendencyRate": 360
+      },
+      "tolerances": {
+        "pressureTendencyRate": 0.018
+      },
+      "normalization": {
+        "pressureTendencyRate": "CANboat SI -> declared Pa/hr"
+      }
+    },
+    {
+      "id": "pgn-si-units:12",
+      "protocol": "nmea2000",
+      "pgn": 130567,
+      "name": "watermakerInputSettingAndStatus",
+      "transport": "Fast",
+      "priority": 6,
+      "sourceAddress": 1,
+      "destinationAddress": 255,
+      "hex": "ffffffff5e01ffffffffffffff7fffff5d02ff7fffffffff",
+      "upstreamInput": "pgn-si-units.in",
+      "upstreamOutput": "pgn-si-units.out",
+      "line": 12,
+      "expected": {
+        "salinity": 350,
+        "productWaterFlow": 60.50016
+      },
+      "tolerances": {
+        "salinity": 0.5,
+        "productWaterFlow": 0.00018
+      },
+      "normalization": {
+        "salinity": "CANboat SI -> declared ppm",
+        "productWaterFlow": "CANboat SI -> declared L/h"
+      }
+    },
+    {
+      "id": "pgn-si-units:13",
+      "protocol": "nmea2000",
+      "pgn": 130818,
+      "name": "furunoSensorSetup",
+      "transport": "Fast",
+      "priority": 7,
+      "sourceAddress": 1,
+      "destinationAddress": 255,
+      "hex": "3f9fffff7d00e7ff0f00ffffffffff7fffffff7fffffff7fff7fff7f",
+      "upstreamInput": "pgn-si-units.in",
+      "upstreamOutput": "pgn-si-units.out",
+      "line": 13,
+      "expected": {
+        "headingOffset": 12.50022021636917,
+        "pitchOffset": -2.499814860155782,
+        "rollOffset": 1.5000035076524953
+      },
+      "tolerances": {
+        "headingOffset": 0.00028647889756541165,
+        "pitchOffset": 0.00028647889756541165,
+        "rollOffset": 0.00028647889756541165
+      },
+      "normalization": {
+        "headingOffset": "CANboat SI -> declared deg",
+        "pitchOffset": "CANboat SI -> declared deg",
+        "rollOffset": "CANboat SI -> declared deg"
+      }
+    },
+    {
+      "id": "pgn-si-units:14",
+      "protocol": "nmea2000",
+      "pgn": 130825,
+      "name": "mercuryCruiseControlData",
+      "transport": "Fast",
+      "priority": 7,
+      "sourceAddress": 1,
+      "destinationAddress": 255,
+      "hex": "909804ffffffb80b100effffff",
+      "upstreamInput": "pgn-si-units.in",
+      "upstreamOutput": "pgn-si-units.out",
+      "line": 14,
+      "expected": {
+        "cruiseRpmSetpoint": 3000,
+        "cruiseSpeedSetpoint": 36
+      },
+      "tolerances": {
+        "cruiseRpmSetpoint": 0.003,
+        "cruiseSpeedSetpoint": 1.8e-05
+      },
+      "normalization": {
+        "cruiseRpmSetpoint": "CANboat SI -> declared rpm",
+        "cruiseSpeedSetpoint": "CANboat SI -> declared km/h"
+      }
+    },
+    {
+      "id": "pgn-string-encoding:1",
+      "protocol": "nmea2000",
+      "pgn": 129285,
+      "name": "navigationRouteWpInformation",
+      "transport": "Fast",
+      "priority": 7,
+      "sourceAddress": 28,
+      "destinationAddress": 255,
+      "hex": "01000200ffffffffe00d0146e66b6520726f7574e900ff00000d0155726174612079617264003796e41337aa664d01000d014d6174733f726120536500b71af2136c267e4d",
+      "upstreamInput": "pgn-string-encoding.in",
+      "upstreamOutput": "pgn-string-encoding.out",
+      "line": 1,
+      "expected": {
+        "startRps": 1,
+        "nitems": 2,
+        "navigationDirectionInRoute": 0,
+        "supplementaryRouteWpDataAvailable": 0,
+        "routeName": "Fæke routé",
+        "list": [
+          {
+            "wpId": 0,
+            "wpName": "Urata yard",
+            "wpLatitude": 33.3747767,
+            "wpLongitude": 129.8573879
+          },
+          {
+            "wpId": 1,
+            "wpName": "Mats?ra Se",
+            "wpLatitude": 33.4633655,
+            "wpLongitude": 130.0113004
+          }
+        ]
+      },
+      "tolerances": {
+        "list/0/wpLatitude": 5e-08,
+        "list/0/wpLongitude": 5e-08,
+        "list/1/wpLatitude": 5e-08,
+        "list/1/wpLongitude": 5e-08
+      },
+      "normalization": {}
+    },
+    {
+      "id": "pgn-string-encoding:2",
+      "protocol": "nmea2000",
+      "pgn": 126998,
+      "name": "configurationInformation",
+      "transport": "Fast",
+      "priority": 6,
+      "sourceAddress": 51,
+      "destinationAddress": 255,
+      "hex": "0a014d532d574236373011014d617473c5ab72612046c3a66bc3a91801467573696f6e20456c656374726f6e696373204c7464",
+      "upstreamInput": "pgn-string-encoding.in",
+      "upstreamOutput": "pgn-string-encoding.out",
+      "line": 2,
+      "expected": {
+        "installationDescription1": "MS-WB670",
+        "installationDescription2": "Matsūra Fæké",
+        "manufacturerInformation": "Fusion Electronics Ltd"
+      },
+      "tolerances": {},
+      "normalization": {}
+    },
+    {
+      "id": "pgn-string-encoding:3",
+      "protocol": "nmea2000",
+      "pgn": 130820,
+      "name": "fusionTrackName",
+      "transport": "Fast",
+      "priority": 7,
+      "sourceAddress": 51,
+      "destinationAddress": 255,
+      "hex": "a39905800a00000000104761627269656c6c61732073c3a56e6700",
+      "upstreamInput": "pgn-string-encoding.in",
+      "upstreamOutput": "pgn-string-encoding.out",
+      "line": 3,
+      "expected": {
+        "manufacturerCode": 419,
+        "industryCode": 4,
+        "messageId": 32773,
+        "sourceId": 10,
+        "index": 0,
+        "track": "Gabriellas sång"
+      },
+      "tolerances": {},
+      "normalization": {}
+    },
+    {
+      "id": "pgn-string-encoding:4",
+      "protocol": "nmea2000",
+      "pgn": 126998,
+      "name": "configurationInformation",
+      "transport": "Fast",
+      "priority": 6,
+      "sourceAddress": 13,
+      "destinationAddress": 255,
+      "hex": "28ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff28ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0201",
+      "upstreamInput": "pgn-string-encoding.in",
+      "upstreamOutput": "pgn-string-encoding.out",
+      "line": 4,
+      "expected": {
+        "installationDescription1": "",
+        "installationDescription2": ""
+      },
+      "tolerances": {},
+      "normalization": {},
+      "representation": "Undefined LAU strings are represented as empty strings; upstream omits their fields."
+    },
+    {
+      "id": "pgn-string-encoding:5",
+      "protocol": "nmea2000",
+      "pgn": 130820,
+      "name": "fusionTuner",
+      "transport": "Fast",
+      "priority": 7,
+      "sourceAddress": 12,
+      "destinationAddress": 255,
+      "hex": "a3990b800102e0516806c708426f6875736c916e00",
+      "upstreamInput": "pgn-string-encoding.in",
+      "upstreamOutput": "pgn-string-encoding.out",
+      "line": 5,
+      "expected": {
+        "manufacturerCode": 419,
+        "industryCode": 4,
+        "messageId": 32779,
+        "sourceId": 1,
+        "scanning": 2,
+        "frequency": 107500000,
+        "signalStrength": 199,
+        "track": "Bohuslän"
+      },
+      "tolerances": {},
+      "normalization": {}
+    },
+    {
+      "id": "pgn-string-encoding:6",
+      "protocol": "nmea2000",
+      "pgn": 126998,
+      "name": "configurationInformation",
+      "transport": "Fast",
+      "priority": 6,
+      "sourceAddress": 51,
+      "destinationAddress": 255,
+      "hex": "050141ff4202010201",
+      "upstreamInput": "pgn-string-encoding.in",
+      "upstreamOutput": "pgn-string-encoding.out",
+      "line": 6,
+      "expected": {
+        "installationDescription1": "AÿB"
+      },
+      "tolerances": {},
+      "normalization": {}
+    },
+    {
+      "id": "pgn-decimal:1",
+      "protocol": "nmea2000",
+      "pgn": 129808,
+      "name": "dscDistressCallInformation",
+      "transport": "Fast",
+      "priority": 3,
+      "sourceAddress": 1,
+      "destinationAddress": 255,
+      "hex": "706c17324c271e27ffff",
+      "upstreamInput": "pgn-decimal.in",
+      "upstreamOutput": "pgn-decimal.out",
+      "line": 1,
+      "expected": {
+        "dscMessageAddress": "235076393",
+        "natureOfDistress": 39
+      },
+      "tolerances": {},
+      "normalization": {},
+      "reject": true
+    },
+    {
+      "id": "pgn-decimal:2",
+      "protocol": "nmea2000",
+      "pgn": 129808,
+      "name": "dscDistressCallInformation",
+      "transport": "Fast",
+      "priority": 3,
+      "sourceAddress": 1,
+      "destinationAddress": 255,
+      "hex": "706c1732ab271e27ffff",
+      "upstreamInput": "pgn-decimal.in",
+      "upstreamOutput": "pgn-decimal.out",
+      "line": 2,
+      "expected": {
+        "natureOfDistress": 39
+      },
+      "tolerances": {},
+      "normalization": {},
+      "reject": true
+    },
+    {
+      "id": "pgn-decimal:3",
+      "protocol": "nmea2000",
+      "pgn": 129808,
+      "name": "dscDistressCallInformation",
+      "transport": "Fast",
+      "priority": 3,
+      "sourceAddress": 1,
+      "destinationAddress": 255,
+      "hex": "706c1732",
+      "upstreamInput": "pgn-decimal.in",
+      "upstreamOutput": "pgn-decimal.out",
+      "line": 3,
+      "expected": {},
+      "tolerances": {},
+      "normalization": {},
+      "reject": true
+    },
+    {
+      "id": "pgn-decimal:4",
+      "protocol": "nmea2000",
+      "pgn": 129808,
+      "name": "dscCallInformation",
+      "transport": "Fast",
+      "priority": 3,
+      "sourceAddress": 1,
+      "destinationAddress": 255,
+      "hex": "786c18283c504627ffff",
+      "upstreamInput": "pgn-decimal.in",
+      "upstreamOutput": "pgn-decimal.out",
+      "line": 4,
+      "expected": {
+        "dscMessageAddress": "244060807",
+        "1stTelecommand": 39
+      },
+      "tolerances": {},
+      "normalization": {},
+      "reject": true
+    },
+    {
+      "id": "pgn-decimal:5",
+      "protocol": "nmea2000",
+      "pgn": 129808,
+      "name": "dscCallInformation",
+      "transport": "Fast",
+      "priority": 3,
+      "sourceAddress": 1,
+      "destinationAddress": 255,
+      "hex": "786c001629022827ffff",
+      "upstreamInput": "pgn-decimal.in",
+      "upstreamOutput": "pgn-decimal.out",
+      "line": 5,
+      "expected": {
+        "dscMessageAddress": "002241024",
+        "1stTelecommand": 39
+      },
+      "tolerances": {},
+      "normalization": {},
+      "reject": true
+    },
+    {
+      "id": "pgn-decimal:6",
+      "protocol": "nmea2000",
+      "pgn": 129808,
+      "name": "dscCallInformation",
+      "transport": "Fast",
+      "priority": 3,
+      "sourceAddress": 1,
+      "destinationAddress": 255,
+      "hex": "786c18283c504727ffff",
+      "upstreamInput": "pgn-decimal.in",
+      "upstreamOutput": "pgn-decimal.out",
+      "line": 6,
+      "expected": {
+        "dscMessageAddress": "2440608071",
+        "1stTelecommand": 39
+      },
+      "tolerances": {},
+      "normalization": {},
+      "reject": true
+    },
+    {
+      "id": "pgn-decimal:7",
+      "protocol": "nmea2000",
+      "pgn": 129808,
+      "name": "dscCallInformation",
+      "transport": "Fast",
+      "priority": 3,
+      "sourceAddress": 1,
+      "destinationAddress": 255,
+      "hex": "666c0f1404050a27ffff",
+      "upstreamInput": "pgn-decimal.in",
+      "upstreamOutput": "pgn-decimal.out",
+      "line": 7,
+      "expected": {
+        "dscMessageAddress": "1520040510",
+        "1stTelecommand": 39
+      },
+      "tolerances": {},
+      "normalization": {},
+      "reject": true
+    },
+    {
+      "id": "pgn-decimal:8",
+      "protocol": "nmea2000",
+      "pgn": 129808,
+      "name": "dscDistressAcknowledgementOrRelay",
+      "transport": "Fast",
+      "priority": 3,
+      "sourceAddress": 1,
+      "destinationAddress": 255,
+      "hex": "66700f1404050a6effff",
+      "upstreamInput": "pgn-decimal.in",
+      "upstreamOutput": "pgn-decimal.out",
+      "line": 8,
+      "expected": {
+        "dscMessageAddress": "1520040510"
+      },
+      "tolerances": {},
+      "normalization": {},
+      "reject": true
+    },
+    {
+      "id": "pgn-decimal:9",
+      "protocol": "nmea2000",
+      "pgn": 129808,
+      "name": "dscCallInformation",
+      "transport": "Fast",
+      "priority": 3,
+      "sourceAddress": 1,
+      "destinationAddress": 255,
+      "hex": "786c0f1404050a27ffff",
+      "upstreamInput": "pgn-decimal.in",
+      "upstreamOutput": "pgn-decimal.out",
+      "line": 9,
+      "expected": {
+        "dscMessageAddress": "152004051",
+        "1stTelecommand": 39
+      },
+      "tolerances": {},
+      "normalization": {},
+      "reject": true
+    },
+    {
+      "id": "pgn-decimal:10",
+      "protocol": "nmea2000",
+      "pgn": 129808,
+      "name": "dscDistressAcknowledgementOrRelay",
+      "transport": "Fast",
+      "priority": 3,
+      "sourceAddress": 1,
+      "destinationAddress": 255,
+      "hex": "66700f1404050a6e6eff",
+      "upstreamInput": "pgn-decimal.in",
+      "upstreamOutput": "pgn-decimal.out",
+      "line": 10,
+      "expected": {
+        "dscMessageAddress": "1520040510"
+      },
+      "tolerances": {},
+      "normalization": {},
+      "reject": true
+    },
+    {
+      "id": "pgn-bitlookup-64:1",
+      "protocol": "nmea2000",
+      "pgn": 130820,
+      "name": "fusionSystemCapabilities",
+      "transport": "Fast",
+      "priority": 7,
+      "sourceAddress": 51,
+      "destinationAddress": 255,
+      "hex": "a3993d809bb4a9fefeea1900",
+      "upstreamInput": "pgn-bitlookup-64.in",
+      "upstreamOutput": "pgn-bitlookup-64.out",
+      "line": 1,
+      "expected": {
+        "manufacturerCode": 419,
+        "industryCode": 4,
+        "messageId": 32829,
+        "capabilities": 7295255332893851
+      },
+      "tolerances": {},
+      "normalization": {}
+    },
+    {
+      "id": "pgn-bitlookup-64:2",
+      "protocol": "nmea2000",
+      "pgn": 130820,
+      "name": "fusionSystemCapabilities",
+      "transport": "Fast",
+      "priority": 7,
+      "sourceAddress": 12,
+      "destinationAddress": 255,
+      "hex": "a3993d808364001800140000",
+      "upstreamInput": "pgn-bitlookup-64.in",
+      "upstreamOutput": "pgn-bitlookup-64.out",
+      "line": 2,
+      "expected": {
+        "manufacturerCode": 419,
+        "industryCode": 4,
+        "messageId": 32829,
+        "capabilities": 21990635234435
+      },
+      "tolerances": {},
+      "normalization": {}
+    },
+    {
+      "id": "pgn-bitlookup-64:3",
+      "protocol": "nmea2000",
+      "pgn": 130820,
+      "name": "fusionSystemCapabilities",
+      "transport": "Fast",
+      "priority": 7,
+      "sourceAddress": 51,
+      "destinationAddress": 255,
+      "hex": "a3993d800100000000000080",
+      "upstreamInput": "pgn-bitlookup-64.in",
+      "upstreamOutput": "pgn-bitlookup-64.out",
+      "line": 3,
+      "expected": {
+        "manufacturerCode": 419,
+        "industryCode": 4,
+        "messageId": 32829,
+        "capabilities": 9223372036854775809
+      },
+      "tolerances": {},
+      "normalization": {}
+    },
+    {
+      "id": "j1939-unit-coverage:1",
+      "protocol": "j1939",
+      "pgn": 61450,
+      "name": "engineGasFlowRate1",
+      "transport": "Single",
+      "priority": 6,
+      "sourceAddress": 0,
+      "destinationAddress": 255,
+      "hex": "70171027ffffffff",
+      "upstreamInput": "j1939-unit-coverage.in",
+      "upstreamOutput": "j1939-unit-coverage-si.out",
+      "line": 1,
+      "expected": {
+        "engineExhaustGasRecirculation1MassFlowRate": 299.99988,
+        "engineIntakeAirMassFlowRate": 500.00004
+      },
+      "tolerances": {
+        "engineExhaustGasRecirculation1MassFlowRate": 0.00018,
+        "engineIntakeAirMassFlowRate": 0.00018
+      },
+      "normalization": {
+        "engineExhaustGasRecirculation1MassFlowRate": "CANboat SI -> declared kg/h",
+        "engineIntakeAirMassFlowRate": "CANboat SI -> declared kg/h"
+      }
+    },
+    {
+      "id": "j1939-unit-coverage:2",
+      "protocol": "j1939",
+      "pgn": 64776,
+      "name": "engineOilMessage",
+      "transport": "Single",
+      "priority": 6,
+      "sourceAddress": 0,
+      "destinationAddress": 255,
+      "hex": "800ccd6cffff652d",
+      "upstreamInput": "j1939-unit-coverage.in",
+      "upstreamOutput": "j1939-unit-coverage-si.out",
+      "line": 2,
+      "expected": {
+        "engineOilViscosity": 50,
+        "engineOilDensity": 0.8500061,
+        "engineOilTemperature3": 363.3062
+      },
+      "tolerances": {
+        "engineOilViscosity": 5e-05,
+        "engineOilDensity": 5e-08,
+        "engineOilTemperature3": 5e-05
+      },
+      "normalization": {
+        "engineOilViscosity": "CANboat SI -> declared cP",
+        "engineOilDensity": "CANboat SI -> declared g/cm3"
+      }
+    },
+    {
+      "id": "j1939-unit-coverage:3",
+      "protocol": "j1939",
+      "pgn": 65005,
+      "name": "utilityTotalAcEnergy",
+      "transport": "Single",
+      "priority": 6,
+      "sourceAddress": 0,
+      "destinationAddress": 255,
+      "hex": "111000002c010000",
+      "upstreamInput": "j1939-unit-coverage.in",
+      "upstreamOutput": "j1939-unit-coverage-si.out",
+      "line": 3,
+      "expected": {
+        "totalEnergyExport": 4113,
+        "totalEnergyImport": 300
+      },
+      "tolerances": {},
+      "normalization": {
+        "totalEnergyExport": "CANboat SI -> declared kWh",
+        "totalEnergyImport": "CANboat SI -> declared kWh"
+      }
+    },
+    {
+      "id": "j1939-unit-coverage:4",
+      "protocol": "j1939",
+      "pgn": 65001,
+      "name": "bus1PhaseCBasicAcQuantities",
+      "transport": "Single",
+      "priority": 6,
+      "sourceAddress": 0,
+      "destinationAddress": 255,
+      "hex": "9001e6000019ffff",
+      "upstreamInput": "j1939-unit-coverage.in",
+      "upstreamOutput": "j1939-unit-coverage-si.out",
+      "line": 4,
+      "expected": {
+        "lineLineAcRmsVoltage": 400,
+        "lineNeutralAcRmsVoltage": 230,
+        "acFrequency": 50
+      },
+      "tolerances": {
+        "acFrequency": 5e-06
+      },
+      "normalization": {}
+    },
+    {
+      "id": "j1939-unit-coverage:5",
+      "protocol": "j1939",
+      "pgn": 65006,
+      "name": "utilityPhaseCAcReactivePower",
+      "transport": "Single",
+      "priority": 6,
+      "sourceAddress": 0,
+      "destinationAddress": 255,
+      "hex": "dc9935776676ffff",
+      "upstreamInput": "j1939-unit-coverage.in",
+      "upstreamOutput": "j1939-unit-coverage-si.out",
+      "line": 5,
+      "expected": {
+        "reactivePower": 1500,
+        "powerFactor": 0.8499756
+      },
+      "tolerances": {
+        "powerFactor": 5e-08
+      },
+      "normalization": {}
+    },
+    {
+      "id": "j1939-unit-coverage:6",
+      "protocol": "j1939",
+      "pgn": 65007,
+      "name": "utilityPhaseCAcPower",
+      "transport": "Single",
+      "priority": 6,
+      "sourceAddress": 0,
+      "destinationAddress": 255,
+      "hex": "10bb3577e0c23577",
+      "upstreamInput": "j1939-unit-coverage.in",
+      "upstreamOutput": "j1939-unit-coverage-si.out",
+      "line": 6,
+      "expected": {
+        "realPower": 10000,
+        "apparentPower": 12000
+      },
+      "tolerances": {},
+      "normalization": {}
+    },
+    {
+      "id": "j1939-unit-coverage:7",
+      "protocol": "j1939",
+      "pgn": 65008,
+      "name": "utilityPhaseCBasicAcQuantities",
+      "transport": "Single",
+      "priority": 6,
+      "sourceAddress": 0,
+      "destinationAddress": 255,
+      "hex": "9001e60000192000",
+      "upstreamInput": "j1939-unit-coverage.in",
+      "upstreamOutput": "j1939-unit-coverage-si.out",
+      "line": 7,
+      "expected": {
+        "lineLineAcRmsVoltage": 400,
+        "lineNeutralAcRmsVoltage": 230,
+        "acFrequency": 50,
+        "acRmsCurrent": 32
+      },
+      "tolerances": {
+        "acFrequency": 5e-06
+      },
+      "normalization": {}
+    },
+    {
+      "id": "j1939-unit-coverage:8",
+      "protocol": "j1939",
+      "pgn": 65253,
+      "name": "engineHours",
+      "transport": "Single",
+      "priority": 6,
+      "sourceAddress": 0,
+      "destinationAddress": 255,
+      "hex": "7ec4030040e20100",
+      "upstreamInput": "j1939-unit-coverage.in",
+      "upstreamOutput": "j1939-unit-coverage-si.out",
+      "line": 8,
+      "expected": {
+        "engineTotalHoursOfOperation": 44443800,
+        "engineTotalRevolutions": 123456000
+      },
+      "tolerances": {},
+      "normalization": {}
+    },
+    {
+      "id": "j1939-unit-coverage:9",
+      "protocol": "j1939",
+      "pgn": 65266,
+      "name": "fuelEconomy",
+      "transport": "Single",
+      "priority": 6,
+      "sourceAddress": 0,
+      "destinationAddress": 255,
+      "hex": "fa00ffffffff7dff",
+      "upstreamInput": "j1939-unit-coverage.in",
+      "upstreamOutput": "j1939-unit-coverage-si.out",
+      "line": 9,
+      "expected": {
+        "fuelRate": 12.49992,
+        "throttlePosition": 50
+      },
+      "tolerances": {
+        "fuelRate": 0.00018,
+        "throttlePosition": 0.05
+      },
+      "normalization": {
+        "fuelRate": "CANboat SI -> declared L/h",
+        "throttlePosition": "CANboat SI -> declared %"
+      }
+    },
+    {
+      "id": "j1939-temperature:1",
+      "protocol": "j1939",
+      "pgn": 65262,
+      "name": "engineTemp1",
+      "transport": "Single",
+      "priority": 6,
+      "sourceAddress": 0,
+      "destinationAddress": 255,
+      "hex": "5a00a02effffffff",
+      "upstreamInput": "j1939-temperature.in",
+      "upstreamOutput": "j1939-temperature-si.out",
+      "line": 1,
+      "expected": {
+        "engineCoolantTemp": 323.15,
+        "engineFuelTemp": 233.15,
+        "engineOilTemp": 373.15
+      },
+      "tolerances": {
+        "engineCoolantTemp": 0.005,
+        "engineFuelTemp": 0.005,
+        "engineOilTemp": 5e-05
+      },
+      "normalization": {}
+    },
+    {
+      "id": "j1939-temperature:2",
+      "protocol": "j1939",
+      "pgn": 65262,
+      "name": "engineTemp1",
+      "transport": "Single",
+      "priority": 6,
+      "sourceAddress": 0,
+      "destinationAddress": 255,
+      "hex": "fffe0000fdffffff",
+      "upstreamInput": "j1939-temperature.in",
+      "upstreamOutput": "j1939-temperature-si.out",
+      "line": 2,
+      "expected": {
+        "engineOilTemp": 0.15
+      },
+      "tolerances": {
+        "engineOilTemp": 5e-05
+      },
+      "normalization": {}
+    },
+    {
+      "id": "pgn-decimal:1:complete-layout",
+      "protocol": "nmea2000",
+      "pgn": 129808,
+      "name": "dscDistressCallInformation",
+      "transport": "Fast",
+      "priority": 3,
+      "sourceAddress": 1,
+      "destinationAddress": 255,
+      "hex": "706c17324c271e27ffffffffffffffffffffffffff0201ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "upstreamInput": "pgn-decimal.in",
+      "upstreamOutput": "pgn-decimal.out",
+      "line": 1,
+      "expected": {
+        "dscMessageAddress": "235076393",
+        "natureOfDistress": 39
+      },
+      "tolerances": {},
+      "normalization": {},
+      "derivation": "Upstream prefix unchanged; pad unavailable fixed fields and insert empty LAU telephone at byte 21."
+    },
+    {
+      "id": "pgn-decimal:2:complete-layout",
+      "protocol": "nmea2000",
+      "pgn": 129808,
+      "name": "dscDistressCallInformation",
+      "transport": "Fast",
+      "priority": 3,
+      "sourceAddress": 1,
+      "destinationAddress": 255,
+      "hex": "706c1732ab271e27ffffffffffffffffffffffffff0201ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "upstreamInput": "pgn-decimal.in",
+      "upstreamOutput": "pgn-decimal.out",
+      "line": 2,
+      "expected": {
+        "natureOfDistress": 39
+      },
+      "tolerances": {},
+      "normalization": {},
+      "derivation": "Upstream prefix unchanged; pad unavailable fixed fields and insert empty LAU telephone at byte 21.",
+      "reject": true,
+      "rejectionMessage": "Invalid decimal pair",
+      "representation": "Preserve the codec existing strict rejection of invalid decimal pairs; upstream omits the value."
+    },
+    {
+      "id": "pgn-decimal:4:complete-layout",
+      "protocol": "nmea2000",
+      "pgn": 129808,
+      "name": "dscCallInformation",
+      "transport": "Fast",
+      "priority": 3,
+      "sourceAddress": 1,
+      "destinationAddress": 255,
+      "hex": "786c18283c504627ffffffffffffffffffffffffff0201ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "upstreamInput": "pgn-decimal.in",
+      "upstreamOutput": "pgn-decimal.out",
+      "line": 4,
+      "expected": {
+        "dscMessageAddress": "244060807",
+        "1stTelecommand": 39
+      },
+      "tolerances": {},
+      "normalization": {},
+      "derivation": "Upstream prefix unchanged; pad unavailable fixed fields and insert empty LAU telephone at byte 21."
+    },
+    {
+      "id": "pgn-decimal:5:complete-layout",
+      "protocol": "nmea2000",
+      "pgn": 129808,
+      "name": "dscCallInformation",
+      "transport": "Fast",
+      "priority": 3,
+      "sourceAddress": 1,
+      "destinationAddress": 255,
+      "hex": "786c001629022827ffffffffffffffffffffffffff0201ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "upstreamInput": "pgn-decimal.in",
+      "upstreamOutput": "pgn-decimal.out",
+      "line": 5,
+      "expected": {
+        "dscMessageAddress": "002241024",
+        "1stTelecommand": 39
+      },
+      "tolerances": {},
+      "normalization": {},
+      "derivation": "Upstream prefix unchanged; pad unavailable fixed fields and insert empty LAU telephone at byte 21."
+    },
+    {
+      "id": "pgn-decimal:6:complete-layout",
+      "protocol": "nmea2000",
+      "pgn": 129808,
+      "name": "dscCallInformation",
+      "transport": "Fast",
+      "priority": 3,
+      "sourceAddress": 1,
+      "destinationAddress": 255,
+      "hex": "786c18283c504727ffffffffffffffffffffffffff0201ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "upstreamInput": "pgn-decimal.in",
+      "upstreamOutput": "pgn-decimal.out",
+      "line": 6,
+      "expected": {
+        "dscMessageAddress": "2440608071",
+        "1stTelecommand": 39
+      },
+      "tolerances": {},
+      "normalization": {},
+      "derivation": "Upstream prefix unchanged; pad unavailable fixed fields and insert empty LAU telephone at byte 21."
+    },
+    {
+      "id": "pgn-decimal:7:complete-layout",
+      "protocol": "nmea2000",
+      "pgn": 129808,
+      "name": "dscCallInformation",
+      "transport": "Fast",
+      "priority": 3,
+      "sourceAddress": 1,
+      "destinationAddress": 255,
+      "hex": "666c0f1404050a27ffffffffffffffffffffffffff0201ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "upstreamInput": "pgn-decimal.in",
+      "upstreamOutput": "pgn-decimal.out",
+      "line": 7,
+      "expected": {
+        "dscMessageAddress": "1520040510",
+        "1stTelecommand": 39
+      },
+      "tolerances": {},
+      "normalization": {},
+      "derivation": "Upstream prefix unchanged; pad unavailable fixed fields and insert empty LAU telephone at byte 21."
+    },
+    {
+      "id": "pgn-decimal:8:complete-layout",
+      "protocol": "nmea2000",
+      "pgn": 129808,
+      "name": "dscDistressAcknowledgementOrRelay",
+      "transport": "Fast",
+      "priority": 3,
+      "sourceAddress": 1,
+      "destinationAddress": 255,
+      "hex": "66700f1404050a6effffffffffffffffffffffffff0201ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "upstreamInput": "pgn-decimal.in",
+      "upstreamOutput": "pgn-decimal.out",
+      "line": 8,
+      "expected": {
+        "dscMessageAddress": "1520040510"
+      },
+      "tolerances": {},
+      "normalization": {},
+      "derivation": "Upstream prefix unchanged; pad unavailable fixed fields and insert empty LAU telephone at byte 21."
+    },
+    {
+      "id": "pgn-decimal:9:complete-layout",
+      "protocol": "nmea2000",
+      "pgn": 129808,
+      "name": "dscCallInformation",
+      "transport": "Fast",
+      "priority": 3,
+      "sourceAddress": 1,
+      "destinationAddress": 255,
+      "hex": "786c0f1404050a27ffffffffffffffffffffffffff0201ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "upstreamInput": "pgn-decimal.in",
+      "upstreamOutput": "pgn-decimal.out",
+      "line": 9,
+      "expected": {
+        "dscMessageAddress": "152004051",
+        "1stTelecommand": 39
+      },
+      "tolerances": {},
+      "normalization": {},
+      "derivation": "Upstream prefix unchanged; pad unavailable fixed fields and insert empty LAU telephone at byte 21."
+    },
+    {
+      "id": "pgn-decimal:10:complete-layout",
+      "protocol": "nmea2000",
+      "pgn": 129808,
+      "name": "dscDistressAcknowledgementOrRelay",
+      "transport": "Fast",
+      "priority": 3,
+      "sourceAddress": 1,
+      "destinationAddress": 255,
+      "hex": "66700f1404050a6e6effffffffffffffffffffffff0201ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "upstreamInput": "pgn-decimal.in",
+      "upstreamOutput": "pgn-decimal.out",
+      "line": 10,
+      "expected": {
+        "dscMessageAddress": "1520040510"
+      },
+      "tolerances": {},
+      "normalization": {},
+      "derivation": "Upstream prefix unchanged; pad unavailable fixed fields and insert empty LAU telephone at byte 21."
+    },
+    {
+      "id": "pgn-130823-directory:1",
+      "protocol": "nmea2000",
+      "pgn": 130823,
+      "name": "navicoDataTypeSourceDirectory",
+      "transport": "Fast",
+      "priority": 3,
+      "sourceAddress": 19,
+      "destinationAddress": 255,
+      "hex": "1399ff000501000a005502bc2f009650c0ff0402260000040227000004027d00000402a5000004029901000402f90100",
+      "frames": [
+        "c0301399ff000501",
+        "c1000a005502bc2f",
+        "c2009650c0ff0402",
+        "c326000004022700",
+        "c40004027d000004",
+        "c502a50000040299",
+        "c601000402f90100"
+      ],
+      "upstreamInput": "pgn-130823-directory.in",
+      "upstreamOutput": "pgn-130823-directory.out",
+      "line": 1,
+      "expected": {
+        "manufacturerCode": 275,
+        "industryCode": 4,
+        "reportType": 5,
+        "part": 1,
+        "list": [
+          {
+            "length": 10,
+            "type": 0,
+            "dataType": 597,
+            "value": "vC8AllDA/w=="
+          },
+          {
+            "length": 4,
+            "type": 2,
+            "dataType": 38,
+            "value": "AA=="
+          },
+          {
+            "length": 4,
+            "type": 2,
+            "dataType": 39,
+            "value": "AA=="
+          },
+          {
+            "length": 4,
+            "type": 2,
+            "dataType": 125,
+            "value": "AA=="
+          },
+          {
+            "length": 4,
+            "type": 2,
+            "dataType": 165,
+            "value": "AA=="
+          },
+          {
+            "length": 4,
+            "type": 2,
+            "dataType": 409,
+            "value": "AA=="
+          },
+          {
+            "length": 4,
+            "type": 2,
+            "dataType": 505,
+            "value": "AA=="
+          }
+        ]
+      },
+      "tolerances": {},
+      "normalization": {}
+    },
+    {
+      "id": "pgn-130823-directory:2",
+      "protocol": "nmea2000",
+      "pgn": 130823,
+      "name": "navicoDataTypeSourceDirectoryFullReport",
+      "transport": "Fast",
+      "priority": 3,
+      "sourceAddress": 19,
+      "destinationAddress": 255,
+      "hex": "1399ff000601000b094d01000000000000000006047600000000150932000a002f1e80110082b4c000000000000000000b09330000000000000000000b09350000000000000000000b09360000000000000000000b09370000000000000000000b093c0000000000000000000402310000040225000004024700000402480000040249000004028e000004028f00000402900000040239010004023a010004023c010004024e010004024f010004025001000b099d0100000000000000000b09830200000000000000000301a0020301be010301bf010301c001",
+      "frames": [
+        "c0da1399ff000601",
+        "c1000b094d010000",
+        "c200000000000006",
+        "c304760000000015",
+        "c40932000a002f1e",
+        "c580110082b4c000",
+        "c600000000000000",
+        "c70b093300000000",
+        "c800000000000b09",
+        "c935000000000000",
+        "ca0000000b093600",
+        "cb00000000000000",
+        "cc000b0937000000",
+        "cd0000000000000b",
+        "ce093c0000000000",
+        "cf00000000040231",
+        "d000000402250000",
+        "d104024700000402",
+        "d248000004024900",
+        "d30004028e000004",
+        "d4028f0000040290",
+        "d500000402390100",
+        "d604023a01000402",
+        "d73c010004024e01",
+        "d80004024f010004",
+        "d9025001000b099d",
+        "da01000000000000",
+        "db00000b09830200",
+        "dc00000000000000",
+        "dd0301a0020301be",
+        "de010301bf010301",
+        "dfc001ffffffffff"
+      ],
+      "upstreamInput": "pgn-130823-directory.in",
+      "upstreamOutput": "pgn-130823-directory.out",
+      "line": 8,
+      "expected": {
+        "manufacturerCode": 275,
+        "industryCode": 4,
+        "reportType": 6,
+        "part": 1,
+        "list": [
+          {
+            "length": 11,
+            "type": 9,
+            "dataType": 333,
+            "value": "AAAAAAAAAAA="
+          },
+          {
+            "length": 6,
+            "type": 4,
+            "dataType": 118,
+            "value": "AAAA"
+          },
+          {
+            "length": 21,
+            "type": 9,
+            "dataType": 50,
+            "value": "CgAvHoARAIK0wAAAAAAAAAAA"
+          },
+          {
+            "length": 11,
+            "type": 9,
+            "dataType": 51,
+            "value": "AAAAAAAAAAA="
+          },
+          {
+            "length": 11,
+            "type": 9,
+            "dataType": 53,
+            "value": "AAAAAAAAAAA="
+          },
+          {
+            "length": 11,
+            "type": 9,
+            "dataType": 54,
+            "value": "AAAAAAAAAAA="
+          },
+          {
+            "length": 11,
+            "type": 9,
+            "dataType": 55,
+            "value": "AAAAAAAAAAA="
+          },
+          {
+            "length": 11,
+            "type": 9,
+            "dataType": 60,
+            "value": "AAAAAAAAAAA="
+          },
+          {
+            "length": 4,
+            "type": 2,
+            "dataType": 49,
+            "value": "AA=="
+          },
+          {
+            "length": 4,
+            "type": 2,
+            "dataType": 37,
+            "value": "AA=="
+          },
+          {
+            "length": 4,
+            "type": 2,
+            "dataType": 71,
+            "value": "AA=="
+          },
+          {
+            "length": 4,
+            "type": 2,
+            "dataType": 72,
+            "value": "AA=="
+          },
+          {
+            "length": 4,
+            "type": 2,
+            "dataType": 73,
+            "value": "AA=="
+          },
+          {
+            "length": 4,
+            "type": 2,
+            "dataType": 142,
+            "value": "AA=="
+          },
+          {
+            "length": 4,
+            "type": 2,
+            "dataType": 143,
+            "value": "AA=="
+          },
+          {
+            "length": 4,
+            "type": 2,
+            "dataType": 144,
+            "value": "AA=="
+          },
+          {
+            "length": 4,
+            "type": 2,
+            "dataType": 313,
+            "value": "AA=="
+          },
+          {
+            "length": 4,
+            "type": 2,
+            "dataType": 314,
+            "value": "AA=="
+          },
+          {
+            "length": 4,
+            "type": 2,
+            "dataType": 316,
+            "value": "AA=="
+          },
+          {
+            "length": 4,
+            "type": 2,
+            "dataType": 334,
+            "value": "AA=="
+          },
+          {
+            "length": 4,
+            "type": 2,
+            "dataType": 335,
+            "value": "AA=="
+          },
+          {
+            "length": 4,
+            "type": 2,
+            "dataType": 336,
+            "value": "AA=="
+          },
+          {
+            "length": 11,
+            "type": 9,
+            "dataType": 413,
+            "value": "AAAAAAAAAAA="
+          },
+          {
+            "length": 11,
+            "type": 9,
+            "dataType": 643,
+            "value": "AAAAAAAAAAA="
+          },
+          {
+            "length": 3,
+            "type": 1,
+            "dataType": 672
+          },
+          {
+            "length": 3,
+            "type": 1,
+            "dataType": 446
+          },
+          {
+            "length": 3,
+            "type": 1,
+            "dataType": 447
+          },
+          {
+            "length": 3,
+            "type": 1,
+            "dataType": 448
+          }
+        ]
+      },
+      "tolerances": {},
+      "normalization": {}
+    },
+    {
+      "id": "pgn-unit-coverage:3:unavailable",
+      "protocol": "nmea2000",
+      "pgn": 65008,
+      "name": "utilityPhaseCBasicAcQuantities",
+      "transport": "Single",
+      "priority": 3,
+      "sourceAddress": 1,
+      "destinationAddress": 255,
+      "hex": "ffffffffffffffff",
+      "upstreamInput": "pgn-unit-coverage.in",
+      "upstreamOutput": "pgn-unit-coverage-si.out",
+      "line": 3,
+      "expected": {
+        "lineLineAcRmsVoltage": null,
+        "lineNeutralAcRmsVoltage": null,
+        "acFrequency": null,
+        "acRmsCurrent": null
+      },
+      "tolerances": {},
+      "normalization": {},
+      "derivation": "Literal unsigned 16-bit boundary/sentinel values from the pinned field definitions; not generated by the codec."
+    },
+    {
+      "id": "pgn-unit-coverage:3:upper-bound",
+      "protocol": "nmea2000",
+      "pgn": 65008,
+      "name": "utilityPhaseCBasicAcQuantities",
+      "transport": "Single",
+      "priority": 3,
+      "sourceAddress": 1,
+      "destinationAddress": 255,
+      "hex": "fcfffdfffeffffff",
+      "upstreamInput": "pgn-unit-coverage.in",
+      "upstreamOutput": "pgn-unit-coverage-si.out",
+      "line": 3,
+      "expected": {
+        "lineLineAcRmsVoltage": 65532,
+        "lineNeutralAcRmsVoltage": null,
+        "acFrequency": null,
+        "acRmsCurrent": null
+      },
+      "tolerances": {},
+      "normalization": {},
+      "derivation": "Literal unsigned 16-bit boundary/sentinel values from the pinned field definitions; not generated by the codec."
+    }
+  ]
+}
