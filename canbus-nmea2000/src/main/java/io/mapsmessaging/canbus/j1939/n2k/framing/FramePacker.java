@@ -103,6 +103,9 @@ public class FramePacker {
     // Subsequent frames: byte0 = seq+index(n), bytes1..7 = next 7 payload bytes
     int frameIndex = 1;
     while (payloadIndex < totalLength) {
+      if (frameIndex > 31) {
+        throw new IllegalStateException("Fast packet exceeded 32 frames for PGN " + pgn + " (payload length " + totalLength + ")");
+      }
       byte[] frame = new byte[8];
       frame[0] = (byte) (((sequenceId & 0x07) << 5) | (frameIndex & 0x1F));
 
@@ -114,9 +117,6 @@ public class FramePacker {
       frames.add(new CanFrame(canIdentifier, true, 8, frame));
 
       frameIndex++;
-      if (frameIndex > 31) {
-        throw new IllegalStateException("Fast packet exceeded 32 frames for PGN " + pgn + " (payload length " + totalLength + ")");
-      }
     }
 
     return frames;
