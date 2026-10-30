@@ -430,7 +430,7 @@ public final class CanboatCodec {
         }
       }
     } else if (type.equals("DECIMAL")) {
-      output = decimal(field, input, state.bits, bits, encode);
+      output = decimal(field, input, state.bits, bits, encode, state.raw);
     } else {
       if (bits <= 0 || bits > 64) {
         throw bad(message, "invalid width for " + original.id());
@@ -620,7 +620,8 @@ public final class CanboatCodec {
   }
 
   private static JsonElement decimal(
-      CanboatField field, JsonElement input, Bits wire, int bits, boolean encode) {
+      CanboatField field, JsonElement input, Bits wire, int bits, boolean encode,
+      Map<Integer, BigInteger> rawValues) {
     int count = bits / 8;
     if (bits % 8 != 0) {
       throw new IllegalArgumentException("Invalid decimal width");
@@ -635,6 +636,10 @@ public final class CanboatCodec {
       String value = input.getAsString();
       if (!value.matches("[0-9]*") || value.length() > count * 2) {
         throw new IllegalArgumentException("Invalid decimal value");
+      }
+      // CANboat DECIMAL pairs pad an odd digit count at the end (ITU-R M.585).
+      if (value.length() % 2 != 0) {
+        value += "0";
       }
       value = "0".repeat(Math.max(0, count * 2 - value.length())) + value;
       for (int index = 0; index < count; index++) {
@@ -654,7 +659,18 @@ public final class CanboatCodec {
       }
       text.append(String.format(Locale.ROOT, "%02d", pair));
     }
-    return text.isEmpty() ? JsonNull.INSTANCE : new JsonPrimitive(text.toString());
+    if (text.isEmpty()) {
+      return JsonNull.INSTANCE;
+    }
+    int discriminator = field.number("TrailingZeroIsDigitField", 0);
+    boolean keepTrailingZero =
+        discriminator != 0
+            && field.integer("TrailingZeroIsDigitValue") != null
+            && field.integer("TrailingZeroIsDigitValue").equals(rawValues.get(discriminator));
+    if (!keepTrailingZero && text.charAt(text.length() - 1) == '0') {
+      text.setLength(text.length() - 1);
+    }
+    return new JsonPrimitive(text.toString());
   }
 
   private static JsonElement string(
