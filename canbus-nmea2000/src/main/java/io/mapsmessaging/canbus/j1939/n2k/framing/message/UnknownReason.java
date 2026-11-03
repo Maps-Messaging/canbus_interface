@@ -18,10 +18,4 @@
 
 package io.mapsmessaging.canbus.j1939.n2k.framing.message;
 
-public enum UnknownReason {
-  NOT_EXTENDED_FRAME,
-  INVALID_IDENTIFIER,
-  INVALID_FRAME,
-  UNSUPPORTED_PGN,
-  DECODE_FAILED
-}
+public enum UnknownReason { NOT_EXTENDED_FRAME, INVALID_IDENTIFIER, INVALID_FRAME, UNSUPPORTED_PGN, DECODE_FAILED }

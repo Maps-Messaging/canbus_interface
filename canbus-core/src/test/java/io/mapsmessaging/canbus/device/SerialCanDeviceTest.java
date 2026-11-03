@@ -17,6 +17,11 @@
 
 package io.mapsmessaging.canbus.device;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import io.mapsmessaging.canbus.device.codec.CanFrameStreamCodec;
 import io.mapsmessaging.canbus.device.codec.SlcanCanFrameStreamCodec;
 import io.mapsmessaging.canbus.device.frames.CanFrame;
@@ -27,13 +32,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 class SerialCanDeviceTest {
-
   @Test
   void closeReleasesBothStreamsWhenCodecFails() throws IOException {
     IOException codecFailure = new IOException("codec close");
@@ -103,9 +102,8 @@ class SerialCanDeviceTest {
 
   @Test
   void rejectsNullOutputStreamBeforeCodecOrClose() {
-    IllegalArgumentException failure = assertThrows(IllegalArgumentException.class,
-        () -> new SerialCanDevice("can0", new ByteArrayInputStream(new byte[0]), null,
-            new SlcanCanFrameStreamCodec()));
+    IllegalArgumentException failure =
+        assertThrows(IllegalArgumentException.class, () -> new SerialCanDevice("can0", new ByteArrayInputStream(new byte[0]), null, new SlcanCanFrameStreamCodec()));
 
     assertEquals("outputStream must not be null", failure.getMessage());
   }

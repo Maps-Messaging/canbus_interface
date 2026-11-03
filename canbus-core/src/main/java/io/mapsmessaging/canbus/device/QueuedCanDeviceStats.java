@@ -17,15 +17,13 @@
  */
 package io.mapsmessaging.canbus.device;
 
-import lombok.Getter;
-
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import lombok.Getter;
 
 @Getter
 public final class QueuedCanDeviceStats {
-
   private final AtomicLong queuedCount;
   private final AtomicLong writtenCount;
   private final AtomicLong droppedCount;

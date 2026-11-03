@@ -18,11 +18,11 @@
 
 package io.mapsmessaging.canbus.device;
 
-
 import com.sun.jna.Structure;
-
 import java.util.List;
 
+// Native structures intentionally retain JNA Structure pointer-based equality.
+@SuppressWarnings("java:S2160")
 public final class SockAddrCan extends Structure {
   public short canFamily;
   public int canInterfaceIndex;
@@ -33,4 +33,3 @@ public final class SockAddrCan extends Structure {
     return List.of("canFamily", "canInterfaceIndex", "address");
   }
 }
-

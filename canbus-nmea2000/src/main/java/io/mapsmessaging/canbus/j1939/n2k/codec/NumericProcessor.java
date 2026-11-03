@@ -22,7 +22,6 @@ import com.google.gson.JsonObject;
 import io.mapsmessaging.canbus.j1939.n2k.compile.N2kCompiledField;
 
 public class NumericProcessor implements Processor {
-
   @Override
   public int pack(N2kCompiledField field, byte[] payload, int cursor, JsonObject decoded) {
     if (!decoded.has(field.getId()) || decoded.get(field.getId()).isJsonNull()) {
@@ -58,22 +57,13 @@ public class NumericProcessor implements Processor {
       startByte = field.getStartByte();
       startBit = field.getStartBit();
       bytesToRead = field.getBytesToRead();
-    }
-    else {
+    } else {
       startByte = cursor;
       startBit = 0;
       bytesToRead = computeRelativeBytes(field);
     }
 
-    long raw =
-        N2kBitCodec.extractBits(
-            payload,
-            startByte,
-            startBit,
-            bytesToRead,
-            field.getMask(),
-            field.isSigned(),
-            field.getBitLength());
+    long raw = N2kBitCodec.extractBits(payload, startByte, startBit, bytesToRead, field.getMask(), field.isSigned(), field.getBitLength());
 
     double value = raw * field.getResolution() + field.getOffset();
     decoded.addProperty(field.getId(), value);
@@ -103,8 +93,7 @@ public class NumericProcessor implements Processor {
 
     if (rawValue < field.getRawMin()) {
       rawValue = field.getRawMin();
-    }
-    else if (rawValue > field.getRawMax()) {
+    } else if (rawValue > field.getRawMax()) {
       rawValue = field.getRawMax();
     }
 
@@ -118,21 +107,13 @@ public class NumericProcessor implements Processor {
       startByte = field.getStartByte();
       startBit = field.getStartBit();
       bytesToRead = field.getBytesToRead();
-    }
-    else {
+    } else {
       startByte = cursor;
       startBit = 0;
       bytesToRead = computeRelativeBytes(field);
     }
 
-    N2kBitCodec.insertBits(
-        payload,
-        startByte,
-        startBit,
-        bytesToRead,
-        field.getMask(),
-        rawValue
-    );
+    N2kBitCodec.insertBits(payload, startByte, startBit, bytesToRead, field.getMask(), rawValue);
 
     return field.isCompileTimeFixed() ? cursor : cursor + bytesToRead;
   }
@@ -153,24 +134,21 @@ public class NumericProcessor implements Processor {
 
       long max = field.getMask();
       if (rawValue > max) {
-        throw new IllegalArgumentException(
-            "Field " + field.getId() + " out of range: " + rawValue + " max=" + max
-        );
+        throw new IllegalArgumentException("Field " + field.getId() + " out of range: " + rawValue + " max=" + max);
       }
-    }
-    else {
+    } else {
       int bitLength = field.getBitLength();
       if (bitLength > 0 && bitLength < 64) {
         long min = -(1L << (bitLength - 1));
         long max = (1L << (bitLength - 1)) - 1L;
         if (rawValue < min || rawValue > max) {
-          throw new IllegalArgumentException(
-              "Signed field " + field.getId() + " out of range: " + rawValue + " allowed=" + min + ".." + max
-          );
+          throw new IllegalArgumentException("Signed field " + field.getId() + " out of range: " + rawValue + " allowed=" + min + ".." + max);
         }
       }
     }
   }
 
-  public NumericProcessor() {}
+  public NumericProcessor() {
+    // Stateless processor: no initialization is required.
+  }
 }

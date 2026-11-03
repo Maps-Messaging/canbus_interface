@@ -25,8 +25,6 @@ import com.sun.jna.ptr.IntByReference;
 import io.mapsmessaging.canbus.device.frames.CanFrame;
 import io.mapsmessaging.canbus.device.frames.NativeCanFdFrame;
 import io.mapsmessaging.canbus.device.frames.NativeCanFrame;
-import lombok.Getter;
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
@@ -34,9 +32,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import lombok.Getter;
 
 public final class SocketCanDevice implements CanDevice, Closeable {
-
   private final LibCFacade libC;
 
   private static final int AF_CAN = 29;
@@ -256,7 +254,8 @@ public final class SocketCanDevice implements CanDevice, Closeable {
 
     int maskedId = extendedFrame ? (canIdentifier & CAN_EFF_MASK) : (canIdentifier & CAN_SFF_MASK);
     if (maskedId != canIdentifier) {
-      throw new IllegalArgumentException("canIdentifier contains invalid bits for " + (extendedFrame ? "extended" : "standard") + " frame: 0x" + Integer.toHexString(canIdentifier));
+      throw new IllegalArgumentException(
+          "canIdentifier contains invalid bits for " + (extendedFrame ? "extended" : "standard") + " frame: 0x" + Integer.toHexString(canIdentifier));
     }
   }
 
@@ -313,12 +312,7 @@ public final class SocketCanDevice implements CanDevice, Closeable {
       ioMaxPayloadBytes = CLASSIC_CAN_MAX_PAYLOAD;
     }
 
-    return new CanCapabilities(
-        interfaceFdEnabled,
-        socketFdEnabled,
-        interfaceMaxPayloadBytes,
-        ioMaxPayloadBytes
-    );
+    return new CanCapabilities(interfaceFdEnabled, socketFdEnabled, interfaceMaxPayloadBytes, ioMaxPayloadBytes);
   }
 
   private boolean isInterfaceFdEnabled() throws IOException {
@@ -348,7 +342,7 @@ public final class SocketCanDevice implements CanDevice, Closeable {
   }
 
   private static String resolveIpCommand() throws IOException {
-    for (String candidate : new String[]{"/usr/sbin/ip", "/usr/bin/ip", "/sbin/ip", "/bin/ip"}) {
+    for (String candidate : new String[] {"/usr/sbin/ip", "/usr/bin/ip", "/sbin/ip", "/bin/ip"}) {
       Path executable = Path.of(candidate);
       if (Files.isRegularFile(executable) && Files.isExecutable(executable)) {
         return candidate;
@@ -358,16 +352,7 @@ public final class SocketCanDevice implements CanDevice, Closeable {
   }
 
   private static String runIpJsonLinkShow(String interfaceName) throws IOException {
-    ProcessBuilder processBuilder = new ProcessBuilder(
-        resolveIpCommand(),
-        "-details",
-        "-statistics",
-        "-json",
-        "link",
-        "show",
-        "dev",
-        interfaceName
-    );
+    ProcessBuilder processBuilder = new ProcessBuilder(resolveIpCommand(), "-details", "-statistics", "-json", "link", "show", "dev", interfaceName);
 
     processBuilder.redirectErrorStream(true);
 

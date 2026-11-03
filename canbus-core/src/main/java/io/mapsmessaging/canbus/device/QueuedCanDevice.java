@@ -18,8 +18,6 @@
 package io.mapsmessaging.canbus.device;
 
 import io.mapsmessaging.canbus.device.frames.CanFrame;
-import lombok.Getter;
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.List;
@@ -29,9 +27,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
+import lombok.Getter;
 
 public final class QueuedCanDevice implements CanDevice, Closeable {
-
   private static final int DEFAULT_QUEUE_DEPTH = 128;
   private static final int DEFAULT_BITRATE_BITS_PER_SECOND = 250_000;
   private static final double DEFAULT_MAX_BUS_USAGE_PERCENT = 20.0;
@@ -69,37 +67,15 @@ public final class QueuedCanDevice implements CanDevice, Closeable {
   private final long writeFailureBackoffMilliseconds;
 
   public QueuedCanDevice(CanDevice delegate) {
-    this(
-        delegate,
-        DEFAULT_QUEUE_DEPTH,
-        DEFAULT_BITRATE_BITS_PER_SECOND,
-        DEFAULT_MAX_BUS_USAGE_PERCENT,
-        QueueFullPolicy.DROP_OLDEST
-    );
+    this(delegate, DEFAULT_QUEUE_DEPTH, DEFAULT_BITRATE_BITS_PER_SECOND, DEFAULT_MAX_BUS_USAGE_PERCENT, QueueFullPolicy.DROP_OLDEST);
   }
 
-  public QueuedCanDevice(CanDevice delegate,
-                         int queueDepth,
-                         int bitrateBitsPerSecond,
-                         double maxBusUsagePercent,
-                         QueueFullPolicy queueFullPolicy) {
-    this(
-        delegate,
-        queueDepth,
-        bitrateBitsPerSecond,
-        maxBusUsagePercent,
-        queueFullPolicy,
-        DEFAULT_WRITE_FAILURE_BACKOFF_MILLISECONDS
-    );
+  public QueuedCanDevice(CanDevice delegate, int queueDepth, int bitrateBitsPerSecond, double maxBusUsagePercent, QueueFullPolicy queueFullPolicy) {
+    this(delegate, queueDepth, bitrateBitsPerSecond, maxBusUsagePercent, queueFullPolicy, DEFAULT_WRITE_FAILURE_BACKOFF_MILLISECONDS);
   }
 
-  public QueuedCanDevice(CanDevice delegate,
-                         int queueDepth,
-                         int bitrateBitsPerSecond,
-                         double maxBusUsagePercent,
-                         QueueFullPolicy queueFullPolicy,
-                         long writeFailureBackoffMilliseconds) {
-
+  public QueuedCanDevice(
+      CanDevice delegate, int queueDepth, int bitrateBitsPerSecond, double maxBusUsagePercent, QueueFullPolicy queueFullPolicy, long writeFailureBackoffMilliseconds) {
     if (delegate == null) {
       throw new IllegalArgumentException("delegate must not be null");
     }
@@ -239,16 +215,14 @@ public final class QueuedCanDevice implements CanDevice, Closeable {
 
       try {
         canWriteMessage = queue.poll(100, TimeUnit.MILLISECONDS);
-        if (canWriteMessage == null) {
-          continue;
+        if (canWriteMessage != null) {
+          waitForBandwidth(canWriteMessage);
+          writeMessage(canWriteMessage);
+          if (queue.isEmpty()) {
+            delegate.flush();
+          }
+          stats.incrementWrittenCount();
         }
-
-        waitForBandwidth(canWriteMessage);
-        writeMessage(canWriteMessage);
-        if (queue.isEmpty()) {
-          delegate.flush();
-        }
-        stats.incrementWrittenCount();
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
         break;

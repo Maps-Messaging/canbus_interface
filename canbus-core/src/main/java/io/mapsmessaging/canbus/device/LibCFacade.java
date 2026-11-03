@@ -22,7 +22,6 @@ import com.sun.jna.Structure;
 import com.sun.jna.ptr.IntByReference;
 
 public interface LibCFacade {
-
   int socket(int domain, int type, int protocol);
 
   int bind(int socketFileDescriptor, Structure address, int addressLength);

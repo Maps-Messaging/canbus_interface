@@ -30,7 +30,6 @@ import io.mapsmessaging.canbus.j1939.n2k.framing.message.Message;
 import io.mapsmessaging.canbus.j1939.n2k.framing.message.UnknownMessage;
 import io.mapsmessaging.canbus.j1939.n2k.model.N2kMessageDefinition;
 import io.mapsmessaging.canbus.j1939.n2k.parser.N2kXmlDialectParser;
-
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -41,10 +40,18 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class CanLogToJsonDecoder {
+  private static final String TIMESTAMP = "timestamp";
+  private static final String EVENT_TYPE = "eventType";
+  private static final String DECODED = "decoded";
+  private static final String REASON = "reason";
+  private static final String PGN_HEX = "pgnHex";
+  private static final String PGN_HEX_FORMAT = "0x%05X";
+  private static final String SOURCE_ADDRESS = "sourceAddress";
+  private static final String DESTINATION_ADDRESS = "destinationAddress";
+  private static final String ERROR = "error";
 
-  private static final Pattern CANDUMP_PATTERN = Pattern.compile(
-      "^\\((?<timestamp>[0-9]+\\.[0-9]+)\\)\\s+(?<interfaceName>\\S+)\\s+(?<canIdentifier>[0-9A-Fa-f]{8})#(?<payload>[0-9A-Fa-f]*)$"
-  );
+  private static final Pattern CANDUMP_PATTERN =
+      Pattern.compile("^\\((?<timestamp>\\d+\\.\\d+)\\)\\s+(?<interfaceName>\\S+)\\s+(?<canIdentifier>[0-9A-Fa-f]{8})#(?<payload>[0-9A-Fa-f]*)$");
 
   private static final HexFormat HEX_FORMAT = HexFormat.of().withUpperCase();
 
@@ -55,18 +62,13 @@ public class CanLogToJsonDecoder {
 
   public CanLogToJsonDecoder(FrameHandler frameHandler) {
     this.frameHandler = frameHandler;
-    this.gson = new GsonBuilder()
-        .disableHtmlEscaping()
-        .create();
+    this.gson = new GsonBuilder().disableHtmlEscaping().create();
     this.fastPacketStates = new HashMap<>();
   }
 
   public void decode(Path inputPath, Path outputPath) throws IOException {
     firstEvent = true;
-    try (
-        BufferedReader reader = Files.newBufferedReader(inputPath);
-        BufferedWriter writer = Files.newBufferedWriter(outputPath)
-    ) {
+    try (BufferedReader reader = Files.newBufferedReader(inputPath); BufferedWriter writer = Files.newBufferedWriter(outputPath)) {
       String line;
       long lineNumber = 0;
       writer.write("[\n");
@@ -87,7 +89,6 @@ public class CanLogToJsonDecoder {
       flushIncompleteFastPackets(writer);
       writer.write("\n]");
     }
-
   }
 
   private Optional<CandumpFrame> parseLine(long lineNumber, String line) {
@@ -97,18 +98,12 @@ public class CanLogToJsonDecoder {
     }
 
     try {
-      double timestamp = Double.parseDouble(matcher.group("timestamp"));
+      double timestamp = Double.parseDouble(matcher.group(TIMESTAMP));
       String interfaceName = matcher.group("interfaceName");
       int canIdentifier = (int) Long.parseUnsignedLong(matcher.group("canIdentifier"), 16);
       byte[] payload = HEX_FORMAT.parseHex(matcher.group("payload"));
 
-      return Optional.of(new CandumpFrame(
-          lineNumber,
-          timestamp,
-          interfaceName,
-          canIdentifier,
-          payload
-      ));
+      return Optional.of(new CandumpFrame(lineNumber, timestamp, interfaceName, canIdentifier, payload));
     } catch (RuntimeException exception) {
       return Optional.empty();
     }
@@ -140,124 +135,66 @@ public class CanLogToJsonDecoder {
   private boolean isFastPacketPgn(int parameterGroupNumber) {
     return switch (parameterGroupNumber) {
       case 126996, // Product Information
-           126998, // Configuration Information
-           127489, // Engine Parameters Dynamic
-           127496, // Trip Parameters Vessel
-           127497, // Trip Parameters Engine
-           128275, // Distance Log
-           129029, // GNSS Position Data
-           129038, // AIS Class A Position Report
-           129039, // AIS Class B Position Report
-           129040, // AIS Class B Extended Position Report
-           129041, // AIS Aids to Navigation Report
-           129284, // Navigation Data
-           129285, // Navigation Route / WP Information
-           129540  // GNSS Sats in View
-          -> true;
+          126998, // Configuration Information
+          127489, // Engine Parameters Dynamic
+          127496, // Trip Parameters Vessel
+          127497, // Trip Parameters Engine
+          128275, // Distance Log
+          129029, // GNSS Position Data
+          129038, // AIS Class A Position Report
+          129039, // AIS Class B Position Report
+          129040, // AIS Class B Extended Position Report
+          129041, // AIS Aids to Navigation Report
+          129284, // Navigation Data
+          129285, // Navigation Route / WP Information
+          129540 -> true; // GNSS Sats in View
       default -> false;
     };
   }
 
-  private void handleFastPacketStart(
-      BufferedWriter writer,
-      CandumpFrame frame,
-      CanIdentifierFields identifierFields,
-      int sequenceIdentifier
-  ) throws IOException {
+  private void handleFastPacketStart(BufferedWriter writer, CandumpFrame frame, CanIdentifierFields identifierFields, int sequenceIdentifier) throws IOException {
     int totalPayloadLength = frame.payload()[1] & 0xff;
 
     if (totalPayloadLength <= 6) {
       return;
     }
 
-    FastPacketKey key = new FastPacketKey(
-        identifierFields.parameterGroupNumber(),
-        identifierFields.sourceAddress(),
-        identifierFields.destinationAddress()
-    );
+    FastPacketKey key = new FastPacketKey(identifierFields.parameterGroupNumber(), identifierFields.sourceAddress(), identifierFields.destinationAddress());
 
     FastPacketState existingState = fastPacketStates.remove(key);
     if (existingState != null && !existingState.isComplete()) {
-      writeIncompleteFastPacket(
-          writer,
-          existingState,
-          "New fast-packet start before previous packet completed"
-      );
+      writeIncompleteFastPacket(writer, existingState, "New fast-packet start before previous packet completed");
     }
 
     int expectedFrameCount = calculateExpectedFrameCount(totalPayloadLength);
 
-    FastPacketState state = new FastPacketState(
-        key,
-        sequenceIdentifier,
-        totalPayloadLength,
-        expectedFrameCount,
-        frame.lineNumber(),
-        frame.timestamp(),
-        frame.interfaceName(),
-        frame.canIdentifier()
-    );
+    FastPacketState state = new FastPacketState(key, sequenceIdentifier, totalPayloadLength, expectedFrameCount, frame);
 
     state.addFrame(0, frame.lineNumber());
     fastPacketStates.put(key, state);
   }
 
-  private void handleFastPacketContinuation(
-      BufferedWriter writer,
-      CandumpFrame frame,
-      CanIdentifierFields identifierFields,
-      int sequenceIdentifier,
-      int frameIndex
-  ) throws IOException {
-    FastPacketKey key = new FastPacketKey(
-        identifierFields.parameterGroupNumber(),
-        identifierFields.sourceAddress(),
-        identifierFields.destinationAddress()
-    );
+  private void handleFastPacketContinuation(BufferedWriter writer, CandumpFrame frame, CanIdentifierFields identifierFields, int sequenceIdentifier, int frameIndex)
+      throws IOException {
+    FastPacketKey key = new FastPacketKey(identifierFields.parameterGroupNumber(), identifierFields.sourceAddress(), identifierFields.destinationAddress());
 
     FastPacketState state = fastPacketStates.get(key);
     if (state == null) {
-      writeOrphanFastPacketContinuation(
-          writer,
-          frame,
-          identifierFields,
-          sequenceIdentifier,
-          frameIndex
-      );
+      writeOrphanFastPacketContinuation(writer, frame, identifierFields, sequenceIdentifier, frameIndex);
       return;
     }
 
     if (state.sequenceIdentifier() != sequenceIdentifier) {
       fastPacketStates.remove(key);
-      writeIncompleteFastPacket(
-          writer,
-          state,
-          "Fast-packet sequence changed before packet completed"
-      );
-      writeOrphanFastPacketContinuation(
-          writer,
-          frame,
-          identifierFields,
-          sequenceIdentifier,
-          frameIndex
-      );
+      writeIncompleteFastPacket(writer, state, "Fast-packet sequence changed before packet completed");
+      writeOrphanFastPacketContinuation(writer, frame, identifierFields, sequenceIdentifier, frameIndex);
       return;
     }
 
     if (frameIndex != state.nextExpectedFrameIndex()) {
       fastPacketStates.remove(key);
-      writeIncompleteFastPacket(
-          writer,
-          state,
-          "Fast-packet frame index gap"
-      );
-      writeOrphanFastPacketContinuation(
-          writer,
-          frame,
-          identifierFields,
-          sequenceIdentifier,
-          frameIndex
-      );
+      writeIncompleteFastPacket(writer, state, "Fast-packet frame index gap");
+      writeOrphanFastPacketContinuation(writer, frame, identifierFields, sequenceIdentifier, frameIndex);
       return;
     }
 
@@ -293,24 +230,14 @@ public class CanLogToJsonDecoder {
       destinationAddress = 255;
     }
 
-    return new CanIdentifierFields(
-        priority,
-        parameterGroupNumber,
-        sourceAddress,
-        destinationAddress
-    );
+    return new CanIdentifierFields(priority, parameterGroupNumber, sourceAddress, destinationAddress);
   }
 
   private void handleFrame(BufferedWriter writer, CandumpFrame frame) throws IOException {
     Optional<Message> optionalMessage;
 
     try {
-      optionalMessage = frameHandler.onFrame(
-          frame.canIdentifier(),
-          true,
-          frame.payload().length,
-          frame.payload()
-      );
+      optionalMessage = frameHandler.onFrame(frame.canIdentifier(), true, frame.payload().length, frame.payload());
     } catch (RuntimeException exception) {
       writeFrameHandlerError(writer, frame, exception);
       return;
@@ -338,65 +265,49 @@ public class CanLogToJsonDecoder {
   private void flushIncompleteFastPackets(BufferedWriter writer) throws IOException {
     for (FastPacketState state : fastPacketStates.values()) {
       if (!state.isComplete()) {
-        writeIncompleteFastPacket(
-            writer,
-            state,
-            "End of file before fast-packet completed"
-        );
+        writeIncompleteFastPacket(writer, state, "End of file before fast-packet completed");
       }
     }
 
     fastPacketStates.clear();
   }
 
-  private void writeKnownMessage(
-      BufferedWriter writer,
-      CandumpFrame frame,
-      KnownMessage knownMessage
-  ) throws IOException {
+  private void writeKnownMessage(BufferedWriter writer, CandumpFrame frame, KnownMessage knownMessage) throws IOException {
     JsonObject output = createBaseFrameJson(frame);
 
-    output.addProperty("eventType", "decodedMessage");
-    output.addProperty("decoded", true);
+    output.addProperty(EVENT_TYPE, "decodedMessage");
+    output.addProperty(DECODED, true);
     output.add("data", knownMessage.getDecoded());
 
     writeEvent(writer, output);
   }
 
-  private void writeUnknownMessage(
-      BufferedWriter writer,
-      CandumpFrame frame,
-      UnknownMessage unknownMessage
-  ) throws IOException {
+  private void writeUnknownMessage(BufferedWriter writer, CandumpFrame frame, UnknownMessage unknownMessage) throws IOException {
     JsonObject output = createBaseFrameJson(frame);
 
-    output.addProperty("eventType", "unknownMessage");
-    output.addProperty("decoded", false);
-    output.addProperty("reason", unknownMessage.getReason().toString());
+    output.addProperty(EVENT_TYPE, "unknownMessage");
+    output.addProperty(DECODED, false);
+    output.addProperty(REASON, unknownMessage.getReason().toString());
     output.addProperty("detail", unknownMessage.getDetail());
 
     writeEvent(writer, output);
   }
 
-  private void writeIncompleteFastPacket(
-      BufferedWriter writer,
-      FastPacketState state,
-      String reason
-  ) throws IOException {
+  private void writeIncompleteFastPacket(BufferedWriter writer, FastPacketState state, String reason) throws IOException {
     JsonObject output = new JsonObject();
 
-    output.addProperty("eventType", "incompleteFastPacket");
-    output.addProperty("decoded", false);
-    output.addProperty("reason", reason);
+    output.addProperty(EVENT_TYPE, "incompleteFastPacket");
+    output.addProperty(DECODED, false);
+    output.addProperty(REASON, reason);
     output.addProperty("startLineNumber", state.startLineNumber());
     output.addProperty("lastLineNumber", state.lastLineNumber());
-    output.addProperty("timestamp", state.startTimestamp());
+    output.addProperty(TIMESTAMP, state.startTimestamp());
     output.addProperty("interface", state.interfaceName());
     output.addProperty("canId", String.format("%08X", state.canIdentifier()));
     output.addProperty("pgn", state.key().parameterGroupNumber());
-    output.addProperty("pgnHex", String.format("0x%05X", state.key().parameterGroupNumber()));
-    output.addProperty("sourceAddress", state.key().sourceAddress());
-    output.addProperty("destinationAddress", state.key().destinationAddress());
+    output.addProperty(PGN_HEX, String.format(PGN_HEX_FORMAT, state.key().parameterGroupNumber()));
+    output.addProperty(SOURCE_ADDRESS, state.key().sourceAddress());
+    output.addProperty(DESTINATION_ADDRESS, state.key().destinationAddress());
     output.addProperty("sequenceIdentifier", state.sequenceIdentifier());
     output.addProperty("payloadLength", state.totalPayloadLength());
     output.addProperty("expectedFrameCount", state.expectedFrameCount());
@@ -406,68 +317,51 @@ public class CanLogToJsonDecoder {
     writeEvent(writer, output);
   }
 
-  private void writeOrphanFastPacketContinuation(
-      BufferedWriter writer,
-      CandumpFrame frame,
-      CanIdentifierFields identifierFields,
-      int sequenceIdentifier,
-      int frameIndex
-  ) throws IOException {
+  private void writeOrphanFastPacketContinuation(BufferedWriter writer, CandumpFrame frame, CanIdentifierFields identifierFields, int sequenceIdentifier, int frameIndex)
+      throws IOException {
     JsonObject output = createBaseFrameJson(frame);
 
-    output.addProperty("eventType", "orphanFastPacketContinuation");
-    output.addProperty("decoded", false);
+    output.addProperty(EVENT_TYPE, "orphanFastPacketContinuation");
+    output.addProperty(DECODED, false);
     output.addProperty("pgn", identifierFields.parameterGroupNumber());
-    output.addProperty("pgnHex", String.format("0x%05X", identifierFields.parameterGroupNumber()));
-    output.addProperty("sourceAddress", identifierFields.sourceAddress());
-    output.addProperty("destinationAddress", identifierFields.destinationAddress());
+    output.addProperty(PGN_HEX, String.format(PGN_HEX_FORMAT, identifierFields.parameterGroupNumber()));
+    output.addProperty(SOURCE_ADDRESS, identifierFields.sourceAddress());
+    output.addProperty(DESTINATION_ADDRESS, identifierFields.destinationAddress());
     output.addProperty("sequenceIdentifier", sequenceIdentifier);
     output.addProperty("frameIndex", frameIndex);
-    output.addProperty("reason", "Fast-packet continuation without matching start frame");
+    output.addProperty(REASON, "Fast-packet continuation without matching start frame");
 
     writeEvent(writer, output);
   }
 
-  private void writeUnexpectedMessage(
-      BufferedWriter writer,
-      CandumpFrame frame,
-      Message message
-  ) throws IOException {
+  private void writeUnexpectedMessage(BufferedWriter writer, CandumpFrame frame, Message message) throws IOException {
     JsonObject output = createBaseFrameJson(frame);
 
-    output.addProperty("eventType", "unexpectedMessage");
-    output.addProperty("decoded", false);
+    output.addProperty(EVENT_TYPE, "unexpectedMessage");
+    output.addProperty(DECODED, false);
     output.addProperty("messageType", message.getClass().getName());
-    output.addProperty("error", "Unexpected message type returned by frame handler");
+    output.addProperty(ERROR, "Unexpected message type returned by frame handler");
 
     writeEvent(writer, output);
   }
 
-  private void writeFrameHandlerError(
-      BufferedWriter writer,
-      CandumpFrame frame,
-      RuntimeException exception
-  ) throws IOException {
+  private void writeFrameHandlerError(BufferedWriter writer, CandumpFrame frame, RuntimeException exception) throws IOException {
     JsonObject output = createBaseFrameJson(frame);
 
-    output.addProperty("eventType", "frameHandlerError");
-    output.addProperty("decoded", false);
-    output.addProperty("error", exception.getMessage());
+    output.addProperty(EVENT_TYPE, "frameHandlerError");
+    output.addProperty(DECODED, false);
+    output.addProperty(ERROR, exception.getMessage());
 
     writeEvent(writer, output);
   }
 
-  private void writeInvalidLine(
-      BufferedWriter writer,
-      long lineNumber,
-      String line
-  ) throws IOException {
+  private void writeInvalidLine(BufferedWriter writer, long lineNumber, String line) throws IOException {
     JsonObject output = new JsonObject();
 
-    output.addProperty("eventType", "invalidLine");
+    output.addProperty(EVENT_TYPE, "invalidLine");
     output.addProperty("lineNumber", lineNumber);
-    output.addProperty("decoded", false);
-    output.addProperty("error", "Invalid candump line");
+    output.addProperty(DECODED, false);
+    output.addProperty(ERROR, "Invalid candump line");
     output.addProperty("line", line);
 
     writeEvent(writer, output);
@@ -488,14 +382,14 @@ public class CanLogToJsonDecoder {
     JsonObject output = new JsonObject();
 
     output.addProperty("lineNumber", frame.lineNumber());
-    output.addProperty("timestamp", frame.timestamp());
+    output.addProperty(TIMESTAMP, frame.timestamp());
     output.addProperty("interface", frame.interfaceName());
     output.addProperty("canId", String.format("%08X", frame.canIdentifier()));
     output.addProperty("priority", identifierFields.priority());
     output.addProperty("pgn", identifierFields.parameterGroupNumber());
-    output.addProperty("pgnHex", String.format("0x%05X", identifierFields.parameterGroupNumber()));
-    output.addProperty("sourceAddress", identifierFields.sourceAddress());
-    output.addProperty("destinationAddress", identifierFields.destinationAddress());
+    output.addProperty(PGN_HEX, String.format(PGN_HEX_FORMAT, identifierFields.parameterGroupNumber()));
+    output.addProperty(SOURCE_ADDRESS, identifierFields.sourceAddress());
+    output.addProperty(DESTINATION_ADDRESS, identifierFields.destinationAddress());
     output.addProperty("fromAddress", identifierFields.sourceAddress());
     output.addProperty("toAddress", identifierFields.destinationAddress());
     output.addProperty("broadcast", identifierFields.destinationAddress() == 255);
@@ -504,6 +398,8 @@ public class CanLogToJsonDecoder {
     return output;
   }
 
+  // Command-line usage errors must remain visible without logging configuration.
+  @SuppressWarnings("java:S106")
   public static void main(String[] args) throws Exception {
     if (args.length != 2) {
       System.err.println("Usage: CandumpN2kJsonDecoder <input-can-log> <output-jsonl>");
@@ -516,34 +412,20 @@ public class CanLogToJsonDecoder {
 
     CanLogToJsonDecoder decoder = new CanLogToJsonDecoder(frameHandler);
 
-    decoder.decode(
-        Path.of(args[0]),
-        Path.of(args[1])
-    );
+    decoder.decode(Path.of(args[0]), Path.of(args[1]));
   }
 
-  private record CandumpFrame(
-      long lineNumber,
-      double timestamp,
-      String interfaceName,
-      int canIdentifier,
-      byte[] payload
-  ) {
+  private record CandumpFrame(long lineNumber, double timestamp, String interfaceName, int canIdentifier, byte[] payload) {
     @Override
     public boolean equals(Object other) {
       if (this == other) {
         return true;
       }
-      if (!(other instanceof CandumpFrame(
-          var otherLineNumber, var otherTimestamp, var otherInterfaceName,
-          var otherCanIdentifier, var otherPayload))) {
+      if (!(other instanceof CandumpFrame(var otherLineNumber, var otherTimestamp, var otherInterfaceName, var otherCanIdentifier, var otherPayload))) {
         return false;
       }
-      return lineNumber == otherLineNumber
-          && Double.compare(timestamp, otherTimestamp) == 0
-          && canIdentifier == otherCanIdentifier
-          && Objects.equals(interfaceName, otherInterfaceName)
-          && Arrays.equals(payload, otherPayload);
+      return lineNumber == otherLineNumber && Double.compare(timestamp, otherTimestamp) == 0 && canIdentifier == otherCanIdentifier
+          && Objects.equals(interfaceName, otherInterfaceName) && Arrays.equals(payload, otherPayload);
     }
 
     @Override
@@ -554,30 +436,15 @@ public class CanLogToJsonDecoder {
 
     @Override
     public String toString() {
-      return "CandumpFrame[lineNumber=" + lineNumber
-          + ", timestamp=" + timestamp
-          + ", interfaceName=" + interfaceName
-          + ", canIdentifier=" + canIdentifier
+      return "CandumpFrame[lineNumber=" + lineNumber + ", timestamp=" + timestamp + ", interfaceName=" + interfaceName + ", canIdentifier=" + canIdentifier
           + ", payload=" + Arrays.toString(payload) + "]";
     }
   }
 
-  private record CanIdentifierFields(
-      int priority,
-      int parameterGroupNumber,
-      int sourceAddress,
-      int destinationAddress
-  ) {
-  }
-  private record FastPacketKey(
-      int parameterGroupNumber,
-      int sourceAddress,
-      int destinationAddress
-  ) {
-  }
+  private record CanIdentifierFields(int priority, int parameterGroupNumber, int sourceAddress, int destinationAddress) {}
+  private record FastPacketKey(int parameterGroupNumber, int sourceAddress, int destinationAddress) {}
 
   private static class FastPacketState {
-
     private final FastPacketKey key;
     private final int sequenceIdentifier;
     private final int totalPayloadLength;
@@ -591,27 +458,18 @@ public class CanLogToJsonDecoder {
     private int nextExpectedFrameIndex;
     private long lastLineNumber;
 
-    FastPacketState(
-        FastPacketKey key,
-        int sequenceIdentifier,
-        int totalPayloadLength,
-        int expectedFrameCount,
-        long startLineNumber,
-        double startTimestamp,
-        String interfaceName,
-        int canIdentifier
-    ) {
+    FastPacketState(FastPacketKey key, int sequenceIdentifier, int totalPayloadLength, int expectedFrameCount, CandumpFrame startFrame) {
       this.key = key;
       this.sequenceIdentifier = sequenceIdentifier;
       this.totalPayloadLength = totalPayloadLength;
       this.expectedFrameCount = expectedFrameCount;
-      this.startLineNumber = startLineNumber;
-      this.startTimestamp = startTimestamp;
-      this.interfaceName = interfaceName;
-      this.canIdentifier = canIdentifier;
+      this.startLineNumber = startFrame.lineNumber();
+      this.startTimestamp = startFrame.timestamp();
+      this.interfaceName = startFrame.interfaceName();
+      this.canIdentifier = startFrame.canIdentifier();
       this.receivedFrameCount = 0;
       this.nextExpectedFrameIndex = 0;
-      this.lastLineNumber = startLineNumber;
+      this.lastLineNumber = startFrame.lineNumber();
     }
 
     void addFrame(int frameIndex, long lineNumber) {

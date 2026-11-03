@@ -22,7 +22,6 @@ import lombok.Value;
 
 @Value
 public class N2kFieldDefinition {
-
   int order;
 
   String id;

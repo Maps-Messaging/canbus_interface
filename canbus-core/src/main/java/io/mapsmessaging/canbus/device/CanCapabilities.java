@@ -18,24 +18,12 @@
 
 package io.mapsmessaging.canbus.device;
 
-
-public record CanCapabilities(
-    boolean interfaceFdEnabled,
-    boolean socketFdEnabled,
-    int interfaceMaxPayloadBytes,
-    int ioMaxPayloadBytes
-) {
-
+public record CanCapabilities(boolean interfaceFdEnabled, boolean socketFdEnabled, int interfaceMaxPayloadBytes, int ioMaxPayloadBytes) {
   public boolean canSendFd() {
     return interfaceFdEnabled && socketFdEnabled && ioMaxPayloadBytes == 64;
   }
 
   public static CanCapabilities classicCan() {
-    return new CanCapabilities(
-        false,
-        false,
-        8,
-        8
-    );
+    return new CanCapabilities(false, false, 8, 8);
   }
 }

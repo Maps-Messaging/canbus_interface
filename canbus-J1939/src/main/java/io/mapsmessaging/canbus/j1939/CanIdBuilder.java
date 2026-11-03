@@ -18,15 +18,13 @@
 package io.mapsmessaging.canbus.j1939;
 
 public class CanIdBuilder {
-
   private static final int EXTENDED_ID_MASK = 0x1FFFFFFF;
   private static final int PRIORITY_MASK = 0x07;
   private static final int BYTE_MASK = 0xFF;
   private static final int MAX_PGN = 0x1FFFF;
   private static final int PDU1_MAX_PF = 239;
 
-  private CanIdBuilder() {
-  }
+  private CanIdBuilder() {}
 
   /**
    * Build a 29-bit identifier in J1939/N2K style.
@@ -86,5 +84,4 @@ public class CanIdBuilder {
 
     return identifier & EXTENDED_ID_MASK;
   }
-
 }

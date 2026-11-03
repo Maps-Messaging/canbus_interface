@@ -24,7 +24,6 @@ import lombok.Getter;
 
 @Getter
 public class ResolvedIdentifier {
-
   private final Integer canId;
   private final String group;
   private final String title;
@@ -36,16 +35,10 @@ public class ResolvedIdentifier {
   private final Double rangeMin;
   private final Double rangeMax;
 
-  public ResolvedIdentifier(Integer canId,
-                             String group,
-                             String title,
-                             String name,
-                             String dataType,
-                             String units,
-                             Double resolution,
-                             String notes,
-                             Double rangeMin,
-                             Double rangeMax) {
+  // Preserve the public constructor used by callers that supply all identifier metadata.
+  @SuppressWarnings("java:S107")
+  public ResolvedIdentifier(
+      Integer canId, String group, String title, String name, String dataType, String units, Double resolution, String notes, Double rangeMin, Double rangeMax) {
     this.canId = canId;
     this.group = group;
     this.title = title;
@@ -72,18 +65,8 @@ public class ResolvedIdentifier {
 
     Double resolution = definition.getResolution();
 
-    return new ResolvedIdentifier(
-        definition.getId(),
-        definition.getGroup(),
-        definition.getTitle(),
-        definition.getName(),
-        definition.getDataType(),
-        definition.getUnits(),
-        resolution,
-        definition.getNotes(),
-        min,
-        max
-    );
+    return new ResolvedIdentifier(definition.getId(), definition.getGroup(), definition.getTitle(), definition.getName(), definition.getDataType(), definition.getUnits(),
+        resolution, definition.getNotes(), min, max);
   }
 
   public static ResolvedIdentifier fromRange(int canId, IdentifierRangeDefinition range) {
@@ -106,17 +89,6 @@ public class ResolvedIdentifier {
       }
     }
 
-    return new ResolvedIdentifier(
-        canId,
-        range.getGroup(),
-        title,
-        null,
-        range.getDataType(),
-        range.getUnits(),
-        range.getResolution(),
-        range.getNotes(),
-        min,
-        max
-    );
+    return new ResolvedIdentifier(canId, range.getGroup(), title, null, range.getDataType(), range.getUnits(), range.getResolution(), range.getNotes(), min, max);
   }
 }

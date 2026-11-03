@@ -23,13 +23,12 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 class CanFrameTest {
-
   @Test
   void roundTrip_standardFrame_dlc8_preservesFieldsAndData() {
     int canIdentifier = 0x7FF;
     boolean extendedFrame = false;
     int dataLengthCode = 8;
-    byte[] data = new byte[]{0x00, (byte) 0xFC, (byte) 0xFF, (byte) 0xFF, 0x00, 0x00, (byte) 0xFF, (byte) 0xFF};
+    byte[] data = new byte[] {0x00, (byte) 0xFC, (byte) 0xFF, (byte) 0xFF, 0x00, 0x00, (byte) 0xFF, (byte) 0xFF};
 
     CanFrame original = new CanFrame(canIdentifier, extendedFrame, dataLengthCode, data);
     byte[] raw = original.getRawData();
@@ -92,7 +91,7 @@ class CanFrameTest {
     boolean extendedFrame = true;
     int dataLengthCode = 8;
 
-    byte[] data = new byte[]{0, 1, 2, 3, 4, 5, 6, 7};
+    byte[] data = new byte[] {0, 1, 2, 3, 4, 5, 6, 7};
     CanFrame frame = new CanFrame(canIdentifier, extendedFrame, dataLengthCode, data);
 
     byte[] raw = frame.getRawData();
@@ -116,89 +115,65 @@ class CanFrameTest {
 
   @Test
   void constructor_defensivelyCopiesData() {
-    byte[] data = new byte[]{1, 2, 3, 4};
+    byte[] data = new byte[] {1, 2, 3, 4};
     CanFrame frame = new CanFrame(0x12345678, true, 4, data);
 
     data[0] = 99;
 
     byte[] retrieved = frame.data();
-    Assertions.assertArrayEquals(new byte[]{1, 2, 3, 4}, retrieved);
+    Assertions.assertArrayEquals(new byte[] {1, 2, 3, 4}, retrieved);
   }
 
   @Test
   void getData_returnsDefensiveCopy() {
-    byte[] data = new byte[]{10, 20, 30, 40};
+    byte[] data = new byte[] {10, 20, 30, 40};
     CanFrame frame = new CanFrame(0x12345678, true, 4, data);
 
     byte[] retrieved = frame.data();
     retrieved[0] = 99;
 
-    Assertions.assertArrayEquals(new byte[]{10, 20, 30, 40}, frame.data());
+    Assertions.assertArrayEquals(new byte[] {10, 20, 30, 40}, frame.data());
   }
 
   @Test
   void constructor_rejectsStandardIdentifierAbove11Bit() {
-    Assertions.assertThrows(
-        IllegalArgumentException.class,
-        () -> new CanFrame(0x800, false, 0, new byte[0])
-    );
+    Assertions.assertThrows(IllegalArgumentException.class, () -> new CanFrame(0x800, false, 0, new byte[0]));
   }
 
   @Test
   void constructor_rejectsExtendedIdentifierAbove29Bit() {
-    Assertions.assertThrows(
-        IllegalArgumentException.class,
-        () -> new CanFrame(0x20000000, true, 0, new byte[0])
-    );
+    Assertions.assertThrows(IllegalArgumentException.class, () -> new CanFrame(0x20000000, true, 0, new byte[0]));
   }
 
   @Test
   void constructor_rejectsNegativeIdentifier() {
-    Assertions.assertThrows(
-        IllegalArgumentException.class,
-        () -> new CanFrame(-1, true, 0, new byte[0])
-    );
+    Assertions.assertThrows(IllegalArgumentException.class, () -> new CanFrame(-1, true, 0, new byte[0]));
   }
 
   @Test
   void constructor_rejectsInvalidDataLengthCode() {
-    Assertions.assertThrows(
-        IllegalArgumentException.class,
-        () -> new CanFrame(0x123, false, 9, new byte[8])
-    );
+    Assertions.assertThrows(IllegalArgumentException.class, () -> new CanFrame(0x123, false, 9, new byte[8]));
   }
 
   @Test
   void constructor_rejectsNullDataWhenDlcGreaterThanZero() {
-    Assertions.assertThrows(
-        IllegalArgumentException.class,
-        () -> new CanFrame(0x123, false, 1, null)
-    );
+    Assertions.assertThrows(IllegalArgumentException.class, () -> new CanFrame(0x123, false, 1, null));
   }
 
   @Test
   void constructor_rejectsDataShorterThanDlc() {
-    Assertions.assertThrows(
-        IllegalArgumentException.class,
-        () -> new CanFrame(0x123, false, 4, new byte[]{1, 2, 3})
-    );
+    Assertions.assertThrows(IllegalArgumentException.class, () -> new CanFrame(0x123, false, 4, new byte[] {1, 2, 3}));
   }
 
   @Test
   void constructor_rejectsDataLongerThanSixtyFourBytes() {
     byte[] data = new byte[65];
 
-    Assertions.assertThrows(
-        IllegalArgumentException.class,
-        () -> new CanFrame(0x12345678, true, 64, data)
-    );
+    Assertions.assertThrows(IllegalArgumentException.class, () -> new CanFrame(0x12345678, true, 64, data));
   }
 
   @Test
   void constructor_rejectsNonEmptyDataWhenDlcZero() {
-    Assertions.assertThrows(
-        IllegalArgumentException.class,
-        () -> new CanFrame(0x123, false, 0, new byte[]{1})
-    );
+    Assertions.assertThrows(IllegalArgumentException.class, () -> new CanFrame(0x123, false, 0, new byte[] {1}));
   }
 }

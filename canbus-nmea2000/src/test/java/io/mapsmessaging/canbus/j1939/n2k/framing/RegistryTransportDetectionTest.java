@@ -17,13 +17,15 @@
  */
 package io.mapsmessaging.canbus.j1939.n2k.framing;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.google.gson.JsonObject;
+import io.mapsmessaging.canbus.device.frames.CanFrame;
 import io.mapsmessaging.canbus.j1939.n2k.codec.N2kMessageParser;
-import io.mapsmessaging.canbus.j1939.n2k.framing.message.KnownMessage;
-import io.mapsmessaging.canbus.j1939.n2k.framing.message.Message;
 import io.mapsmessaging.canbus.j1939.n2k.compile.N2kCompiledRegistry;
 import io.mapsmessaging.canbus.j1939.n2k.compile.N2kCompiler;
-import io.mapsmessaging.canbus.device.frames.CanFrame;
+import io.mapsmessaging.canbus.j1939.n2k.framing.message.KnownMessage;
+import io.mapsmessaging.canbus.j1939.n2k.framing.message.Message;
 import io.mapsmessaging.canbus.j1939.n2k.model.N2kMessageDefinition;
 import io.mapsmessaging.canbus.j1939.n2k.model.N2kTransportType;
 import io.mapsmessaging.canbus.j1939.n2k.parser.N2kXmlDialectParser;
@@ -33,15 +35,13 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
 
 /** MSG-212: transport metadata must survive parsing/compilation and control wire framing. */
 class RegistryTransportDetectionTest {
-
   @Test
   void registry_fixture_looks_up_single_and_fast_pgns_and_unknown() throws Exception {
     N2kCompiledRegistry registry = registry();
-    for (int pgn : new int[]{59904, 60928, 126993, 126996, 126998}) {
+    for (int pgn : new int[] {59904, 60928, 126993, 126996, 126998}) {
       assertNotNull(registry.getRequiredMessage(pgn), "PGN " + pgn);
     }
     assertNull(registry.getRequiredMessage(130001));
@@ -72,11 +72,9 @@ class RegistryTransportDetectionTest {
 
   @Test
   void changing_only_registry_transport_changes_framing_for_same_pgn_and_length() throws Exception {
-    List<CanFrame> single = new FramePacker(new N2kMessageParser(registry(130000, "Single", 3)))
-        .pack(130000, 6, 42, 77, envelope());
-    List<CanFrame> fast = new FramePacker(new N2kMessageParser(registry(130000, "Fast", 3)))
-        .pack(130000, 6, 42, 77, envelope());
-    assertArrayEquals(new byte[]{-1, -1, -1}, single.get(0).data());
+    List<CanFrame> single = new FramePacker(new N2kMessageParser(registry(130000, "Single", 3))).pack(130000, 6, 42, 77, envelope());
+    List<CanFrame> fast = new FramePacker(new N2kMessageParser(registry(130000, "Fast", 3))).pack(130000, 6, 42, 77, envelope());
+    assertArrayEquals(new byte[] {-1, -1, -1}, single.get(0).data());
     assertFastPacket(fast, 3, 0x19FBD02A);
   }
 
@@ -89,20 +87,18 @@ class RegistryTransportDetectionTest {
   @Test
   void unsupported_transport_protocol_is_rejected_instead_of_guessed_from_length() throws Exception {
     FramePacker packer = new FramePacker(new N2kMessageParser(registry(130000, "ISO", 9)));
-    RuntimeException failure = assertThrows(RuntimeException.class,
-        () -> packer.pack(130000, 6, 42, 77, envelope()));
-    assertTrue(failure instanceof IllegalArgumentException || failure instanceof UnsupportedOperationException,
-        "Expected an explicit unsupported transport rejection: " + failure);
+    RuntimeException failure = assertThrows(RuntimeException.class, () -> packer.pack(130000, 6, 42, 77, envelope()));
+    assertTrue(failure instanceof IllegalArgumentException || failure instanceof UnsupportedOperationException, "Expected an explicit unsupported transport rejection: " + failure);
   }
 
   @Test
   void bundled_registry_transport_metadata_matches_required_pgns() throws Exception {
     N2kCompiledRegistry registry = N2kCompiler.compile(N2kXmlDialectParser.parseFromClasspath());
-    for (int pgn : new int[]{59904, 60928, 126993}) {
+    for (int pgn : new int[] {59904, 60928, 126993}) {
       assertEquals(N2kTransportType.SINGLE_FRAME, registry.getTransportType(pgn, 8));
       assertThrows(IllegalArgumentException.class, () -> registry.getTransportType(pgn, 9));
     }
-    for (int pgn : new int[]{126996, 126998}) {
+    for (int pgn : new int[] {126996, 126998}) {
       assertEquals(N2kTransportType.FAST_PACKET, registry.getTransportType(pgn, 3));
     }
   }
@@ -110,7 +106,7 @@ class RegistryTransportDetectionTest {
   @Test
   void unknown_pgn_fallback_is_limited_to_single_frame_payloads() throws Exception {
     N2kCompiledRegistry registry = registry();
-    for (int length : new int[]{0, 1, 8}) {
+    for (int length : new int[] {0, 1, 8}) {
       assertEquals(N2kTransportType.SINGLE_FRAME, registry.getTransportType(130001, length));
     }
     assertThrows(IllegalArgumentException.class, () -> registry.getTransportType(130001, 9));
@@ -126,15 +122,14 @@ class RegistryTransportDetectionTest {
 
   @Test
   void receiver_reassembles_short_fast_packets_instead_of_decoding_headers() throws Exception {
-    for (int length : new int[]{1, 3, 4, 6, 7, 8}) {
+    for (int length : new int[] {1, 3, 4, 6, 7, 8}) {
       N2kMessageParser parser = new N2kMessageParser(registry(130000, "Fast", length));
       FrameHandler handler = new FrameHandler(parser);
       byte[] payload = new byte[length];
       for (int index = 0; index < length; index++) {
         payload[index] = (byte) (index + 1);
       }
-      List<CanFrame> frames = new FramePacker(parser)
-          .packFastPacket(130000, 0x19FBD02A, 42, 255, payload);
+      List<CanFrame> frames = new FramePacker(parser).packFastPacket(130000, 0x19FBD02A, 42, 255, payload);
       for (int index = 0; index < frames.size(); index++) {
         CanFrame frame = frames.get(index);
         Optional<Message> result = handler.onFrame(frame.canIdentifier(), true, frame.dataLengthCode(), frame.data());
@@ -154,10 +149,9 @@ class RegistryTransportDetectionTest {
     FrameHandler handler = new FrameHandler(parser);
     byte[] frame = {0, 4, 1, 0, 3, 0x54, 0, 0};
 
-    KnownMessage message = assertInstanceOf(KnownMessage.class,
-        handler.onFrame(0x19F2152A, true, 8, frame).orElseThrow());
+    KnownMessage message = assertInstanceOf(KnownMessage.class, handler.onFrame(0x19F2152A, true, 8, frame).orElseThrow());
 
-    assertArrayEquals(new byte[]{1, 0, 3, 0x54}, message.getPayload());
+    assertArrayEquals(new byte[] {1, 0, 3, 0x54}, message.getPayload());
     assertEquals(0, message.getDecoded().getAsJsonObject("packet").get("acInstance").getAsInt());
   }
 
@@ -166,8 +160,7 @@ class RegistryTransportDetectionTest {
     FrameHandler handler = new FrameHandler(new N2kMessageParser(registry()));
     byte[] payload = {0, 9, 1};
 
-    KnownMessage message = assertInstanceOf(KnownMessage.class,
-        handler.onFrame(0x18EA4D2A, true, 3, payload).orElseThrow());
+    KnownMessage message = assertInstanceOf(KnownMessage.class, handler.onFrame(0x18EA4D2A, true, 3, payload).orElseThrow());
 
     assertArrayEquals(payload, message.getPayload());
   }
@@ -203,9 +196,8 @@ class RegistryTransportDetectionTest {
   }
 
   private static N2kCompiledRegistry registry() throws Exception {
-    return parse(definition(59904, "Single", 3) + definition(60928, "Single", 8)
-        + definition(126993, "Single", 8) + definition(126996, "Fast", 134)
-        + definition(126998, "Fast", 3));
+    return parse(
+        definition(59904, "Single", 3) + definition(60928, "Single", 8) + definition(126993, "Single", 8) + definition(126996, "Fast", 134) + definition(126998, "Fast", 3));
   }
 
   private static N2kCompiledRegistry registry(int pgn, String type, int length) throws Exception {

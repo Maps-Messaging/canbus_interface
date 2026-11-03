@@ -17,6 +17,10 @@
 
 package io.mapsmessaging.canbus.j1939.n2k.schema;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.google.gson.JsonObject;
 import io.mapsmessaging.canbus.j1939.n2k.compile.N2kCompiledMessage;
 import io.mapsmessaging.canbus.j1939.n2k.compile.N2kCompiledRegistry;
@@ -31,17 +35,11 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 class N2kSchemaRegistryConcurrencyTest {
-
   @Test
   void concurrentFirstAccessReturnsOnePublishedSchema() throws Exception {
     N2kCompiledMessage message = N2kCompiledMessage.builder().pgn(129025).id("Position").build();
-    N2kSchemaRegistry schemas = new N2kSchemaRegistry(
-        new N2kCompiledRegistry(Map.of(129025, message)));
+    N2kSchemaRegistry schemas = new N2kSchemaRegistry(new N2kCompiledRegistry(Map.of(129025, message)));
     int workerCount = 16;
     CountDownLatch start = new CountDownLatch(1);
     ExecutorService workers = Executors.newFixedThreadPool(workerCount);
@@ -56,8 +54,7 @@ class N2kSchemaRegistryConcurrencyTest {
       start.countDown();
 
       JsonObject published = results.getFirst().get(10, TimeUnit.SECONDS);
-      assertEquals(129025, published.getAsJsonObject("properties")
-          .getAsJsonObject("pgn").get("const").getAsInt());
+      assertEquals(129025, published.getAsJsonObject("properties").getAsJsonObject("pgn").get("const").getAsInt());
       for (Future<JsonObject> result : results) {
         assertSame(published, result.get(10, TimeUnit.SECONDS));
       }

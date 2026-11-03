@@ -29,7 +29,6 @@ import lombok.experimental.UtilityClass;
 
 @UtilityClass
 public class N2kJsonSchemaGenerator {
-
   public static JsonObject generateSchema(N2kMessageDefinition messageDefinition) {
     JsonObject schema = new JsonObject();
 
@@ -49,55 +48,12 @@ public class N2kJsonSchemaGenerator {
 
     JsonObject decodedProperties = new JsonObject();
 
-    List<N2kFieldDefinition> fields = messageDefinition.getFields().stream()
-        .sorted(Comparator.comparingInt(N2kFieldDefinition::getOrder))
-        .toList();
+    List<N2kFieldDefinition> fields = messageDefinition.getFields().stream().sorted(Comparator.comparingInt(N2kFieldDefinition::getOrder)).toList();
 
     for (N2kFieldDefinition field : fields) {
-      if (!isSchemaField(field)) {
-        continue;
+      if (isSchemaField(field) && field.getId() != null && !field.getId().isBlank()) {
+        decodedProperties.add(field.getId(), buildFieldSchema(field));
       }
-
-      String id = field.getId();
-      if (id == null || id.isBlank()) {
-        continue;
-      }
-
-      JsonObject prop = new JsonObject();
-      prop.addProperty("type", "number");
-
-      String description = buildFieldDescription(field);
-      if (description != null) {
-        prop.addProperty("description", description);
-      }
-
-      if (field.getRangeMin() != null) {
-        prop.addProperty("minimum", field.getRangeMin());
-      }
-      if (field.getRangeMax() != null) {
-        prop.addProperty("maximum", field.getRangeMax());
-      }
-
-      if (field.getResolution() > 0.0) {
-        prop.addProperty("multipleOf", field.getResolution());
-      }
-
-      // Non-standard but useful metadata
-      prop.addProperty("x-bitLength", field.getBitLength());
-      prop.addProperty("x-bitOffset", field.getBitOffset());
-      prop.addProperty("x-signed", field.isSigned());
-      prop.addProperty("x-resolution", field.getResolution());
-      prop.addProperty("x-offset", field.getOffset());
-
-      if (field.getUnit() != null && !field.getUnit().isBlank()) {
-        prop.addProperty("x-unit", field.getUnit());
-      }
-      if (field.getTypeInPdf() != null && !field.getTypeInPdf().isBlank()) {
-        prop.addProperty("x-typeInPdf", field.getTypeInPdf());
-      }
-      prop.addProperty("x-fieldType", field.getFieldType().name());
-
-      decodedProperties.add(id, prop);
     }
 
     decoded.add("properties", decodedProperties);
@@ -117,20 +73,51 @@ public class N2kJsonSchemaGenerator {
     return schema;
   }
 
+  private static JsonObject buildFieldSchema(N2kFieldDefinition field) {
+    JsonObject prop = new JsonObject();
+    prop.addProperty("type", "number");
+
+    String description = buildFieldDescription(field);
+    if (description != null) {
+      prop.addProperty("description", description);
+    }
+
+    if (field.getRangeMin() != null) {
+      prop.addProperty("minimum", field.getRangeMin());
+    }
+    if (field.getRangeMax() != null) {
+      prop.addProperty("maximum", field.getRangeMax());
+    }
+
+    if (field.getResolution() > 0.0) {
+      prop.addProperty("multipleOf", field.getResolution());
+    }
+
+    // Non-standard but useful metadata
+    prop.addProperty("x-bitLength", field.getBitLength());
+    prop.addProperty("x-bitOffset", field.getBitOffset());
+    prop.addProperty("x-signed", field.isSigned());
+    prop.addProperty("x-resolution", field.getResolution());
+    prop.addProperty("x-offset", field.getOffset());
+
+    if (field.getUnit() != null && !field.getUnit().isBlank()) {
+      prop.addProperty("x-unit", field.getUnit());
+    }
+    if (field.getTypeInPdf() != null && !field.getTypeInPdf().isBlank()) {
+      prop.addProperty("x-typeInPdf", field.getTypeInPdf());
+    }
+    prop.addProperty("x-fieldType", field.getFieldType().name());
+
+    return prop;
+  }
+
   private static boolean isSchemaField(N2kFieldDefinition field) {
     if (field.getBitOffset() == null || field.getBitLength() == null) {
       return false;
     }
 
     N2kFieldType type = field.getFieldType();
-    if (type == N2kFieldType.STRING_FIX ||
-        type == N2kFieldType.STRING_LAU ||
-        type == N2kFieldType.REPEAT_MARKER ||
-        type == N2kFieldType.RESERVED) {
-      return false;
-    }
-
-    return true;
+    return type != N2kFieldType.STRING_FIX && type != N2kFieldType.STRING_LAU && type != N2kFieldType.REPEAT_MARKER && type != N2kFieldType.RESERVED;
   }
 
   private static String buildTitle(N2kMessageDefinition messageDefinition) {

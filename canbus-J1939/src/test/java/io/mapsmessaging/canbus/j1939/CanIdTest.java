@@ -21,7 +21,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 class CanIdTest {
-
   @Test
   void parse_pdu1_identifier() {
     // Priority = 3
@@ -29,12 +28,7 @@ class CanIdTest {
     // PF = 0xEC (236 < 240 => PDU1)
     // PS = destination = 0x45
     // SA = 0x22
-    int canId =
-        (3 << 26) |
-            (0 << 24) |
-            (0xEC << 16) |
-            (0x45 << 8) |
-            0x22;
+    int canId = (3 << 26) | (0 << 24) | (0xEC << 16) | (0x45 << 8) | 0x22;
 
     CanId id = CanId.parse(canId);
 
@@ -51,12 +45,7 @@ class CanIdTest {
     // PF = 0xF1 (241 >= 240 => PDU2)
     // PS = PGN low byte = 0x10
     // SA = 0xAB
-    int canId =
-        (6 << 26) |
-            (1 << 24) |
-            (0xF1 << 16) |
-            (0x10 << 8) |
-            0xAB;
+    int canId = (6 << 26) | (1 << 24) | (0xF1 << 16) | (0x10 << 8) | 0xAB;
 
     CanId id = CanId.parse(canId);
 

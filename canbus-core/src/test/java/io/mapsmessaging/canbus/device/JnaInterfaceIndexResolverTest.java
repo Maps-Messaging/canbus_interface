@@ -18,14 +18,12 @@
  */
 package io.mapsmessaging.canbus.device;
 
+import java.io.IOException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import java.io.IOException;
-
 class JnaInterfaceIndexResolverTest {
-
   @Test
   void resolvesIndex_whenIfNameToIndexReturnsPositive() throws Exception {
     LibCFacade libC = Mockito.mock(LibCFacade.class);

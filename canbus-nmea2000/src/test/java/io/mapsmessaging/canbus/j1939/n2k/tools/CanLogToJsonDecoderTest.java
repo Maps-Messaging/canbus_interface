@@ -16,19 +16,6 @@
  */
 package io.mapsmessaging.canbus.j1939.n2k.tools;
 
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import com.google.gson.Strictness;
-import io.mapsmessaging.canbus.j1939.n2k.framing.FrameHandler;
-import io.mapsmessaging.canbus.j1939.n2k.framing.message.UnknownMessage;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.lang.reflect.Constructor;
-import java.util.Optional;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -38,8 +25,20 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class CanLogToJsonDecoderTest {
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.Strictness;
+import io.mapsmessaging.canbus.j1939.n2k.framing.FrameHandler;
+import io.mapsmessaging.canbus.j1939.n2k.framing.message.UnknownMessage;
+import java.lang.reflect.Constructor;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Optional;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
+class CanLogToJsonDecoderTest {
   @TempDir
   Path temporaryDirectory;
 
@@ -47,8 +46,7 @@ class CanLogToJsonDecoderTest {
   void reportsMalformedLinesAndUnknownFramesAsValidJson() throws Exception {
     FrameHandler handler = mock(FrameHandler.class);
     when(handler.onFrame(anyInt(), anyBoolean(), anyInt(), any(byte[].class)))
-        .thenAnswer(call -> Optional.of(UnknownMessage.invalidFrame(
-            "unrecognized frame", call.getArgument(0), call.getArgument(2), call.getArgument(3))));
+        .thenAnswer(call -> Optional.of(UnknownMessage.invalidFrame("unrecognized frame", call.getArgument(0), call.getArgument(2), call.getArgument(3))));
 
     JsonArray events = decode(handler, "bad candump line", "(1.25) can0 09F80101#0102030405060708");
 
@@ -77,16 +75,13 @@ class CanLogToJsonDecoderTest {
     JsonArray events = decode(emptyHandler(), "(1.25) can0 09F01401#010708090A0B0C0D");
 
     assertEquals(1, events.size());
-    assertEquals("orphanFastPacketContinuation",
-        events.get(0).getAsJsonObject().get("eventType").getAsString());
+    assertEquals("orphanFastPacketContinuation", events.get(0).getAsJsonObject().get("eventType").getAsString());
     assertEquals(1, events.get(0).getAsJsonObject().get("frameIndex").getAsInt());
   }
 
   @Test
   void completedFastPacketProducesNoIncompleteEvent() throws Exception {
-    JsonArray events = decode(emptyHandler(),
-        "(1.25) can0 09F01401#0008010203040506",
-        "(1.26) can0 09F01401#010708090A0B0C0D");
+    JsonArray events = decode(emptyHandler(), "(1.25) can0 09F01401#0008010203040506", "(1.26) can0 09F01401#010708090A0B0C0D");
 
     assertEquals(0, events.size());
   }
@@ -103,12 +98,11 @@ class CanLogToJsonDecoderTest {
   @Test
   void candumpFramesComparePayloadContent() throws Exception {
     Class<?> frameClass = Class.forName(CanLogToJsonDecoder.class.getName() + "$CandumpFrame");
-    Constructor<?> constructor = frameClass.getDeclaredConstructor(
-        long.class, double.class, String.class, int.class, byte[].class);
+    Constructor<?> constructor = frameClass.getDeclaredConstructor(long.class, double.class, String.class, int.class, byte[].class);
     constructor.setAccessible(true);
-    Object first = constructor.newInstance(1L, 1.25, "can0", 0x09F80101, new byte[]{1, 2});
-    Object same = constructor.newInstance(1L, 1.25, "can0", 0x09F80101, new byte[]{1, 2});
-    Object different = constructor.newInstance(1L, 1.25, "can0", 0x09F80101, new byte[]{1, 3});
+    Object first = constructor.newInstance(1L, 1.25, "can0", 0x09F80101, new byte[] {1, 2});
+    Object same = constructor.newInstance(1L, 1.25, "can0", 0x09F80101, new byte[] {1, 2});
+    Object different = constructor.newInstance(1L, 1.25, "can0", 0x09F80101, new byte[] {1, 3});
 
     assertEquals(first, same);
     assertEquals(first.hashCode(), same.hashCode());
@@ -122,9 +116,8 @@ class CanLogToJsonDecoderTest {
     JsonObject payload = new JsonObject();
     payload.addProperty("heading", 42);
     when(handler.onFrame(anyInt(), anyBoolean(), anyInt(), any(byte[].class)))
-        .thenReturn(Optional.of(new io.mapsmessaging.canbus.j1939.n2k.framing.message.KnownMessage(
-            io.mapsmessaging.canbus.j1939.CanId.parse(0x09F80101),
-            0x09F80101, new byte[]{1}, payload)));
+        .thenReturn(Optional.of(
+            new io.mapsmessaging.canbus.j1939.n2k.framing.message.KnownMessage(io.mapsmessaging.canbus.j1939.CanId.parse(0x09F80101), 0x09F80101, new byte[] {1}, payload)));
 
     JsonArray events = decode(handler, "(1.25) can0 09F80101#01");
 
@@ -137,12 +130,9 @@ class CanLogToJsonDecoderTest {
   @Test
   void reportsFrameHandlerFailureWithoutLosingFollowingFrames() throws Exception {
     FrameHandler handler = mock(FrameHandler.class);
-    when(handler.onFrame(anyInt(), anyBoolean(), anyInt(), any(byte[].class)))
-        .thenThrow(new IllegalStateException("bad frame"));
+    when(handler.onFrame(anyInt(), anyBoolean(), anyInt(), any(byte[].class))).thenThrow(new IllegalStateException("bad frame"));
 
-    JsonArray events = decode(handler,
-        "(1.25) can0 09F80101#01",
-        "(1.26) can0 09F80101#02");
+    JsonArray events = decode(handler, "(1.25) can0 09F80101#01", "(1.26) can0 09F80101#02");
 
     assertEquals(2, events.size());
     assertEquals("frameHandlerError", events.get(0).getAsJsonObject().get("eventType").getAsString());
@@ -152,48 +142,36 @@ class CanLogToJsonDecoderTest {
 
   @Test
   void sequenceChangeReportsIncompletePacketAndOrphanContinuation() throws Exception {
-    JsonArray events = decode(emptyHandler(),
-        "(1.25) can0 09F01401#0008010203040506",
-        "(1.26) can0 09F01401#210708090A0B0C0D");
+    JsonArray events = decode(emptyHandler(), "(1.25) can0 09F01401#0008010203040506", "(1.26) can0 09F01401#210708090A0B0C0D");
 
     assertEquals(2, events.size());
     assertEquals("incompleteFastPacket", events.get(0).getAsJsonObject().get("eventType").getAsString());
-    assertEquals("Fast-packet sequence changed before packet completed",
-        events.get(0).getAsJsonObject().get("reason").getAsString());
-    assertEquals("orphanFastPacketContinuation",
-        events.get(1).getAsJsonObject().get("eventType").getAsString());
+    assertEquals("Fast-packet sequence changed before packet completed", events.get(0).getAsJsonObject().get("reason").getAsString());
+    assertEquals("orphanFastPacketContinuation", events.get(1).getAsJsonObject().get("eventType").getAsString());
   }
 
   @Test
   void missingFrameIndexReportsGapAndOrphanContinuation() throws Exception {
-    JsonArray events = decode(emptyHandler(),
-        "(1.25) can0 09F01401#0008010203040506",
-        "(1.26) can0 09F01401#020708090A0B0C0D");
+    JsonArray events = decode(emptyHandler(), "(1.25) can0 09F01401#0008010203040506", "(1.26) can0 09F01401#020708090A0B0C0D");
 
     assertEquals(2, events.size());
-    assertEquals("Fast-packet frame index gap",
-        events.get(0).getAsJsonObject().get("reason").getAsString());
+    assertEquals("Fast-packet frame index gap", events.get(0).getAsJsonObject().get("reason").getAsString());
     assertEquals(2, events.get(1).getAsJsonObject().get("frameIndex").getAsInt());
   }
 
   @Test
   void newPacketStartReportsPreviousPacketAsIncomplete() throws Exception {
-    JsonArray events = decode(emptyHandler(),
-        "(1.25) can0 09F01401#0008010203040506",
-        "(1.26) can0 09F01401#2008010203040506");
+    JsonArray events = decode(emptyHandler(), "(1.25) can0 09F01401#0008010203040506", "(1.26) can0 09F01401#2008010203040506");
 
     assertEquals(2, events.size());
-    assertEquals("New fast-packet start before previous packet completed",
-        events.get(0).getAsJsonObject().get("reason").getAsString());
-    assertEquals("End of file before fast-packet completed",
-        events.get(1).getAsJsonObject().get("reason").getAsString());
+    assertEquals("New fast-packet start before previous packet completed", events.get(0).getAsJsonObject().get("reason").getAsString());
+    assertEquals("End of file before fast-packet completed", events.get(1).getAsJsonObject().get("reason").getAsString());
     assertEquals(1, events.get(1).getAsJsonObject().get("sequenceIdentifier").getAsInt());
   }
 
   private FrameHandler emptyHandler() {
     FrameHandler handler = mock(FrameHandler.class);
-    when(handler.onFrame(anyInt(), anyBoolean(), anyInt(), any(byte[].class)))
-        .thenReturn(Optional.empty());
+    when(handler.onFrame(anyInt(), anyBoolean(), anyInt(), any(byte[].class))).thenReturn(Optional.empty());
     return handler;
   }
 
@@ -202,7 +180,6 @@ class CanLogToJsonDecoderTest {
     Path output = temporaryDirectory.resolve("events.json");
     Files.write(input, java.util.List.of(lines));
     new CanLogToJsonDecoder(handler).decode(input, output);
-    return new GsonBuilder().setStrictness(Strictness.STRICT).create()
-        .fromJson(Files.readString(output), JsonArray.class);
+    return new GsonBuilder().setStrictness(Strictness.STRICT).create().fromJson(Files.readString(output), JsonArray.class);
   }
 }

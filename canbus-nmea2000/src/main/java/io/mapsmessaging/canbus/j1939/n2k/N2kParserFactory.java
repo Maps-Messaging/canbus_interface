@@ -26,11 +26,10 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class N2kParserFactory {
-
   private static final AtomicReference<N2kCompiledRegistry> registry = new AtomicReference<>();
 
   public static N2kCompiledRegistry getN2kParser() throws Exception {
-    if(registry.get() == null) {
+    if (registry.get() == null) {
       List<N2kMessageDefinition> messageDefinitions = N2kXmlDialectParser.parseFromClasspath();
       registry.set(N2kCompiler.compile(messageDefinitions));
     }

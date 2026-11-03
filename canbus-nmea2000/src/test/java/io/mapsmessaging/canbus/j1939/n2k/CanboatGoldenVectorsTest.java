@@ -46,14 +46,10 @@ class CanboatGoldenVectorsTest {
   @Test
   void preservesCanonicalDefinitionAndPgnCounts() {
     assertEquals(640, nmeaDefinitions.size());
-    assertEquals(
-        348, nmeaDefinitions.stream().map(N2kMessageDefinition::getPgn).distinct().count());
+    assertEquals(348, nmeaDefinitions.stream().map(N2kMessageDefinition::getPgn).distinct().count());
     assertEquals(89, j1939Definitions.size());
-    assertEquals(
-        84, j1939Definitions.stream().map(N2kMessageDefinition::getPgn).distinct().count());
-    assertEquals(
-        nmeaDefinitions.stream().filter(d -> d.getPgn() == 126720).count(),
-        nmeaRegistry.getVariants(126720).size());
+    assertEquals(84, j1939Definitions.stream().map(N2kMessageDefinition::getPgn).distinct().count());
+    assertEquals(nmeaDefinitions.stream().filter(d -> d.getPgn() == 126720).count(), nmeaRegistry.getVariants(126720).size());
   }
 
   @Test
@@ -69,24 +65,15 @@ class CanboatGoldenVectorsTest {
   @Test
   void preservesUnsigned64BitIsoNamesExactly() {
     // pgn-126983.in and pgn-126983-nv.out; NAME bytes decoded little endian.
-    JsonObject packet =
-        packet(
-            nmea,
-            126983,
-            "01 02 03 00 f8 19 e8 e4 10 00 82 78 c0 04 01 3b 07 03 04 04 30 ef 34 12 21 67 32 32");
-    assertEquals(
-        new BigInteger("13868977989282490393"),
-        packet.get("dataSourceNetworkIdName").getAsBigInteger());
-    assertEquals(
-        new BigInteger("2383025354739811331"),
-        packet.get("acknowledgeSourceNetworkIdName").getAsBigInteger());
+    JsonObject packet = packet(nmea, 126983, "01 02 03 00 f8 19 e8 e4 10 00 82 78 c0 04 01 3b 07 03 04 04 30 ef 34 12 21 67 32 32");
+    assertEquals(new BigInteger("13868977989282490393"), packet.get("dataSourceNetworkIdName").getAsBigInteger());
+    assertEquals(new BigInteger("2383025354739811331"), packet.get("acknowledgeSourceNetworkIdName").getAsBigInteger());
   }
 
   @Test
   void readsSequentialLauStringsWithUtf16Content() {
     // ubsan-utf16.in: ASCII first string, UTF16LE second string.
-    JsonObject packet =
-        packet(nmea, 126998, "07 01 68 65 6c 6c 6f 0c 00 77 00 f3 00 72 00 6c 00 64 00");
+    JsonObject packet = packet(nmea, 126998, "07 01 68 65 6c 6c 6f 0c 00 77 00 f3 00 72 00 6c 00 64 00");
     assertEquals("hello", packet.get("installationDescription1").getAsString());
     assertEquals("wórld", packet.get("installationDescription2").getAsString());
   }
@@ -94,8 +81,7 @@ class CanboatGoldenVectorsTest {
   @Test
   void readsReferencedProprietaryVariantInGroupFunctionRepeat() {
     // pgn-126208-request-126720.in and .out, first record.
-    JsonObject result =
-        nmea.decodeToJson(126208, bytes("00 00 ef 01 ff ff ff ff ff ff 03 01 87 00 03 04 04 23"));
+    JsonObject result = nmea.decodeToJson(126208, bytes("00 00 ef 01 ff ff ff ff ff ff 03 01 87 00 03 04 04 23"));
     assertEquals("nmeaRequestGroupFunction", result.get("name").getAsString());
     JsonObject packet = result.getAsJsonObject("packet");
     assertEquals(126720, packet.get("pgn").getAsInt());
@@ -110,12 +96,9 @@ class CanboatGoldenVectorsTest {
   @Test
   void skipsOverwideDynamicNumericValueWithoutLosingNextRecord() {
     // keyvalue-wide-field.in and .out: Length 13 exceeds numeric capacity.
-    JsonObject packet =
-        packet(
-            nmea,
-            130824,
-            "7d 99 7e 20 cb 00 7c 20 00 05 32 21 a8 46 33 21 b5 4d 12 d1 f4 03 50 21 56 5e 51 21 95"
-                + " 0a 21 6b f5 6c 21 56 2c 6d 21 56 2b ff");
+    JsonObject packet = packet(nmea, 130824,
+        "7d 99 7e 20 cb 00 7c 20 00 05 32 21 a8 46 33 21 b5 4d 12 d1 f4 03 50 21 56 5e 51 21 95"
+            + " 0a 21 6b f5 6c 21 56 2c 6d 21 56 2b ff");
     JsonArray list = packet.getAsJsonArray("list");
     assertEquals(7, list.size());
     assertEquals(2.03, list.get(0).getAsJsonObject().get("value").getAsDouble(), 1e-9);
@@ -144,12 +127,9 @@ class CanboatGoldenVectorsTest {
   @Test
   void usesPositiveMaximumForSignedUnknown() {
     // pgn-float-units.in, User Datum record: deltaY/Z = signed 0x7fffffff.
-    JsonObject packet =
-        packet(
-            nmea,
-            129045,
-            "96 00 00 00 ff ff ff 7f ff ff ff 7f 35 fa 0e 3c c2 b8 b2 bc 35 fa 0e 3d ff ff ff ff ff"
-                + " ff ff 7f ff ff ff ff ff ff ff ff");
+    JsonObject packet = packet(nmea, 129045,
+        "96 00 00 00 ff ff ff 7f ff ff ff 7f 35 fa 0e 3c c2 b8 b2 bc 35 fa 0e 3d ff ff ff ff ff"
+            + " ff ff 7f ff ff ff ff ff ff ff ff");
     assertEquals(1.5, packet.get("deltaX").getAsDouble(), 1e-9);
     assertNullField(packet, "deltaY");
     assertNullField(packet, "deltaZ");

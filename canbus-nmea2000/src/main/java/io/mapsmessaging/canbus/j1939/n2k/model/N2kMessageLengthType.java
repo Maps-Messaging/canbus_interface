@@ -18,7 +18,4 @@
 
 package io.mapsmessaging.canbus.j1939.n2k.model;
 
-public enum N2kMessageLengthType {
-  FIXED,
-  VARIABLE
-}
+public enum N2kMessageLengthType { FIXED, VARIABLE }

@@ -18,10 +18,9 @@
 
 package io.mapsmessaging.canbus.canaerospace.schema;
 
-import lombok.Data;
-
 import java.util.LinkedHashMap;
 import java.util.Map;
+import lombok.Data;
 
 @Data
 public class DataTypesDefinition {

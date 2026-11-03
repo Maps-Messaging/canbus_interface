@@ -18,12 +18,12 @@
 
 package io.mapsmessaging.canbus.device.frames;
 
-
 import com.sun.jna.Pointer;
 import com.sun.jna.Structure;
-
 import java.util.List;
 
+// Native structures intentionally retain JNA Structure pointer-based equality.
+@SuppressWarnings("java:S2160")
 public final class NativeCanFrame extends Structure {
   public int canIdentifier;
   public byte dataLengthCode;
@@ -45,4 +45,3 @@ public final class NativeCanFrame extends Structure {
     return List.of("canIdentifier", "dataLengthCode", "pad", "reserved0", "reserved1", "data");
   }
 }
-

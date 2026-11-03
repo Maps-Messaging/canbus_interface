@@ -20,17 +20,13 @@ package io.mapsmessaging.canbus.j1939.n2k.codec;
 
 import com.google.gson.JsonObject;
 import io.mapsmessaging.canbus.j1939.n2k.compile.N2kCompiledField;
-
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 public class StringProcessor implements Processor {
-
   @Override
   public int pack(N2kCompiledField field, byte[] payload, int cursor, JsonObject decoded) {
-    return writeString(field, payload, cursor, decoded.has(field.getId()) && !decoded.get(field.getId()).isJsonNull()
-        ? decoded.get(field.getId()).getAsString()
-        : null);
+    return writeString(field, payload, cursor, decoded.has(field.getId()) && !decoded.get(field.getId()).isJsonNull() ? decoded.get(field.getId()).getAsString() : null);
   }
 
   @Override
@@ -43,9 +39,7 @@ public class StringProcessor implements Processor {
     Position position = resolvePosition(field, cursor);
 
     if (position.startBit != 0) {
-      throw new UnsupportedOperationException(
-          "STRING_FIX must be byte-aligned: " + field.getId() + " startBit=" + position.startBit
-      );
+      throw new UnsupportedOperationException("STRING_FIX must be byte-aligned: " + field.getId() + " startBit=" + position.startBit);
     }
 
     int endExclusive = Math.min(payload.length, position.startByte + position.lengthBytes);
@@ -77,9 +71,7 @@ public class StringProcessor implements Processor {
     Position position = resolvePosition(field, cursor);
 
     if (position.startBit != 0) {
-      throw new UnsupportedOperationException(
-          "STRING_FIX must be byte-aligned: " + field.getId() + " startBit=" + position.startBit
-      );
+      throw new UnsupportedOperationException("STRING_FIX must be byte-aligned: " + field.getId() + " startBit=" + position.startBit);
     }
 
     int endExclusive = Math.min(payload.length, position.startByte + position.lengthBytes);
@@ -102,21 +94,11 @@ public class StringProcessor implements Processor {
 
   private static Position resolvePosition(N2kCompiledField field, int cursor) {
     if (field.isCompileTimeFixed()) {
-      return new Position(
-          field.getStartByte(),
-          field.getStartBit(),
-          field.getBytesToRead(),
-          cursor
-      );
+      return new Position(field.getStartByte(), field.getStartBit(), field.getBytesToRead(), cursor);
     }
 
     int lengthBytes = computeRelativeBytes(field);
-    return new Position(
-        cursor,
-        0,
-        lengthBytes,
-        cursor + lengthBytes
-    );
+    return new Position(cursor, 0, lengthBytes, cursor + lengthBytes);
   }
 
   private static int computeRelativeBytes(N2kCompiledField field) {
@@ -146,12 +128,9 @@ public class StringProcessor implements Processor {
     return (end == input.length()) ? input : input.substring(0, end);
   }
 
-  private record Position(
-      int startByte,
-      int startBit,
-      int lengthBytes,
-      int nextCursor
-  ) {}
+  private record Position(int startByte, int startBit, int lengthBytes, int nextCursor) {}
 
-  public StringProcessor() {}
+  public StringProcessor() {
+    // Stateless processor: no initialization is required.
+  }
 }

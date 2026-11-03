@@ -36,9 +36,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
 
-class N2kRoundTripAllPgnsTest extends BaseTest{
-
-
+class N2kRoundTripAllPgnsTest extends BaseTest {
   @TestFactory
   Stream<DynamicTest> allCompiledPgns_roundTrip_fixedWidthNumericFields() throws Exception {
     N2kCompiledRegistry registry = buildRegistry();
@@ -47,13 +45,8 @@ class N2kRoundTripAllPgnsTest extends BaseTest{
     List<N2kCompiledMessage> messages = new ArrayList<>(registry.getMessagesByPgn().values());
     messages.sort(Comparator.comparingInt(N2kCompiledMessage::getPgn));
 
-    return messages.stream()
-        .map(msg -> DynamicTest.dynamicTest(
-            msg.getPgn() + " " + (msg.getId() == null ? "" : msg.getId()),
-            () -> roundTripMessage(parser, msg)
-        ));
+    return messages.stream().map(msg -> DynamicTest.dynamicTest(msg.getPgn() + " " + (msg.getId() == null ? "" : msg.getId()), () -> roundTripMessage(parser, msg)));
   }
-
 
   private static void roundTripMessage(N2kMessageParser parser, N2kCompiledMessage msg) {
     JsonObject decoded = new JsonObject();
@@ -79,8 +72,7 @@ class N2kRoundTripAllPgnsTest extends BaseTest{
 
         if (type == N2kFieldType.LOOKUP) {
           decoded.addProperty(id, (int) (clampedRawValue & field.getMask()));
-        }
-        else {
+        } else {
           decoded.addProperty(id, value);
         }
         continue;
@@ -123,29 +115,14 @@ class N2kRoundTripAllPgnsTest extends BaseTest{
 
       N2kFieldType type = field.getFieldType();
       if (type == N2kFieldType.LOOKUP) {
-        assertEquals(
-            expectedJson.getAsInt(),
-            actualJson.getAsInt(),
-            "LOOKUP mismatch for " + fieldId + " PGN=" + msg.getPgn()
-        );
-      }
-      else if (type == N2kFieldType.STRING_LAU || type == N2kFieldType.STRING_FIX) {
-        assertEquals(
-            expectedJson.getAsString(),
-            actualJson.getAsString(),
-            "STRING mismatch for " + fieldId + " PGN=" + msg.getPgn()
-        );
-      }
-      else {
+        assertEquals(expectedJson.getAsInt(), actualJson.getAsInt(), "LOOKUP mismatch for " + fieldId + " PGN=" + msg.getPgn());
+      } else if (type == N2kFieldType.STRING_LAU || type == N2kFieldType.STRING_FIX) {
+        assertEquals(expectedJson.getAsString(), actualJson.getAsString(), "STRING mismatch for " + fieldId + " PGN=" + msg.getPgn());
+      } else {
         double expected = expectedJson.getAsDouble();
         double actual = actualJson.getAsDouble();
         double tolerance = toleranceFor(field);
-        assertEquals(
-            expected,
-            actual,
-            tolerance,
-            "NUMERIC mismatch for " + fieldId + " PGN=" + msg.getPgn()
-        );
+        assertEquals(expected, actual, tolerance, "NUMERIC mismatch for " + fieldId + " PGN=" + msg.getPgn());
       }
     }
   }

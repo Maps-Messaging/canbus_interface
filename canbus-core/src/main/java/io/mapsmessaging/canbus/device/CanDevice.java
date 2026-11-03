@@ -18,13 +18,11 @@
 package io.mapsmessaging.canbus.device;
 
 import io.mapsmessaging.canbus.device.frames.CanFrame;
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.List;
 
 public interface CanDevice extends Closeable {
-
   CanFrame readFrame() throws IOException;
 
   void writeFrame(CanFrame canFrame) throws IOException;
@@ -39,8 +37,7 @@ public interface CanDevice extends Closeable {
     }
   }
 
-  default void flush() throws IOException {
-  }
+  default void flush() throws IOException {}
 
   CanCapabilities getCanCapabilities();
 }

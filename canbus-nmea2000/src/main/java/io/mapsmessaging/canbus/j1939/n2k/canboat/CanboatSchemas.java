@@ -29,6 +29,14 @@ import java.util.Map;
 
 /** JSON schemas for the decoded CANboat envelope, retaining every named PGN variant. */
 public final class CanboatSchemas {
+  private static final String TITLE = "title";
+  private static final String STRING = "string";
+  private static final String PROPERTIES = "properties";
+  private static final String DESCRIPTION = "Description";
+  private static final String PACKET = "packet";
+  private static final String ADDITIONAL_PROPERTIES = "additionalProperties";
+  private static final String REPEATING_FIELD_SET = "RepeatingFieldSet";
+
   private CanboatSchemas() {}
 
   public static Map<Integer, JsonObject> build(CanboatDatabase database) {
@@ -45,24 +53,18 @@ public final class CanboatSchemas {
       throw new IllegalArgumentException("Unknown PGN: " + pgn);
     }
     CanboatMessage fallback = database.fallback(pgn);
-    boolean conditionalOnly =
-        variants.stream()
-            .allMatch(
-                message ->
-                    !message.fallback()
-                        && message.fields().stream()
-                            .anyMatch(field -> field.integer("Match") != null));
+    boolean conditionalOnly = variants.stream().allMatch(message -> !message.fallback() && message.fields().stream().anyMatch(field -> field.integer("Match") != null));
     if (conditionalOnly && fallback != null) {
       variants.add(fallback);
     }
     JsonObject root = object();
     root.addProperty("$schema", "https://json-schema.org/draft/2020-12/schema");
     root.addProperty("$id", database.getProtocol() + "/pgn/" + pgn + ".schema.json");
-    root.addProperty("title", database.getProtocol() + " PGN " + pgn);
+    root.addProperty(TITLE, database.getProtocol() + " PGN " + pgn);
     JsonObject properties = new JsonObject();
     properties.add("pgn", constant(pgn));
     JsonObject name = new JsonObject();
-    name.addProperty("type", "string");
+    name.addProperty("type", STRING);
     JsonArray names = new JsonArray();
     JsonArray alternatives = new JsonArray();
     JsonObject mergedPacket = object();
@@ -70,7 +72,7 @@ public final class CanboatSchemas {
     for (CanboatMessage message : variants) {
       names.add(message.id());
       JsonObject packet = packet(message);
-      for (Map.Entry<String, JsonElement> entry : packet.getAsJsonObject("properties").entrySet()) {
+      for (Map.Entry<String, JsonElement> entry : packet.getAsJsonObject(PROPERTIES).entrySet()) {
         JsonElement previous = mergedFields.get(entry.getKey());
         if (previous == null) {
           mergedFields.add(entry.getKey(), entry.getValue().deepCopy());
@@ -84,36 +86,27 @@ public final class CanboatSchemas {
         }
       }
       JsonObject variant = object();
-      variant.addProperty("title", message.id());
-      if (message.properties().containsKey("Description")) {
-        variant.addProperty("description", message.properties().get("Description"));
+      variant.addProperty(TITLE, message.id());
+      if (message.properties().containsKey(DESCRIPTION)) {
+        variant.addProperty("description", message.properties().get(DESCRIPTION));
       }
       JsonObject variantProperties = new JsonObject();
       variantProperties.add("name", constant(message.id()));
-      variantProperties.add("packet", packet);
+      variantProperties.add(PACKET, packet);
       variantProperties.add("pgn", constant(pgn));
-      variant.add("properties", variantProperties);
-      variant.add("required", strings("packet", "name"));
-      variant.addProperty("additionalProperties", false);
+      variant.add(PROPERTIES, variantProperties);
+      variant.add("required", strings(PACKET, "name"));
+      variant.addProperty(ADDITIONAL_PROPERTIES, false);
       alternatives.add(variant);
     }
     name.add("enum", names);
     properties.add("name", name);
-    mergedPacket.add("properties", mergedFields);
-    mergedPacket.addProperty("additionalProperties", false);
-    properties.add(
-        "packet",
-        variants.size() == 1
-            ? alternatives
-                .get(0)
-                .getAsJsonObject()
-                .getAsJsonObject("properties")
-                .get("packet")
-                .deepCopy()
-            : mergedPacket);
-    root.add("properties", properties);
-    root.add("required", strings("packet", "name"));
-    root.addProperty("additionalProperties", false);
+    mergedPacket.add(PROPERTIES, mergedFields);
+    mergedPacket.addProperty(ADDITIONAL_PROPERTIES, false);
+    properties.add(PACKET, variants.size() == 1 ? alternatives.get(0).getAsJsonObject().getAsJsonObject(PROPERTIES).get(PACKET).deepCopy() : mergedPacket);
+    root.add(PROPERTIES, properties);
+    root.add("required", strings(PACKET, "name"));
+    root.addProperty(ADDITIONAL_PROPERTIES, false);
     if (variants.size() > 1) {
       root.add("oneOf", alternatives);
     }
@@ -130,11 +123,11 @@ public final class CanboatSchemas {
       properties.add(field.id(), field(field));
     }
     for (int index = 1; index <= 2; index++) {
-      int size = message.number("RepeatingFieldSet" + index + "Size", 0);
+      int size = message.number(REPEATING_FIELD_SET + index + "Size", 0);
       if (size <= 0) {
         continue;
       }
-      int start = message.number("RepeatingFieldSet" + index + "StartField", 0);
+      int start = message.number(REPEATING_FIELD_SET + index + "StartField", 0);
       JsonObject array = new JsonObject();
       array.addProperty("type", "array");
       JsonObject items = object();
@@ -144,21 +137,21 @@ public final class CanboatSchemas {
           itemProperties.add(field.id(), field(field));
         }
       }
-      items.add("properties", itemProperties);
-      items.addProperty("additionalProperties", false);
+      items.add(PROPERTIES, itemProperties);
+      items.addProperty(ADDITIONAL_PROPERTIES, false);
       array.add("items", items);
       properties.add(index == 1 ? "list" : "list2", array);
     }
     // Fixed fields can be absent in truncated payloads, and conditional fields need not exist.
-    packet.add("properties", properties);
-    packet.addProperty("additionalProperties", false);
+    packet.add(PROPERTIES, properties);
+    packet.addProperty(ADDITIONAL_PROPERTIES, false);
     return packet;
   }
 
   private static int group(CanboatMessage message, int order) {
     for (int index = 1; index <= 2; index++) {
-      int start = message.number("RepeatingFieldSet" + index + "StartField", 0);
-      int size = message.number("RepeatingFieldSet" + index + "Size", 0);
+      int start = message.number(REPEATING_FIELD_SET + index + "StartField", 0);
+      int size = message.number(REPEATING_FIELD_SET + index + "Size", 0);
       if (size > 0 && order >= start && order < start + size) {
         return index;
       }
@@ -167,47 +160,32 @@ public final class CanboatSchemas {
   }
 
   private static boolean visible(CanboatField field) {
-    return !field.type().equals("RESERVED")
-        && !field.type().equals("SPARE")
-        && field.text("Continues") == null;
+    return !field.type().equals("RESERVED") && !field.type().equals("SPARE") && field.text("Continues") == null;
   }
 
   private static JsonObject field(CanboatField field) {
     JsonObject schema = new JsonObject();
     switch (field.type()) {
-      case "NUMBER", "DURATION", "TIME", "DATE", "FLOAT" ->
-          schema.add("type", strings("number", "null"));
-      case "LOOKUP",
-          "INDIRECT_LOOKUP",
-          "BITLOOKUP",
-          "PGN",
-          "ADDRESS",
-          "FIELD_INDEX",
-          "DYNAMIC_FIELD_KEY",
-          "DYNAMIC_FIELD_LENGTH",
-          "ISO_NAME" ->
-          schema.add("type", strings("integer", "null"));
-      case "MMSI", "DECIMAL", "STRING_FIX", "STRING_LAU", "STRING_LZ" ->
-          schema.add("type", strings("string", "null"));
+      case "NUMBER", "DURATION", "TIME", "DATE", "FLOAT" -> schema.add("type", strings("number", "null"));
+      case "LOOKUP", "INDIRECT_LOOKUP", "BITLOOKUP", "PGN", "ADDRESS", "FIELD_INDEX", "DYNAMIC_FIELD_KEY", "DYNAMIC_FIELD_LENGTH", "ISO_NAME" ->
+        schema.add("type", strings("integer", "null"));
+      case "MMSI", "DECIMAL", "STRING_FIX", "STRING_LAU", "STRING_LZ" -> schema.add("type", strings(STRING, "null"));
       case "BINARY" -> {
-        schema.add("type", strings("string", "null"));
+        schema.add("type", strings(STRING, "null"));
         schema.addProperty("contentEncoding", "base64");
       }
-      case "VARIABLE", "DYNAMIC_FIELD_VALUE" ->
-          schema.add("type", strings("number", "string", "null"));
-      default ->
-          throw new IllegalArgumentException(
-              "Unsupported CANboat schema field type: " + field.type());
+      case "VARIABLE", "DYNAMIC_FIELD_VALUE" -> schema.add("type", strings("number", STRING, "null"));
+      default -> throw new IllegalArgumentException("Unsupported CANboat schema field type: " + field.type());
     }
     if (field.type().equals("ISO_NAME")) {
       schema.addProperty("minimum", 0);
       schema.addProperty("maximum", new BigInteger("18446744073709551615"));
     }
     if (field.text("Name") != null) {
-      schema.addProperty("title", field.text("Name"));
+      schema.addProperty(TITLE, field.text("Name"));
     }
-    if (field.text("Description") != null) {
-      schema.addProperty("description", field.text("Description"));
+    if (field.text(DESCRIPTION) != null) {
+      schema.addProperty("description", field.text(DESCRIPTION));
     }
     if (field.text("Unit") != null) {
       schema.addProperty("unit", field.text("Unit"));

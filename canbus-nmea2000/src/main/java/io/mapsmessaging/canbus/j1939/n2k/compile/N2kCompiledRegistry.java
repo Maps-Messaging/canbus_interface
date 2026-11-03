@@ -18,11 +18,11 @@
 
 package io.mapsmessaging.canbus.j1939.n2k.compile;
 
+import io.mapsmessaging.canbus.j1939.n2k.canboat.CanboatDatabase;
 import io.mapsmessaging.canbus.j1939.n2k.model.N2kTransportType;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.List;
-import io.mapsmessaging.canbus.j1939.n2k.canboat.CanboatDatabase;
 import lombok.Value;
 
 @Value
@@ -34,8 +34,7 @@ public class N2kCompiledRegistry {
   public N2kCompiledRegistry(Map<Integer, N2kCompiledMessage> messagesByPgn) {
     this(messagesByPgn, Map.of(), null);
   }
-  public N2kCompiledRegistry(Map<Integer, N2kCompiledMessage> messagesByPgn,
-      Map<Integer, List<N2kCompiledMessage>> variantsByPgn, CanboatDatabase database) {
+  public N2kCompiledRegistry(Map<Integer, N2kCompiledMessage> messagesByPgn, Map<Integer, List<N2kCompiledMessage>> variantsByPgn, CanboatDatabase database) {
     this.messagesByPgn = Map.copyOf(messagesByPgn);
     this.variantsByPgn = Map.copyOf(variantsByPgn);
     this.database = database;
@@ -46,7 +45,9 @@ public class N2kCompiledRegistry {
 
   public N2kCompiledMessage getRequiredMessage(int pgn) {
     N2kCompiledMessage exact = messagesByPgn.get(pgn);
-    if (exact != null || database == null) { return exact; }
+    if (exact != null || database == null) {
+      return exact;
+    }
     return database.candidates(pgn).stream().findFirst().map(message -> messagesByPgn.get(message.pgn())).orElse(null);
   }
 
@@ -71,5 +72,4 @@ public class N2kCompiledRegistry {
     }
     return transport;
   }
-
 }

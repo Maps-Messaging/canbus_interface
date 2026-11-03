@@ -16,6 +16,8 @@
  */
 package io.mapsmessaging.canbus.j1939.n2k;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -40,8 +42,6 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 /** Pinned external byte/value oracles; expectations never come from the codec under test. */
 class CanboatConformanceVectorsTest {
   private static JsonArray vectors;
@@ -55,8 +55,7 @@ class CanboatConformanceVectorsTest {
       assertEquals("5b8340403e009b935f6a398b1ef0244a03e3d128", corpus.get("upstreamCommit").getAsString());
       vectors = corpus.getAsJsonArray("vectors");
     }
-    parsers = Map.of("nmea2000", new N2kMessageParser(N2kParserFactory.getN2kParser()),
-        "j1939", new N2kMessageParser(N2kParserFactory.getJ1939Parser()));
+    parsers = Map.of("nmea2000", new N2kMessageParser(N2kParserFactory.getN2kParser()), "j1939", new N2kMessageParser(N2kParserFactory.getJ1939Parser()));
   }
 
   @Test
@@ -79,8 +78,7 @@ class CanboatConformanceVectorsTest {
     return stream().map(vector -> DynamicTest.dynamicTest(vector.get("id").getAsString(), () -> {
       N2kMessageParser parser = parser(vector);
       if (vector.has("reject")) {
-        IllegalArgumentException failure = assertThrows(IllegalArgumentException.class,
-            () -> parser.decodeToJson(pgn(vector), payload(vector)));
+        IllegalArgumentException failure = assertThrows(IllegalArgumentException.class, () -> parser.decodeToJson(pgn(vector), payload(vector)));
         String expectedReason = vector.has("rejectionMessage") ? vector.get("rejectionMessage").getAsString() : "minimum";
         assertTrue(failure.getMessage().contains(expectedReason), failure.getMessage());
       } else {
@@ -91,8 +89,8 @@ class CanboatConformanceVectorsTest {
 
   @TestFactory
   Stream<DynamicTest> independently_specified_values_encode_to_known_wire_bytes() {
-    List<String> identifiers = List.of("pgn-unit-coverage:3", "pgn-unit-coverage:5", "pgn-si-units:5",
-        "pgn-bitlookup-64:1", "pgn-bitlookup-64:2", "pgn-bitlookup-64:3", "j1939-unit-coverage:7");
+    List<String> identifiers =
+        List.of("pgn-unit-coverage:3", "pgn-unit-coverage:5", "pgn-si-units:5", "pgn-bitlookup-64:1", "pgn-bitlookup-64:2", "pgn-bitlookup-64:3", "j1939-unit-coverage:7");
     return identifiers.stream().map(id -> DynamicTest.dynamicTest(id, () -> {
       JsonObject vector = stream().filter(row -> row.get("id").getAsString().equals(id)).findFirst().orElseThrow();
       JsonObject envelope = new JsonObject();
@@ -104,7 +102,8 @@ class CanboatConformanceVectorsTest {
 
   @TestFactory
   Stream<DynamicTest> decimal_addresses_encode_to_the_independent_wire_prefix() {
-    return stream().filter(vector -> vector.get("id").getAsString().startsWith("pgn-decimal:") && vector.has("derivation") && !vector.has("reject"))
+    return stream()
+        .filter(vector -> vector.get("id").getAsString().startsWith("pgn-decimal:") && vector.has("derivation") && !vector.has("reject"))
         .map(vector -> DynamicTest.dynamicTest(vector.get("id").getAsString(), () -> {
           JsonObject envelope = new JsonObject();
           JsonObject packet = new JsonObject();
@@ -118,12 +117,12 @@ class CanboatConformanceVectorsTest {
 
   @TestFactory
   Stream<DynamicTest> literal_single_and_fast_frames_decode_to_independent_values() {
-    return stream().filter(vector -> !vector.has("reject"))
+    return stream()
+        .filter(vector -> !vector.has("reject"))
         .filter(vector -> vector.get("protocol").getAsString().equals("nmea2000"))
         .map(vector -> DynamicTest.dynamicTest(vector.get("id").getAsString(), () -> {
           FrameHandler handler = new FrameHandler(parser(vector));
-          int identifier = CanIdBuilder.build(pgn(vector), vector.get("priority").getAsInt(),
-              vector.get("sourceAddress").getAsInt(), vector.get("destinationAddress").getAsInt());
+          int identifier = CanIdBuilder.build(pgn(vector), vector.get("priority").getAsInt(), vector.get("sourceAddress").getAsInt(), vector.get("destinationAddress").getAsInt());
           byte[] payload = payload(vector);
           Optional<Message> completed = Optional.empty();
           if (vector.has("frames")) {
@@ -170,17 +169,14 @@ class CanboatConformanceVectorsTest {
   @Test
   void truncated_variable_string_is_rejected_instead_of_reading_past_payload() {
     // LAU length says seven bytes, but only three are present.
-    assertThrows(IllegalArgumentException.class, () -> parsers.get("nmea2000")
-        .decodeToJson(126998, HexFormat.of().parseHex("070168")));
+    assertThrows(IllegalArgumentException.class, () -> parsers.get("nmea2000").decodeToJson(126998, HexFormat.of().parseHex("070168")));
   }
 
   @Test
   void truncated_route_repeat_and_inconsistent_count_are_rejected() {
-    JsonObject vector = stream().filter(row -> row.get("id").getAsString().equals("pgn-string-encoding:1"))
-        .findFirst().orElseThrow();
+    JsonObject vector = stream().filter(row -> row.get("id").getAsString().equals("pgn-string-encoding:1")).findFirst().orElseThrow();
     byte[] wire = payload(vector);
-    assertThrows(IllegalArgumentException.class,
-        () -> parser(vector).decodeToJson(129285, Arrays.copyOf(wire, wire.length - 1)));
+    assertThrows(IllegalArgumentException.class, () -> parser(vector).decodeToJson(129285, Arrays.copyOf(wire, wire.length - 1)));
     wire[2] = 3; // nItems now claims a third waypoint, but only two are supplied.
     assertThrows(IllegalArgumentException.class, () -> parser(vector).decodeToJson(129285, wire));
   }
@@ -188,8 +184,7 @@ class CanboatConformanceVectorsTest {
   private static void assertEnvelope(JsonObject vector, JsonObject actual) {
     assertNotNull(actual);
     assertEquals(vector.get("name").getAsString(), actual.get("name").getAsString());
-    assertValues(vector.getAsJsonObject("expected"), actual.getAsJsonObject("packet"),
-        vector.getAsJsonObject("tolerances"), "");
+    assertValues(vector.getAsJsonObject("expected"), actual.getAsJsonObject("packet"), vector.getAsJsonObject("tolerances"), "");
   }
 
   private static void assertValues(JsonElement expected, JsonElement actual, JsonObject tolerances, String path) {
@@ -210,8 +205,7 @@ class CanboatConformanceVectorsTest {
       String key = path.substring(0, path.length() - 1);
       BigDecimal tolerance = tolerances.has(key) ? tolerances.get(key).getAsBigDecimal() : BigDecimal.ZERO;
       BigDecimal difference = expected.getAsBigDecimal().subtract(actual.getAsBigDecimal()).abs();
-      assertTrue(difference.compareTo(tolerance) <= 0,
-          () -> path + " expected " + expected + " but was " + actual + ", tolerance " + tolerance);
+      assertTrue(difference.compareTo(tolerance) <= 0, () -> path + " expected " + expected + " but was " + actual + ", tolerance " + tolerance);
     } else {
       assertEquals(expected, actual, path);
     }

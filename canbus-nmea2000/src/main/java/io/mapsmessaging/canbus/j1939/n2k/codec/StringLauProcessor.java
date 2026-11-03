@@ -20,11 +20,9 @@ package io.mapsmessaging.canbus.j1939.n2k.codec;
 
 import com.google.gson.JsonObject;
 import io.mapsmessaging.canbus.j1939.n2k.compile.N2kCompiledField;
-
 import java.nio.charset.StandardCharsets;
 
 public class StringLauProcessor implements Processor {
-
   @Override
   public int computePayloadLength(N2kCompiledField field, JsonObject decoded) {
     if (!decoded.has(field.getId()) || decoded.get(field.getId()).isJsonNull()) {
@@ -96,8 +94,7 @@ public class StringLauProcessor implements Processor {
     String value;
     if (control == 0x01) {
       value = new String(payload, cursor, stringLength, StandardCharsets.UTF_8);
-    }
-    else {
+    } else {
       value = new String(payload, cursor, stringLength, StandardCharsets.ISO_8859_1);
     }
 

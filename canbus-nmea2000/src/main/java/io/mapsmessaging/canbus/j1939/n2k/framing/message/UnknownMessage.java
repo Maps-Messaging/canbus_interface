@@ -19,13 +19,11 @@
 package io.mapsmessaging.canbus.j1939.n2k.framing.message;
 
 import io.mapsmessaging.canbus.j1939.CanId;
-import lombok.Getter;
-
 import java.util.Arrays;
+import lombok.Getter;
 
 @Getter
 public class UnknownMessage implements Message {
-
   private final UnknownReason reason;
   private final CanId canId;
   private final int rawCanIdentifier;
@@ -33,14 +31,7 @@ public class UnknownMessage implements Message {
   private final byte[] payload;
   private final String detail;
 
-  public UnknownMessage(
-      UnknownReason reason,
-      CanId canId,
-      int rawCanIdentifier,
-      int dataLengthCode,
-      byte[] payload,
-      String detail
-  ) {
+  public UnknownMessage(UnknownReason reason, CanId canId, int rawCanIdentifier, int dataLengthCode, byte[] payload, String detail) {
     this.reason = reason;
     this.canId = canId;
     this.rawCanIdentifier = rawCanIdentifier;
@@ -51,13 +42,6 @@ public class UnknownMessage implements Message {
 
   public static UnknownMessage invalidFrame(String detail, int rawCanIdentifier, int dataLengthCode, byte[] data) {
     byte[] rawPayload = data == null ? null : Arrays.copyOf(data, Math.min(dataLengthCode, data.length));
-    return new UnknownMessage(
-        UnknownReason.INVALID_FRAME,
-        null,
-        rawCanIdentifier,
-        dataLengthCode,
-        rawPayload,
-        detail
-    );
+    return new UnknownMessage(UnknownReason.INVALID_FRAME, null, rawCanIdentifier, dataLengthCode, rawPayload, detail);
   }
 }

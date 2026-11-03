@@ -17,19 +17,18 @@
 
 package io.mapsmessaging.canbus.canaerospace.parser;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class DataTypeCodecBoundaryTest {
+import org.junit.jupiter.api.Test;
 
+class DataTypeCodecBoundaryTest {
   @Test
   void signedThreeByteValuesRoundTripAtBothLimits() {
-    for (int value : new int[]{-8388608, -1, 0, 8388607}) {
+    for (int value : new int[] {-8388608, -1, 0, 8388607}) {
       assertEquals(value, DataTypeCodec.decode("VARIABLE3", DataTypeCodec.encode("VARIABLE3", value)));
     }
     assertThrows(IllegalArgumentException.class, () -> DataTypeCodec.encode("VARIABLE3", -8388609));
@@ -38,7 +37,7 @@ class DataTypeCodecBoundaryTest {
 
   @Test
   void unsignedThreeByteValuesRoundTripAtBothLimits() {
-    for (int value : new int[]{0, 1, 0xFFFFFF}) {
+    for (int value : new int[] {0, 1, 0xFFFFFF}) {
       assertEquals(value, DataTypeCodec.decode("UVARIABLE3", DataTypeCodec.encode("UVARIABLE3", value)));
     }
     assertThrows(IllegalArgumentException.class, () -> DataTypeCodec.encode("UVARIABLE3", -1));
@@ -47,7 +46,7 @@ class DataTypeCodecBoundaryTest {
 
   @Test
   void unknownTypePreservesRawDecodeAndCopiesRawEncode() {
-    byte[] payload = new byte[]{1, 2, 3, 4};
+    byte[] payload = new byte[] {1, 2, 3, 4};
     assertSame(payload, DataTypeCodec.decode("VENDOR", payload));
     byte[] encoded = DataTypeCodec.encode("VENDOR", payload);
     assertArrayEquals(payload, encoded);

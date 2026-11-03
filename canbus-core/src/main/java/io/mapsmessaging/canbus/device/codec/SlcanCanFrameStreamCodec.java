@@ -19,14 +19,12 @@
 package io.mapsmessaging.canbus.device.codec;
 
 import io.mapsmessaging.canbus.device.frames.CanFrame;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
 public class SlcanCanFrameStreamCodec implements CanFrameStreamCodec {
-
   private static final int MAX_LINE_LENGTH = 64;
 
   @Override
@@ -68,9 +66,7 @@ public class SlcanCanFrameStreamCodec implements CanFrameStreamCodec {
 
     final int canIdentifier;
     try {
-      canIdentifier = Integer.parseUnsignedInt(
-          trimmed.substring(1, 1 + identifierLength),
-          16);
+      canIdentifier = Integer.parseUnsignedInt(trimmed.substring(1, 1 + identifierLength), 16);
     } catch (NumberFormatException exception) {
       throw new IOException("Invalid SLCAN CAN identifier: " + trimmed, exception);
     }

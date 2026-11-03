@@ -18,36 +18,30 @@
  */
 package io.mapsmessaging.canbus.device;
 
-import com.sun.jna.Pointer;
-import io.mapsmessaging.canbus.device.frames.CanFrame;
-import io.mapsmessaging.canbus.device.frames.NativeCanFdFrame;
-import io.mapsmessaging.canbus.device.frames.NativeCanFrame;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
-class SocketCanDeviceTest {
+import com.sun.jna.Pointer;
+import io.mapsmessaging.canbus.device.frames.CanFrame;
+import io.mapsmessaging.canbus.device.frames.NativeCanFdFrame;
+import io.mapsmessaging.canbus.device.frames.NativeCanFrame;
+import java.io.IOException;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
+class SocketCanDeviceTest {
   @Test
   void constructorClosesSocketWhenInterfaceLookupFails() throws Exception {
     LibCFacade libC = mock(LibCFacade.class);
     when(libC.socket(anyInt(), anyInt(), anyInt())).thenReturn(42);
 
-    InterfaceIndexResolver resolver =
-        (socketFileDescriptor, interfaceName) -> {
-          throw new IOException("lookup failed");
-        };
+    InterfaceIndexResolver resolver = (socketFileDescriptor, interfaceName) -> {
+      throw new IOException("lookup failed");
+    };
 
-    IOException exception = Assertions.assertThrows(
-        IOException.class,
-        () -> new SocketCanDevice("can0", libC, resolver)
-    );
+    IOException exception = Assertions.assertThrows(IOException.class, () -> new SocketCanDevice("can0", libC, resolver));
 
     Assertions.assertTrue(exception.getMessage().contains("lookup failed"));
     verify(libC).close(42);
@@ -58,12 +52,7 @@ class SocketCanDeviceTest {
   void readFrame_classic_returnsCanFrame() throws Exception {
     LibCFacade libC = mock(LibCFacade.class);
 
-    SocketCanDevice device = newDevice(
-        libC,
-        new CanCapabilities(false, false, 8, 8),
-        42,
-        "can0"
-    );
+    SocketCanDevice device = newDevice(libC, new CanCapabilities(false, false, 8, 8), 42, "can0");
 
     NativeCanFrame classic = new NativeCanFrame();
     classic.canIdentifier = 0x123; // standard
@@ -73,13 +62,12 @@ class SocketCanDeviceTest {
     classic.data[2] = 0x03;
     classic.write();
 
-    when(libC.read(eq(42), any(Pointer.class), anyInt()))
-        .thenAnswer(invocation -> {
-          Pointer buffer = invocation.getArgument(1, Pointer.class);
-          byte[] bytes = classic.getPointer().getByteArray(0, classic.size());
-          buffer.write(0, bytes, 0, bytes.length);
-          return classic.size();
-        });
+    when(libC.read(eq(42), any(Pointer.class), anyInt())).thenAnswer(invocation -> {
+      Pointer buffer = invocation.getArgument(1, Pointer.class);
+      byte[] bytes = classic.getPointer().getByteArray(0, classic.size());
+      buffer.write(0, bytes, 0, bytes.length);
+      return classic.size();
+    });
 
     CanFrame frame = device.readFrame();
 
@@ -92,17 +80,11 @@ class SocketCanDeviceTest {
     Assertions.assertEquals(0x03, frame.data()[2]);
   }
 
-
   @Test
   void readFrame_fd_returnsCanFrame() throws Exception {
     LibCFacade libC = mock(LibCFacade.class);
 
-    SocketCanDevice device = newDevice(
-        libC,
-        new CanCapabilities(true, true, 64, 64),
-        42,
-        "can0"
-    );
+    SocketCanDevice device = newDevice(libC, new CanCapabilities(true, true, 64, 64), 42, "can0");
 
     NativeCanFdFrame fd = new NativeCanFdFrame();
     fd.canIdentifier = 0x456;
@@ -113,13 +95,12 @@ class SocketCanDeviceTest {
     }
     fd.write();
 
-    when(libC.read(eq(42), any(Pointer.class), anyInt()))
-        .thenAnswer(invocation -> {
-          Pointer buffer = invocation.getArgument(1, Pointer.class);
-          byte[] bytes = fd.getPointer().getByteArray(0, fd.size());
-          buffer.write(0, bytes, 0, bytes.length);
-          return fd.size();
-        });
+    when(libC.read(eq(42), any(Pointer.class), anyInt())).thenAnswer(invocation -> {
+      Pointer buffer = invocation.getArgument(1, Pointer.class);
+      byte[] bytes = fd.getPointer().getByteArray(0, fd.size());
+      buffer.write(0, bytes, 0, bytes.length);
+      return fd.size();
+    });
 
     CanFrame frame = device.readFrame();
 
@@ -134,12 +115,7 @@ class SocketCanDeviceTest {
   void readFrame_throwsOnUnexpectedSize() throws Exception {
     LibCFacade libC = mock(LibCFacade.class);
 
-    SocketCanDevice device = newDevice(
-        libC,
-        new CanCapabilities(true, true, 64, 64),
-        42,
-        "can0"
-    );
+    SocketCanDevice device = newDevice(libC, new CanCapabilities(true, true, 64, 64), 42, "can0");
 
     when(libC.read(eq(42), any(Pointer.class), anyInt())).thenReturn(17);
 
@@ -151,17 +127,11 @@ class SocketCanDeviceTest {
   void writeFrame_classic_writesClassicFrame_andPadsZeros() throws Exception {
     LibCFacade libC = mock(LibCFacade.class);
 
-    SocketCanDevice device = newDevice(
-        libC,
-        new CanCapabilities(false, false, 8, 8),
-        42,
-        "can0"
-    );
+    SocketCanDevice device = newDevice(libC, new CanCapabilities(false, false, 8, 8), 42, "can0");
 
-    when(libC.write(eq(42), any(Pointer.class), anyInt()))
-        .thenAnswer(invocation -> invocation.getArgument(2, Integer.class));
+    when(libC.write(eq(42), any(Pointer.class), anyInt())).thenAnswer(invocation -> invocation.getArgument(2, Integer.class));
 
-    byte[] data = new byte[] { 0x11, 0x22, 0x33, 0x44 };
+    byte[] data = new byte[] {0x11, 0x22, 0x33, 0x44};
 
     device.writeFrame(0x321, false, 4, data);
 
@@ -186,19 +156,11 @@ class SocketCanDeviceTest {
   void writeFrame_fd_throwsWhenFdNotEnabled() throws Exception {
     LibCFacade libC = mock(LibCFacade.class);
 
-    SocketCanDevice device = newDevice(
-        libC,
-        new CanCapabilities(false, false, 8, 8),
-        42,
-        "can0"
-    );
+    SocketCanDevice device = newDevice(libC, new CanCapabilities(false, false, 8, 8), 42, "can0");
 
     byte[] data = new byte[12];
 
-    IllegalArgumentException ex = Assertions.assertThrows(
-        IllegalArgumentException.class,
-        () -> device.writeFrame(0x555, false,12, data)
-    );
+    IllegalArgumentException ex = Assertions.assertThrows(IllegalArgumentException.class, () -> device.writeFrame(0x555, false, 12, data));
 
     Assertions.assertTrue(ex.getMessage().contains("CAN FD not enabled"));
     verify(libC, never()).write(anyInt(), any(Pointer.class), anyInt());
@@ -208,15 +170,9 @@ class SocketCanDeviceTest {
   void writeFrame_fd_writesCanFdFrame_whenEnabled() throws Exception {
     LibCFacade libC = mock(LibCFacade.class);
 
-    SocketCanDevice device = newDevice(
-        libC,
-        new CanCapabilities(true, true, 64, 64),
-        42,
-        "can0"
-    );
+    SocketCanDevice device = newDevice(libC, new CanCapabilities(true, true, 64, 64), 42, "can0");
 
-    when(libC.write(eq(42), any(Pointer.class), anyInt()))
-        .thenAnswer(invocation -> invocation.getArgument(2, Integer.class));
+    when(libC.write(eq(42), any(Pointer.class), anyInt())).thenAnswer(invocation -> invocation.getArgument(2, Integer.class));
 
     byte[] data = new byte[64];
     for (int i = 0; i < 12; i++) {
@@ -244,12 +200,7 @@ class SocketCanDeviceTest {
   void close_throwsIOException_whenCloseFails() throws Exception {
     LibCFacade libC = mock(LibCFacade.class);
 
-    SocketCanDevice device = newDevice(
-        libC,
-        new CanCapabilities(false, false, 8, 8),
-        42,
-        "can0"
-    );
+    SocketCanDevice device = newDevice(libC, new CanCapabilities(false, false, 8, 8), 42, "can0");
 
     when(libC.close(42)).thenReturn(-1);
     when(libC.getLastError()).thenReturn(9);
@@ -267,12 +218,7 @@ class SocketCanDeviceTest {
   void readFrame_throwsIOException_whenReadFails() throws Exception {
     LibCFacade libC = mock(LibCFacade.class);
 
-    SocketCanDevice device = newDevice(
-        libC,
-        new CanCapabilities(true, true, 64, 64),
-        42,
-        "can0"
-    );
+    SocketCanDevice device = newDevice(libC, new CanCapabilities(true, true, 64, 64), 42, "can0");
 
     when(libC.read(eq(42), any(Pointer.class), anyInt())).thenReturn(-1);
     when(libC.getLastError()).thenReturn(11);
@@ -286,25 +232,19 @@ class SocketCanDeviceTest {
   void readFrame_classic_throwsIOException_onInvalidDlcGreaterThan8() throws Exception {
     LibCFacade libC = mock(LibCFacade.class);
 
-    SocketCanDevice device = newDevice(
-        libC,
-        new CanCapabilities(false, false, 8, 8),
-        42,
-        "can0"
-    );
+    SocketCanDevice device = newDevice(libC, new CanCapabilities(false, false, 8, 8), 42, "can0");
 
     NativeCanFrame classic = new NativeCanFrame();
     classic.canIdentifier = 0x123;
     classic.dataLengthCode = (byte) 9;
     classic.write();
 
-    when(libC.read(eq(42), any(Pointer.class), anyInt()))
-        .thenAnswer(invocation -> {
-          Pointer buffer = invocation.getArgument(1, Pointer.class);
-          byte[] bytes = classic.getPointer().getByteArray(0, classic.size());
-          buffer.write(0, bytes, 0, bytes.length);
-          return classic.size();
-        });
+    when(libC.read(eq(42), any(Pointer.class), anyInt())).thenAnswer(invocation -> {
+      Pointer buffer = invocation.getArgument(1, Pointer.class);
+      byte[] bytes = classic.getPointer().getByteArray(0, classic.size());
+      buffer.write(0, bytes, 0, bytes.length);
+      return classic.size();
+    });
 
     IOException ex = Assertions.assertThrows(IOException.class, device::readFrame);
     Assertions.assertTrue(ex.getMessage().contains("Invalid classic DLC"), ex.getMessage());
@@ -314,12 +254,7 @@ class SocketCanDeviceTest {
   void readFrame_fd_throwsIOException_onInvalidLengthGreaterThan64() throws Exception {
     LibCFacade libC = mock(LibCFacade.class);
 
-    SocketCanDevice device = newDevice(
-        libC,
-        new CanCapabilities(true, true, 64, 64),
-        42,
-        "can0"
-    );
+    SocketCanDevice device = newDevice(libC, new CanCapabilities(true, true, 64, 64), 42, "can0");
 
     NativeCanFdFrame fd = new NativeCanFdFrame();
     fd.canIdentifier = 0x456;
@@ -327,13 +262,12 @@ class SocketCanDeviceTest {
     fd.flags = 0;
     fd.write();
 
-    when(libC.read(eq(42), any(Pointer.class), anyInt()))
-        .thenAnswer(invocation -> {
-          Pointer buffer = invocation.getArgument(1, Pointer.class);
-          byte[] bytes = fd.getPointer().getByteArray(0, fd.size());
-          buffer.write(0, bytes, 0, bytes.length);
-          return fd.size();
-        });
+    when(libC.read(eq(42), any(Pointer.class), anyInt())).thenAnswer(invocation -> {
+      Pointer buffer = invocation.getArgument(1, Pointer.class);
+      byte[] bytes = fd.getPointer().getByteArray(0, fd.size());
+      buffer.write(0, bytes, 0, bytes.length);
+      return fd.size();
+    });
 
     IOException ex = Assertions.assertThrows(IOException.class, device::readFrame);
     Assertions.assertTrue(ex.getMessage().contains("Invalid FD length"), ex.getMessage());
@@ -343,17 +277,9 @@ class SocketCanDeviceTest {
   void writeFrame_throwsIllegalArgumentException_whenDataIsNull() throws Exception {
     LibCFacade libC = mock(LibCFacade.class);
 
-    SocketCanDevice device = newDevice(
-        libC,
-        new CanCapabilities(true, true, 64, 64),
-        42,
-        "can0"
-    );
+    SocketCanDevice device = newDevice(libC, new CanCapabilities(true, true, 64, 64), 42, "can0");
 
-    IllegalArgumentException ex = Assertions.assertThrows(
-        IllegalArgumentException.class,
-        () -> device.writeFrame(0x100,false, 1, null)
-    );
+    IllegalArgumentException ex = Assertions.assertThrows(IllegalArgumentException.class, () -> device.writeFrame(0x100, false, 1, null));
     Assertions.assertTrue(ex.getMessage().contains("data must not be null"), ex.getMessage());
   }
 
@@ -361,19 +287,11 @@ class SocketCanDeviceTest {
   void writeFrame_throwsIllegalArgumentException_whenDlcIsNegative() throws Exception {
     LibCFacade libC = mock(LibCFacade.class);
 
-    SocketCanDevice device = newDevice(
-        libC,
-        new CanCapabilities(true, true, 64, 64),
-        42,
-        "can0"
-    );
+    SocketCanDevice device = newDevice(libC, new CanCapabilities(true, true, 64, 64), 42, "can0");
 
     byte[] data = new byte[1];
 
-    IllegalArgumentException ex = Assertions.assertThrows(
-        IllegalArgumentException.class,
-        () -> device.writeFrame(0x100,false, -1, data)
-    );
+    IllegalArgumentException ex = Assertions.assertThrows(IllegalArgumentException.class, () -> device.writeFrame(0x100, false, -1, data));
     Assertions.assertTrue(ex.getMessage().contains("dataLengthCode must be >= 0"), ex.getMessage());
   }
 
@@ -381,19 +299,11 @@ class SocketCanDeviceTest {
   void writeFrame_throwsIllegalArgumentException_whenDlcGreaterThan64() throws Exception {
     LibCFacade libC = mock(LibCFacade.class);
 
-    SocketCanDevice device = newDevice(
-        libC,
-        new CanCapabilities(true, true, 64, 64),
-        42,
-        "can0"
-    );
+    SocketCanDevice device = newDevice(libC, new CanCapabilities(true, true, 64, 64), 42, "can0");
 
     byte[] data = new byte[65];
 
-    IllegalArgumentException ex = Assertions.assertThrows(
-        IllegalArgumentException.class,
-        () -> device.writeFrame(0x100,false, 65, data)
-    );
+    IllegalArgumentException ex = Assertions.assertThrows(IllegalArgumentException.class, () -> device.writeFrame(0x100, false, 65, data));
     Assertions.assertTrue(ex.getMessage().contains("dataLengthCode must be 0..64"), ex.getMessage());
   }
 
@@ -401,19 +311,11 @@ class SocketCanDeviceTest {
   void writeFrame_throwsIllegalArgumentException_whenDataLengthLessThanDlc() throws Exception {
     LibCFacade libC = mock(LibCFacade.class);
 
-    SocketCanDevice device = newDevice(
-        libC,
-        new CanCapabilities(true, true, 64, 64),
-        42,
-        "can0"
-    );
+    SocketCanDevice device = newDevice(libC, new CanCapabilities(true, true, 64, 64), 42, "can0");
 
     byte[] data = new byte[3];
 
-    IllegalArgumentException ex = Assertions.assertThrows(
-        IllegalArgumentException.class,
-        () -> device.writeFrame(0x100, false, 4, data)
-    );
+    IllegalArgumentException ex = Assertions.assertThrows(IllegalArgumentException.class, () -> device.writeFrame(0x100, false, 4, data));
     Assertions.assertTrue(ex.getMessage().contains("data.length"), ex.getMessage());
   }
 
@@ -421,19 +323,14 @@ class SocketCanDeviceTest {
   void writeFrame_classic_throwsIOException_whenNativeWriteFails() throws Exception {
     LibCFacade libC = mock(LibCFacade.class);
 
-    SocketCanDevice device = newDevice(
-        libC,
-        new CanCapabilities(false, false, 8, 8),
-        42,
-        "can0"
-    );
+    SocketCanDevice device = newDevice(libC, new CanCapabilities(false, false, 8, 8), 42, "can0");
 
     when(libC.write(eq(42), any(Pointer.class), anyInt())).thenReturn(-1);
     when(libC.getLastError()).thenReturn(5);
 
-    byte[] data = new byte[] { 0x01 };
+    byte[] data = new byte[] {0x01};
 
-    IOException ex = Assertions.assertThrows(IOException.class, () -> device.writeFrame(0x321,false, 1, data));
+    IOException ex = Assertions.assertThrows(IOException.class, () -> device.writeFrame(0x321, false, 1, data));
     Assertions.assertTrue(ex.getMessage().contains("write"), ex.getMessage());
     Assertions.assertTrue(ex.getMessage().contains("errno=5"), ex.getMessage());
   }
@@ -442,19 +339,14 @@ class SocketCanDeviceTest {
   void writeFrame_classic_throwsIOException_onShortWrite() throws Exception {
     LibCFacade libC = mock(LibCFacade.class);
 
-    SocketCanDevice device = newDevice(
-        libC,
-        new CanCapabilities(false, false, 8, 8),
-        42,
-        "can0"
-    );
+    SocketCanDevice device = newDevice(libC, new CanCapabilities(false, false, 8, 8), 42, "can0");
 
     int expectedSize = new NativeCanFrame().size();
     when(libC.write(eq(42), any(Pointer.class), anyInt())).thenReturn(expectedSize - 1);
 
-    byte[] data = new byte[] { 0x01 };
+    byte[] data = new byte[] {0x01};
 
-    IOException ex = Assertions.assertThrows(IOException.class, () -> device.writeFrame(0x321,false, 1, data));
+    IOException ex = Assertions.assertThrows(IOException.class, () -> device.writeFrame(0x321, false, 1, data));
     Assertions.assertTrue(ex.getMessage().contains("Short write"), ex.getMessage());
   }
 
@@ -462,19 +354,14 @@ class SocketCanDeviceTest {
   void writeFrame_fd_throwsIOException_whenNativeWriteFails() throws Exception {
     LibCFacade libC = mock(LibCFacade.class);
 
-    SocketCanDevice device = newDevice(
-        libC,
-        new CanCapabilities(true, true, 64, 64),
-        42,
-        "can0"
-    );
+    SocketCanDevice device = newDevice(libC, new CanCapabilities(true, true, 64, 64), 42, "can0");
 
     when(libC.write(eq(42), any(Pointer.class), anyInt())).thenReturn(-1);
     when(libC.getLastError()).thenReturn(12);
 
     byte[] data = new byte[12];
 
-    IOException ex = Assertions.assertThrows(IOException.class, () -> device.writeFrame(0x777,false, 12, data));
+    IOException ex = Assertions.assertThrows(IOException.class, () -> device.writeFrame(0x777, false, 12, data));
     Assertions.assertTrue(ex.getMessage().contains("write"), ex.getMessage());
     Assertions.assertTrue(ex.getMessage().contains("errno=12"), ex.getMessage());
   }
@@ -483,19 +370,14 @@ class SocketCanDeviceTest {
   void writeFrame_fd_throwsIOException_onShortWrite() throws Exception {
     LibCFacade libC = mock(LibCFacade.class);
 
-    SocketCanDevice device = newDevice(
-        libC,
-        new CanCapabilities(true, true, 64, 64),
-        42,
-        "can0"
-    );
+    SocketCanDevice device = newDevice(libC, new CanCapabilities(true, true, 64, 64), 42, "can0");
 
     int expectedSize = new NativeCanFdFrame().size();
     when(libC.write(eq(42), any(Pointer.class), anyInt())).thenReturn(expectedSize - 1);
 
     byte[] data = new byte[12];
 
-    IOException ex = Assertions.assertThrows(IOException.class, () -> device.writeFrame(0x777, false,12, data));
+    IOException ex = Assertions.assertThrows(IOException.class, () -> device.writeFrame(0x777, false, 12, data));
     Assertions.assertTrue(ex.getMessage().contains("Short write"), ex.getMessage());
   }
 
@@ -503,8 +385,7 @@ class SocketCanDeviceTest {
   void constructorRejectsNullInterfaceWithoutOpeningSocket() {
     LibCFacade libC = mock(LibCFacade.class);
 
-    Assertions.assertThrows(IllegalArgumentException.class,
-        () -> new SocketCanDevice(null, libC, (socket, name) -> 1));
+    Assertions.assertThrows(IllegalArgumentException.class, () -> new SocketCanDevice(null, libC, (socket, name) -> 1));
 
     verify(libC, never()).socket(anyInt(), anyInt(), anyInt());
   }
@@ -515,8 +396,7 @@ class SocketCanDeviceTest {
     when(libC.socket(anyInt(), anyInt(), anyInt())).thenReturn(-1);
     when(libC.getLastError()).thenReturn(97);
 
-    IOException failure = Assertions.assertThrows(IOException.class,
-        () -> new SocketCanDevice("vcan0", libC, (socket, name) -> 1));
+    IOException failure = Assertions.assertThrows(IOException.class, () -> new SocketCanDevice("vcan0", libC, (socket, name) -> 1));
 
     Assertions.assertTrue(failure.getMessage().contains("errno=97"));
     verify(libC, never()).close(anyInt());
@@ -528,10 +408,7 @@ class SocketCanDeviceTest {
     when(libC.socket(anyInt(), anyInt(), anyInt())).thenReturn(42);
     IllegalArgumentException failure = new IllegalArgumentException("invalid interface");
 
-    Assertions.assertSame(failure, Assertions.assertThrows(IllegalArgumentException.class,
-        () -> new SocketCanDevice("bad", libC, (socket, name) -> {
-          throw failure;
-        })));
+    Assertions.assertSame(failure, Assertions.assertThrows(IllegalArgumentException.class, () -> new SocketCanDevice("bad", libC, (socket, name) -> { throw failure; })));
     verify(libC).close(42);
   }
 
@@ -542,8 +419,7 @@ class SocketCanDeviceTest {
     when(libC.bind(eq(42), any(), anyInt())).thenReturn(-1);
     when(libC.getLastError()).thenReturn(19);
 
-    IOException failure = Assertions.assertThrows(IOException.class,
-        () -> new SocketCanDevice("vcan0", libC, (socket, name) -> 5));
+    IOException failure = Assertions.assertThrows(IOException.class, () -> new SocketCanDevice("vcan0", libC, (socket, name) -> 5));
 
     Assertions.assertTrue(failure.getMessage().contains("errno=19"));
     verify(libC).close(42);
@@ -554,19 +430,12 @@ class SocketCanDeviceTest {
     LibCFacade libC = mock(LibCFacade.class);
     SocketCanDevice device = newDevice(libC, new CanCapabilities(true, true, 64, 64), 42, "can0");
 
-    Assertions.assertThrows(IllegalArgumentException.class,
-        () -> device.writeFrame(0x800, false, 1, new byte[]{1}));
-    Assertions.assertThrows(IllegalArgumentException.class,
-        () -> device.writeFrame(0x20000000, true, 1, new byte[]{1}));
+    Assertions.assertThrows(IllegalArgumentException.class, () -> device.writeFrame(0x800, false, 1, new byte[] {1}));
+    Assertions.assertThrows(IllegalArgumentException.class, () -> device.writeFrame(0x20000000, true, 1, new byte[] {1}));
     verify(libC, never()).write(anyInt(), any(Pointer.class), anyInt());
   }
 
-  private static SocketCanDevice newDevice(
-      LibCFacade libC,
-      CanCapabilities canCapabilities,
-      int socketFileDescriptor,
-      String interfaceName
-  ) {
+  private static SocketCanDevice newDevice(LibCFacade libC, CanCapabilities canCapabilities, int socketFileDescriptor, String interfaceName) {
     return new SocketCanDevice(libC, canCapabilities, socketFileDescriptor, interfaceName);
   }
 

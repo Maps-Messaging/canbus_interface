@@ -19,22 +19,21 @@
 package io.mapsmessaging.canbus.j1939.n2k.codec;
 
 import com.google.gson.JsonObject;
+import io.mapsmessaging.canbus.j1939.n2k.canboat.CanboatCodec;
 import io.mapsmessaging.canbus.j1939.n2k.compile.N2kCompiledField;
 import io.mapsmessaging.canbus.j1939.n2k.compile.N2kCompiledMessage;
 import io.mapsmessaging.canbus.j1939.n2k.compile.N2kCompiledRegistry;
 import io.mapsmessaging.canbus.j1939.n2k.model.N2kFieldType;
-import java.util.Arrays;
-
 import io.mapsmessaging.canbus.j1939.n2k.model.N2kMessageLengthType;
+import java.util.Arrays;
 import lombok.Getter;
-import io.mapsmessaging.canbus.j1939.n2k.canboat.CanboatCodec;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 public class N2kMessageParser {
+  private static final String PACKET = "packet";
 
-  private static final java.util.EnumMap<N2kFieldType, Processor> PROCESSORS =
-      new java.util.EnumMap<>(N2kFieldType.class);
+  private static final java.util.EnumMap<N2kFieldType, Processor> PROCESSORS = new java.util.EnumMap<>(N2kFieldType.class);
 
   static {
     PROCESSORS.put(N2kFieldType.NUMBER, new NumericProcessor());
@@ -49,7 +48,9 @@ public class N2kMessageParser {
   private final N2kCompiledRegistry registry;
 
   public JsonObject decodeToJson(int pgn, byte[] payload) {
-    if (registry.getDatabase() != null) { return new CanboatCodec(registry.getDatabase()).decode(pgn, payload); }
+    if (registry.getDatabase() != null) {
+      return new CanboatCodec(registry.getDatabase()).decode(pgn, payload);
+    }
     N2kCompiledMessage message = registry.getRequiredMessage(pgn);
     if (message == null) {
       return null;
@@ -61,28 +62,24 @@ public class N2kMessageParser {
 
     for (N2kCompiledField field : message.getFields()) {
       Processor processor = PROCESSORS.get(field.getFieldType());
-      if (processor == null) {
-        continue;
-      }
-
-      if (field.isCompileTimeFixed()) {
-        int endBitExclusive = field.getBitOffset() + field.getBitLength();
-        if (endBitExclusive > payloadBits) {
+      if (processor != null) {
+        if (field.isCompileTimeFixed() && field.getBitOffset() + field.getBitLength() > payloadBits) {
           break;
         }
+        cursor = processor.unpack(field, payload, cursor, decoded);
       }
-
-      cursor = processor.unpack(field, payload, cursor, decoded);
     }
 
     JsonObject envelope = new JsonObject();
-    envelope.add("packet", decoded);
+    envelope.add(PACKET, decoded);
     envelope.addProperty("name", message.getId());
     return envelope;
   }
 
   public byte[] encodeFromJson(int pgn, JsonObject envelope) {
-    if (registry.getDatabase() != null) { return new CanboatCodec(registry.getDatabase()).encode(pgn, envelope); }
+    if (registry.getDatabase() != null) {
+      return new CanboatCodec(registry.getDatabase()).encode(pgn, envelope);
+    }
     N2kCompiledMessage message = registry.getRequiredMessage(pgn);
     if (message == null) {
       return new byte[0];
@@ -90,11 +87,11 @@ public class N2kMessageParser {
     if (envelope == null) {
       throw new IllegalArgumentException("Envelope is null");
     }
-    if (!envelope.has("packet") || envelope.get("packet").isJsonNull()) {
+    if (!envelope.has(PACKET) || envelope.get(PACKET).isJsonNull()) {
       throw new IllegalArgumentException("Missing 'packet' object");
     }
 
-    JsonObject decoded = envelope.getAsJsonObject("packet");
+    JsonObject decoded = envelope.getAsJsonObject(PACKET);
 
     int payloadLengthBytes = computePayloadLengthBytes(message, decoded);
     byte[] payload = new byte[payloadLengthBytes];
@@ -115,7 +112,9 @@ public class N2kMessageParser {
   }
 
   public byte[] encodeFromSource(int pgn, FieldValueSource source) {
-    if (registry.getDatabase() != null) { return new CanboatCodec(registry.getDatabase()).encode(pgn, source); }
+    if (registry.getDatabase() != null) {
+      return new CanboatCodec(registry.getDatabase()).encode(pgn, source);
+    }
     N2kCompiledMessage message = registry.getRequiredMessage(pgn);
     if (message == null) {
       return new byte[0];
@@ -147,23 +146,15 @@ public class N2kMessageParser {
 
     for (N2kCompiledField field : message.getFields()) {
       Processor processor = PROCESSORS.get(field.getFieldType());
-      if (processor == null) {
-        continue;
+      if (processor != null && !field.isCompileTimeFixed()) {
+        length += processor.computePayloadLength(field, decoded);
       }
-
-      if (field.isCompileTimeFixed()) {
-        continue;
-      }
-
-      length += processor.computePayloadLength(field, decoded);
     }
 
     if (message.getLengthType() == N2kMessageLengthType.FIXED) {
       Integer fixedLengthBytes = message.getFixedLengthBytes();
       if (fixedLengthBytes == null) {
-        throw new IllegalArgumentException(
-            "FIXED lengthType but fixedLengthBytes is null for PGN " + message.getPgn()
-        );
+        throw new IllegalArgumentException("FIXED lengthType but fixedLengthBytes is null for PGN " + message.getPgn());
       }
       return fixedLengthBytes;
     }

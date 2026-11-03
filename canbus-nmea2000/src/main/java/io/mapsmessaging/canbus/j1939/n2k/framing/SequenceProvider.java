@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class SequenceProvider {
-
   private final Map<Key, Integer> counters;
 
   public SequenceProvider() {

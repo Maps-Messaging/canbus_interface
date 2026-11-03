@@ -21,7 +21,6 @@ package io.mapsmessaging.canbus.device.frames;
 import java.util.Arrays;
 
 public record CanFrame(int canIdentifier, boolean extendedFrame, int dataLengthCode, byte[] data) {
-
   private static final int RAW_CLASSIC_FRAME_LENGTH = 13;
   private static final int MAX_CLASSIC_DATA_LENGTH = 8;
   private static final int MAX_FD_DATA_LENGTH = 64;
@@ -53,11 +52,7 @@ public record CanFrame(int canIdentifier, boolean extendedFrame, int dataLengthC
       throw new IllegalArgumentException("Raw CAN frame must be exactly 13 bytes");
     }
 
-    int canIdentifier =
-        ((raw[0] & 0xFF) << 24)
-            | ((raw[1] & 0xFF) << 16)
-            | ((raw[2] & 0xFF) << 8)
-            | (raw[3] & 0xFF);
+    int canIdentifier = ((raw[0] & 0xFF) << 24) | ((raw[1] & 0xFF) << 16) | ((raw[2] & 0xFF) << 8) | (raw[3] & 0xFF);
 
     int flags = raw[4] & 0xFF;
     boolean extendedFrame = (flags & 0x01) != 0;
@@ -111,8 +106,7 @@ public record CanFrame(int canIdentifier, boolean extendedFrame, int dataLengthC
       if (canIdentifier > EXTENDED_IDENTIFIER_MAX) {
         throw new IllegalArgumentException("Extended CAN identifier must be <= 0x1FFFFFFF");
       }
-    }
-    else {
+    } else {
       if (canIdentifier > STANDARD_IDENTIFIER_MAX) {
         throw new IllegalArgumentException("Standard CAN identifier must be <= 0x7FF");
       }
@@ -154,10 +148,7 @@ public record CanFrame(int canIdentifier, boolean extendedFrame, int dataLengthC
     if (!(object instanceof CanFrame other)) {
       return false;
     }
-    return canIdentifier == other.canIdentifier
-        && extendedFrame == other.extendedFrame
-        && dataLengthCode == other.dataLengthCode
-        && Arrays.equals(data, other.data);
+    return canIdentifier == other.canIdentifier && extendedFrame == other.extendedFrame && dataLengthCode == other.dataLengthCode && Arrays.equals(data, other.data);
   }
 
   @Override
@@ -173,10 +164,7 @@ public record CanFrame(int canIdentifier, boolean extendedFrame, int dataLengthC
   @Override
   public String toString() {
     return "CanFrame{"
-        + "canIdentifier=0x" + Integer.toHexString(canIdentifier)
-        + ", extendedFrame=" + extendedFrame
-        + ", dataLengthCode=" + dataLengthCode
-        + ", data=" + Arrays.toString(data)
+        + "canIdentifier=0x" + Integer.toHexString(canIdentifier) + ", extendedFrame=" + extendedFrame + ", dataLengthCode=" + dataLengthCode + ", data=" + Arrays.toString(data)
         + '}';
   }
 }

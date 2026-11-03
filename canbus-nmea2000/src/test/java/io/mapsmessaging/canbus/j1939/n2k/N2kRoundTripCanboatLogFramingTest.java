@@ -16,7 +16,6 @@
  *
  */
 
-
 package io.mapsmessaging.canbus.j1939.n2k;
 
 import static io.mapsmessaging.canbus.j1939.n2k.BaseTest.buildRegistry;
@@ -99,13 +98,7 @@ class N2kRoundTripCanboatLogFramingTest {
 
         List<CanFrame> frames;
         try {
-          frames = framePacker.pack(
-              row.pgn,
-              row.priority,
-              row.source,
-              row.destination,
-              decodedEnvelope1
-          );
+          frames = framePacker.pack(row.pgn, row.priority, row.source, row.destination, decodedEnvelope1);
         } catch (Exception exception) {
           packFailureCounts.merge(row.pgn, 1, Integer::sum);
           continue;
@@ -126,7 +119,7 @@ class N2kRoundTripCanboatLogFramingTest {
         processed++;
       }
     }
-    start = (System.nanoTime() - start)/1000000;
+    start = (System.nanoTime() - start) / 1000000;
     double msTime = start;
 
     assertTrue(processed > 0, "No rows processed. lines=" + totalLines);
@@ -136,8 +129,8 @@ class N2kRoundTripCanboatLogFramingTest {
     dumpCounts("Unknown PGNs", unknownPgnCounts, 30);
     dumpCounts("Decode failures", decodeFailureCounts, 30);
     dumpCounts("Pack failures", packFailureCounts, 30);
-    System.err.println("Total time to parser "+totalLines+" "+start+"ms");
-    System.err.println("Time per pgn "+(msTime/totalLines)+" ms");
+    System.err.println("Total time to parser " + totalLines + " " + start + "ms");
+    System.err.println("Time per pgn " + (msTime / totalLines) + " ms");
   }
 
   private static boolean supportsPgn(N2kMessageParser parser, int pgn) {
@@ -168,12 +161,7 @@ class N2kRoundTripCanboatLogFramingTest {
     JsonObject decodedEnvelope = null;
 
     for (CanFrame frame : frames) {
-      Optional<Message> message = frameHandler.onFrame(
-          frame.canIdentifier(),
-          true,
-          frame.dataLengthCode(),
-          frame.data()
-      );
+      Optional<Message> message = frameHandler.onFrame(frame.canIdentifier(), true, frame.dataLengthCode(), frame.data());
 
       if (message.isEmpty()) {
         continue;
@@ -187,10 +175,7 @@ class N2kRoundTripCanboatLogFramingTest {
       }
 
       if (finalMessage instanceof UnknownMessage unknownMessage) {
-        fail("Unexpected unknown from handler. line=" + line +
-            " pgn=" + pgn +
-            " reason=" + unknownMessage.getReason() +
-            " detail=" + unknownMessage.getDetail());
+        fail("Unexpected unknown from handler. line=" + line + " pgn=" + pgn + " reason=" + unknownMessage.getReason() + " detail=" + unknownMessage.getDetail());
       }
 
       fail("Unexpected Message type from handler. line=" + line + " pgn=" + pgn + " type=" + finalMessage.getClass().getName());
@@ -213,11 +198,8 @@ class N2kRoundTripCanboatLogFramingTest {
 
     int expectedParts = 6 + length;
     if (parts.length < expectedParts) {
-      throw new IllegalArgumentException(
-          "Line has fewer payload bytes than declared length. " +
-              "pgn=" + pgn + " declaredLen=" + length + " parts=" + parts.length + " expected>=" + expectedParts +
-              " line=" + line
-      );
+      throw new IllegalArgumentException("Line has fewer payload bytes than declared length. "
+          + "pgn=" + pgn + " declaredLen=" + length + " parts=" + parts.length + " expected>=" + expectedParts + " line=" + line);
     }
 
     byte[] payload = new byte[length];
@@ -262,16 +244,14 @@ class N2kRoundTripCanboatLogFramingTest {
         double eps = epsilonFor(pgn, key);
         if (Double.isFinite(av) && Double.isFinite(bv)) {
           if (Math.abs(av - bv) > eps) {
-            fail("Unstable field drift too large. pgn=" + pgn + " line=" + line +
-                " key=" + key + " a=" + av + " b=" + bv + " eps=" + eps);
+            fail("Unstable field drift too large. pgn=" + pgn + " line=" + line + " key=" + key + " a=" + av + " b=" + bv + " eps=" + eps);
           }
         }
         continue;
       }
 
       if (!a.get(key).equals(b.get(key))) {
-        fail("Field mismatch. pgn=" + pgn + " line=" + line +
-            " key=" + key + " a=" + a.get(key) + " b=" + b.get(key));
+        fail("Field mismatch. pgn=" + pgn + " line=" + line + " key=" + key + " a=" + a.get(key) + " b=" + b.get(key));
       }
     }
   }

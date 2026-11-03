@@ -38,8 +38,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
 
-class N2kJsonSchemaValidationTest extends BaseTest{
-
+class N2kJsonSchemaValidationTest extends BaseTest {
   @TestFactory
   Stream<DynamicTest> allCompiledPgns_decodeJson_conformsToGeneratedSchema() throws Exception {
     N2kCompiledRegistry registry = buildRegistry();
@@ -49,29 +48,19 @@ class N2kJsonSchemaValidationTest extends BaseTest{
     List<N2kCompiledMessage> messages = new ArrayList<>(registry.getMessagesByPgn().values());
     messages.sort(Comparator.comparingInt(N2kCompiledMessage::getPgn));
 
-    return messages.stream()
-        .map(msg -> DynamicTest.dynamicTest(
-            msg.getPgn() + " " + (msg.getId() == null ? "" : msg.getId()),
-            () -> schemaValidateDecodedEnvelope(parser, schemaRegistry, msg)
-        ));
+    return messages.stream().map(
+        msg -> DynamicTest.dynamicTest(msg.getPgn() + " " + (msg.getId() == null ? "" : msg.getId()), () -> schemaValidateDecodedEnvelope(parser, schemaRegistry, msg)));
   }
 
-
   // io.mapsmessaging.n2k.N2kRoundTripAllPgnsTest
-// Replace schemaValidateDecodedEnvelope(...) with this version.
+  // Replace schemaValidateDecodedEnvelope(...) with this version.
 
-  private static void schemaValidateDecodedEnvelope(
-      N2kMessageParser parser,
-      N2kSchemaRegistry schemaRegistry,
-      N2kCompiledMessage msg
-  ) {
+  private static void schemaValidateDecodedEnvelope(N2kMessageParser parser, N2kSchemaRegistry schemaRegistry, N2kCompiledMessage msg) {
     JsonObject decoded = new JsonObject();
     Random random = new Random(BASE_SEED ^ (long) msg.getPgn());
 
     for (N2kFieldDefinition field : msg.getDefinitions()) {
-
-      if (field.getFieldType() == N2kFieldType.RESERVED
-          || field.getFieldType() == N2kFieldType.REPEAT_MARKER) {
+      if (field.getFieldType() == N2kFieldType.RESERVED || field.getFieldType() == N2kFieldType.REPEAT_MARKER) {
         continue;
       }
 
@@ -81,11 +70,8 @@ class N2kJsonSchemaValidationTest extends BaseTest{
       }
 
       switch (field.getFieldType()) {
-
         case LOOKUP: {
-          long max = (field.getBitLength() != null && field.getBitLength() < 64)
-              ? (1L << field.getBitLength()) - 1
-              : 255;
+          long max = (field.getBitLength() != null && field.getBitLength() < 64) ? (1L << field.getBitLength()) - 1 : 255;
           int value = (int) (random.nextInt((int) Math.min(max, Integer.MAX_VALUE)));
           decoded.addProperty(id, value);
           break;
@@ -100,9 +86,7 @@ class N2kJsonSchemaValidationTest extends BaseTest{
         }
 
         case STRING_FIX: {
-          int lenBytes = (field.getBitLength() != null)
-              ? field.getBitLength() / 8
-              : 8;
+          int lenBytes = (field.getBitLength() != null) ? field.getBitLength() / 8 : 8;
 
           String value = "TEST_" + id;
           if (value.length() > lenBytes) {
@@ -190,7 +174,6 @@ class N2kJsonSchemaValidationTest extends BaseTest{
         continue;
       }
 
-
       double tolerance = 0.0;
       if (fieldSchema.has("multipleOf")) {
         tolerance = fieldSchema.get("multipleOf").getAsDouble() * 0.51;
@@ -198,7 +181,7 @@ class N2kJsonSchemaValidationTest extends BaseTest{
 
       if (fieldSchema.has("minimum")) {
         double min = fieldSchema.get("minimum").getAsDouble();
-        if(value.getAsDouble() + tolerance < min){
+        if (value.getAsDouble() + tolerance < min) {
           System.err.println("check");
         }
         assertTrue(value.getAsDouble() + tolerance >= min, "Field '" + fieldId + "' below minimum for PGN=" + pgn);
@@ -219,5 +202,4 @@ class N2kJsonSchemaValidationTest extends BaseTest{
       }
     }
   }
-
 }

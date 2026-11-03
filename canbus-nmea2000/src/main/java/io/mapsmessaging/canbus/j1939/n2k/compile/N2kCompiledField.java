@@ -51,5 +51,4 @@ public class N2kCompiledField {
   N2kFieldType fieldType;
 
   boolean reserved;
-
 }

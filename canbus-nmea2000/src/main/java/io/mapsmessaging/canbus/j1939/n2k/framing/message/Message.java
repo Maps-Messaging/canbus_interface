@@ -18,5 +18,4 @@
 
 package io.mapsmessaging.canbus.j1939.n2k.framing.message;
 
-public interface Message {
-}
+public interface Message {}

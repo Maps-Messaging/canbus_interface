@@ -18,10 +18,9 @@
 
 package io.mapsmessaging.canbus.canaerospace.schema;
 
-import lombok.Data;
-
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Data;
 
 @Data
 public class SchemaMeta {
