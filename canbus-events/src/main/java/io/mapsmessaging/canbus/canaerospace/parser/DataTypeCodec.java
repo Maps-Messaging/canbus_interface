@@ -23,6 +23,10 @@ import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 
 public class DataTypeCodec {
+  private static final String ULONG = "ULONG";
+  private static final String SHORT = "SHORT";
+  private static final String USHORT = "USHORT";
+  private static final String BSHORT = "BSHORT";
   private static final ByteOrder BYTE_ORDER = ByteOrder.BIG_ENDIAN;
 
   private DataTypeCodec() {}
@@ -44,13 +48,13 @@ public class DataTypeCodec {
       case "LONG" -> {
         return buffer.getInt(0);
       }
-      case "ULONG" -> {
+      case ULONG -> {
         return buffer.getInt(0) & 0xFFFFFFFFL;
       }
-      case "SHORT" -> {
+      case SHORT -> {
         return (int) buffer.getShort(2);
       }
-      case "USHORT" -> {
+      case USHORT -> {
         return buffer.getShort(2) & 0xFFFF;
       }
       case "CHAR" -> {
@@ -85,7 +89,7 @@ public class DataTypeCodec {
         int b = buffer.getShort(2) & 0xFFFF;
         return new int[] {a, b};
       }
-      case "BSHORT" -> {
+      case BSHORT -> {
         return buffer.getShort(0) & 0xFFFF;
       }
       case "BLONG", "MEMID", "CHKSUM" -> {
@@ -131,21 +135,21 @@ public class DataTypeCodec {
         buffer.putInt(0, toInt(value));
         return buffer.array();
       }
-      case "ULONG" -> {
+      case ULONG -> {
         long longValue = toLong(value);
-        validateUnsignedLong(longValue, "ULONG");
+        validateUnsignedLong(longValue, ULONG);
         buffer.putInt(0, (int) longValue);
         return buffer.array();
       }
-      case "SHORT" -> {
+      case SHORT -> {
         int intValue = toInt(value);
-        validateRange(intValue, Short.MIN_VALUE, Short.MAX_VALUE, "SHORT");
+        validateRange(intValue, Short.MIN_VALUE, Short.MAX_VALUE, SHORT);
         buffer.putShort(2, (short) intValue);
         return buffer.array();
       }
-      case "USHORT" -> {
+      case USHORT -> {
         int intValue = toInt(value);
-        validateRange(intValue, 0, 0xFFFF, "USHORT");
+        validateRange(intValue, 0, 0xFFFF, USHORT);
         buffer.putShort(2, (short) intValue);
         return buffer.array();
       }
@@ -217,9 +221,9 @@ public class DataTypeCodec {
         buffer.putShort(2, (short) values[1]);
         return buffer.array();
       }
-      case "BSHORT" -> {
+      case BSHORT -> {
         int intValue = toInt(value);
-        validateRange(intValue, 0, 0xFFFF, "BSHORT");
+        validateRange(intValue, 0, 0xFFFF, BSHORT);
         buffer.putShort(0, (short) intValue);
         return buffer.array();
       }

@@ -38,6 +38,8 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.xml.parsers.ParserConfigurationException;
+import org.xml.sax.SAXException;
 
 public class CanLogToJsonDecoder {
   private static final String TIMESTAMP = "timestamp";
@@ -527,7 +529,7 @@ public class CanLogToJsonDecoder {
     }
   }
 
-  protected static N2kCompiledRegistry buildRegistry() throws Exception {
+  protected static N2kCompiledRegistry buildRegistry() throws IOException, SAXException, ParserConfigurationException {
     List<N2kMessageDefinition> defs = N2kXmlDialectParser.parseFromClasspath();
     return N2kCompiler.compile(defs);
   }
