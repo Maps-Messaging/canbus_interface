@@ -1,157 +1,37 @@
-# CAN Bus Interface Layer (Java / JNA / Serial)
+# canbus-core
 
-This repository provides a thin Java interface over CAN bus devices.
+`canbus-core` supplies raw CAN frames, Linux SocketCAN access, CAN adapter stream codecs, and an optional queued writer.
+It is usable independently of the J1939, NMEA 2000, event, and MapsMessaging server layers.
 
-It supports native Linux SocketCAN interfaces and serial-attached CAN adapters, including the Waveshare USB-CAN dongle style devices.
+Start with the [device and stream integration guide](../docs/devices-and-streams.md) for constructors, ownership, frame identifiers,
+capabilities, serial adapter setup, queue policies, and Linux virtual CAN setup.
+The [example instructions](../examples/README.md) cover building and running the complete Java examples:
 
-The project deliberately focuses on device-level CAN frame access. It opens CAN interfaces, reads and writes raw CAN frames, detects available capabilities where the platform allows it, and exposes those capabilities without trying to invent protocol behaviour above the bus.
+- [SocketCanExample.java](../examples/java/SocketCanExample.java): receive one frame; explicitly send a test frame only on `vcan0`.
+- [StreamCodecExample.java](../examples/java/StreamCodecExample.java): encode/decode classic frames in memory with both bundled codecs.
 
-It does not implement higher-level CAN protocols, message fragmentation, transport semantics, routing, retries, or application-level meaning. Those belong above this layer.
+## API map
 
----
+| Type | Purpose |
+| --- | --- |
+| `CanFrame` | Validated standard/extended identifier, payload length, and defensively copied data. |
+| `CanDevice` | Blocking frame read/write interface with capability reporting, flush, and close. |
+| `SocketCanDevice` | Native Linux CAN socket accessed using JNA. The operating system configures the interface. |
+| `SerialCanDevice` | Uses application-provided input/output streams and a `CanFrameStreamCodec`; owns their close lifecycle. |
+| `SlcanCanFrameStreamCodec` | Classic SLCAN `t`/`T` data frames and explicit adapter command helpers. |
+| `WaveshareUsbCanAStreamCodec` | Classic Waveshare USB-CAN-A `0xAA`/`0x55` binary framing. |
+| `QueuedCanDevice` | Bounded asynchronous write queue over another device, with estimated bandwidth limiting and failure statistics. |
 
-## Design Goals
+The stream codecs frame bytes; they do not open or configure a serial port.
+The application selects a serial library, port settings, adapter mode, timeouts, and CAN bitrate where required.
+There is no `StreamCanDevice` or `StreamCanDeviceConfig` API in this revision; the stream-backed implementation is `SerialCanDevice`.
 
-- **Thin**: minimal abstraction over the underlying device or operating system interface
-- **Truthful**: exposes what the device and implementation can actually do
-- **Deterministic**: no guessing, no hidden protocol behaviour
-- **Protocol-agnostic**: frames in, frames out
-- **Extensible**: supports different CAN device backends behind a common model
+Classic CAN payloads contain 0–8 bytes. The frame model also accepts up to 64 bytes, but each backend determines usable CAN FD support.
+Read `getCanCapabilities()` and the guide's limitations before attempting CAN FD; the bundled stream codecs report classic CAN only.
+The core module does not parse PGNs, fragment messages, interpret payloads, or provide delivery acknowledgments and retries.
 
-This layer sits at the same conceptual level as TCP, UDP, or serial adapters in larger systems. The difference is that CAN is a broadcast frame bus, not a stream, and this layer does not pretend otherwise.
+SocketCAN requires Linux, kernel CAN support, a configured interface, and JNA's native runtime.
+Stream codec logic uses Java streams; actual serial access on another operating system depends on the application's serial transport and adapter driver.
+No cross-platform hardware compatibility is implied by the stream API.
 
----
-
-## Supported Device Types
-
-### SocketCAN
-
-Native Linux SocketCAN interfaces such as:
-
-- `can0`
-- `can1`
-- `vcan0`
-
-SocketCAN support is provided using JNA and the Linux CAN socket API.
-
-### Serial CAN Adapters
-
-Serial-attached CAN devices are supported through a serial transport layer. This allows CAN frames to be exchanged with devices that expose a serial protocol rather than a native SocketCAN interface.
-
-Current support includes Waveshare USB-CAN style adapters.
-
----
-
-## Supported Features
-
-- Linux SocketCAN support
-- Virtual CAN support through `vcan` where configured by the operating system
-- Serial CAN adapter support
-- Waveshare USB-CAN adapter support
-- Classic CAN frames with 0 to 8 byte payloads
-- CAN FD frames where supported by the device and implementation
-- Blocking read/write semantics
-- Device capability reporting where available
-- Raw frame read/write access
-- No fragmentation or reassembly
-
----
-
-## Classic CAN vs CAN FD
-
-CAN capability depends on the selected backend and the underlying hardware.
-
-For SocketCAN, capability detection can include interface-level checks such as the Linux network interface MTU and socket options.
-
-For serial adapters, capability detection depends on what the adapter protocol exposes and what the implementation can verify safely.
-
-The implementation should expose the effective I/O limits rather than assuming that all CAN devices behave the same way. Because, naturally, they do not.
-
----
-
-## Capabilities
-
-Device capability information is exposed through the CAN device abstraction so higher layers can decide what behaviour is valid.
-
-Typical capability information includes:
-
-- Whether the interface supports CAN FD
-- Whether the active connection can send or receive CAN FD frames
-- Maximum payload size supported by the interface
-- Maximum payload size supported by the current implementation path
-
-The capability model is the source of truth. Higher layers should derive behaviour from it rather than duplicating backend-specific checks.
-
----
-
-## What This Layer Does Not Do
-
-This is intentional:
-
-- No message fragmentation
-- No multi-frame reassembly
-- No PGN parsing
-- No address semantics
-- No retry logic
-- No protocol awareness
-- No payload interpretation
-- No transport-level fiction pretending CAN is TCP with smaller packets
-
-CAN is a broadcast frame bus. Anything above raw frame exchange belongs in a protocol layer.
-
----
-
-## Intended Usage
-
-Typical usage pattern:
-
-1. Configure the CAN device backend.
-2. Open the device.
-3. Query device capabilities.
-4. Read and write CAN frames.
-5. Let higher layers handle meaning, framing, addressing, and protocol rules.
-
-This layer is suitable as a foundation for protocol implementations, diagnostic tools, monitoring utilities, replay tools, and embedded system integrations.
-
----
-
-## Platform Notes
-
-### SocketCAN
-
-SocketCAN support requires:
-
-- Linux
-- SocketCAN-enabled kernel
-- CAN, CAN FD, or virtual CAN interface
-- Java
-- JNA
-
-### Serial CAN Devices
-
-Serial CAN support requires:
-
-- A supported serial CAN adapter
-- A configured serial port
-- Java serial support
-- Correct adapter mode and baud configuration
-
-Serial adapters are not SocketCAN devices. They are CAN devices accessed through a serial protocol, which means their behaviour is limited by both the CAN bus and the adapter firmware.
-
----
-
-## Project Scope
-
-This module provides the device-facing CAN layer.
-
-Protocol-specific modules should be built above it. They should consume and produce CAN frames while keeping protocol rules out of this device abstraction.
-
-That separation keeps the low-level device layer small, testable, and honest.
-
----
-
-## Philosophy
-
-If this layer starts interpreting payloads, managing protocol state, or trying to be helpful, it has gone too far.
-
-It exists to expose CAN devices as they are, not as we wish hardware vendors had documented them.
+For the existing dual MCP2515 Raspberry Pi installation instructions, see [pi_setup.md](pi_setup.md).

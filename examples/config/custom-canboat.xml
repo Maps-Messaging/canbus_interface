@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Authored demonstration metadata only; not an assigned or vendor-approved proprietary wire protocol. -->
+<PGNDefinitions>
+  <SchemaVersion>2.8.0</SchemaVersion>
+  <Version>demo-v1</Version>
+  <Protocol>nmea2000</Protocol>
+  <PGNs>
+    <PGNInfo>
+      <PGN>130816</PGN>
+      <Id>demoMeasurement</Id>
+      <Description>Demonstration unsigned scaled measurement</Description>
+      <Priority>6</Priority>
+      <Type>Single</Type>
+      <Complete>true</Complete>
+      <Length>2</Length>
+      <Fields>
+        <Field>
+          <Order>1</Order>
+          <Id>value</Id>
+          <Name>Demonstration value</Name>
+          <FieldType>NUMBER</FieldType>
+          <BitOffset>0</BitOffset>
+          <BitLength>16</BitLength>
+          <Signed>false</Signed>
+          <Resolution>0.1</Resolution>
+          <Offset>0</Offset>
+        </Field>
+      </Fields>
+    </PGNInfo>
+  </PGNs>
+</PGNDefinitions>

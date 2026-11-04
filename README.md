@@ -1,158 +1,65 @@
 # Canbus Interface
 
-[Release notes](RELEASE_NOTES.md)
+Modular Java libraries for CAN device access, J1939 identifiers, NMEA 2000/J1939 payload definitions and CANaerospace parsing. They can be embedded without running the MapsMessaging server.
 
-This repository provides a modular Java implementation for working with **CAN bus–based protocols**,
-including **native CAN socket device support**, with current, production-ready support for
-**J1939** and **NMEA 2000 (N2K)**.
+## Start here
 
-The project is structured as a **multi-module Maven build**, allowing protocol layers to evolve
-independently while sharing a common CAN framing and device-access core.
+1. Read the [integration overview](docs/overview.md) to choose the required modules.
+2. Build and run the [complete examples](examples/README.md), including hardware-free demonstrations.
+3. Use [dynamic definitions](docs/dynamic-definitions.md) to load your own XML at runtime and replace application registries safely.
 
-**CANboat acknowledgement:** The NMEA 2000 PGN definitions used by this project come from [CANboat](https://github.com/canboat/canboat), developed through years of reverse engineering by its contributors and licensed under the Apache License, Version 2.0.
+| Module/artifact | Responsibility | Guide |
+| --- | --- | --- |
+| `canbus-core` | Raw CAN frames, Linux SocketCAN, stream/serial adapter framing and queued writes | [Devices and streams](docs/devices-and-streams.md) |
+| `canbus-J1939` | Build/parse 29-bit J1939 identifiers, including PDU1/PDU2 rules | [Identifiers](docs/canaerospace-and-identifiers.md) |
+| `canbus-nmea2000` | XML loading, compiled payload registries, JSON/schema conversion and N2K fast packets; separate NMEA/J1939 catalogs | [Payloads and schemas](docs/payloads-and-schemas.md) |
+| `canbus-events` | YAML-driven CANaerospace parsing and typed values | [CANaerospace](docs/canaerospace-and-identifiers.md) |
 
-The NMEA 2000 module **parses CANboat-format PGN XML at runtime**, rather than generating Java code or baking the PGN definitions into the library at build time. It can load definitions from an XML file, a classpath resource, or an input stream. Applications can adopt an updated compatible CANboat database without rebuilding the library by reloading the XML and constructing a new compiled registry. Existing registries are not automatically refreshed when the XML file changes.
+Artifact names are case-sensitive: the identifier module is `canbus-J1939`. The parent `io.mapsmessaging:canbus` is a Maven aggregator (`pom`), not the runtime JAR to add to an application.
 
----
+## Maven usage
 
-## What This Project Is
+For NMEA 2000 or definition-based J1939 payload handling:
 
-- A **CAN bus protocol stack**, not just parsers
-- Includes **SocketCAN-based device access**
-- Designed to sit inside larger systems (gateways, brokers, analytics pipelines)
-- Transport-aware but not UI- or application-level
-
-This is not a CAN driver replacement. It builds on OS-level CAN support and focuses on
-**protocol correctness, structure, and extensibility**.
-
----
-
-## Module Overview
-
-### `canbus-core`
-Core CAN and protocol framing layer.
-
-Responsibilities:
-- Native **CAN socket (SocketCAN) device support**
-- Construction and parsing of **29-bit extended CAN identifiers**
-- Shared framing utilities for J1939 and N2K
-- Transport-facing abstractions used by higher-level protocols
-
-This module owns the boundary between the operating system CAN interface and protocol logic.
-
----
-
-### `canbus-j1939`
-J1939 protocol implementation.
-
-Responsibilities:
-- J1939 identifier construction and decoding
-- PDU1 vs PDU2 handling
-- PGN, priority, source, and destination resolution
-- Protocol-correct framing independent of transport
-
-This module implements **core SAE J1939 semantics**, not vendor-specific extensions.
-
-#### Dialect Support (Planned)
-J1939 is commonly extended by OEMs and industries. Planned work includes:
-
-- Industry-specific PGN catalogs
-- OEM extensions
-- Runtime-selectable J1939 dialects
-
-The intent is to support dialects via **pluggable definitions**, avoiding hard-coded logic.
-
----
-
-### `canbus-nmea2000`
-NMEA 2000 (N2K) protocol implementation.
-
-Responsibilities:
-- Loading and interpreting NMEA 2000 XML definitions
-- Mapping PGNs to structured field models
-- Converting N2K messages to and from JSON
-- Schema generation and validation support
-
-Dependencies:
-- `canbus-core`
-- `canbus-j1939`
-
-NMEA 2000 is treated as a **specialised J1939 profile**, preserving correct layering and reuse.
-
-Want to dive deeper? 
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Maps-Messaging/canbus_interface)
----
-
-## Current Capabilities
-
-- SocketCAN device access
-- J1939 frame construction and decoding
-- NMEA 2000 message parsing and formatting
-- JSON conversion and schema-driven validation
-- Multi-module Maven build with clear protocol separation
-
----
-
-## Planned Work
-
-### CANopen Support
-A future module is planned:
-
-```
-canbus-canopen
+```xml
+<dependency>
+  <groupId>io.mapsmessaging</groupId>
+  <artifactId>canbus-nmea2000</artifactId>
+  <version>1.1.0-SNAPSHOT</version>
+</dependency>
 ```
 
-Expected scope:
-- CANopen object dictionary handling
-- PDO / SDO framing
-- Network management (NMT) states
-- Profile support (CiA 301, CiA 402)
+This brings the core and identifier modules transitively. Add `io.mapsmessaging:canbus-events` at the same version for CANaerospace. See [setup](examples/README.md#build-against-this-checkout) for snapshot resolution and a complete consumer POM.
 
-CANopen is intentionally separate due to its significantly different protocol model.
+These guides describe the current development API (`1.1.0-SNAPSHOT`). Use documentation from the same tag as a released artifact, especially when migrating field names and XML formats. The POM targets Java 21; build and run with a compatible full JDK.
 
----
+## Runtime definitions
 
-### J1939 Dialect Expansion
-Future development will focus on:
+NMEA/J1939 PGN metadata is loaded from XML, not generated into Java classes. Applications can parse compatible XML from the classpath, a file or an input stream, then compile a new registry. Updating the file does not refresh an existing registry or the static factory caches. The [reload example](examples/java/XmlReloadExample.java) shows application-owned replacement while retaining the previous configuration on failure.
 
-- Multiple concurrent dialects
-- Vendor- and industry-specific PGN mappings
-- Use in gateways, sniffers, and normalisation pipelines
+CANaerospace uses YAML through a separate schema registry. Keep its schema/parser lifecycle independent of NMEA/J1939 XML.
 
----
+## Scope and operational details
+
+- Device access supplies frames; protocol modules interpret them. SocketCAN requires a configured Linux CAN interface.
+- CAN FD representation/device capabilities do not imply the classic N2K framing layer supports CAN FD.
+- The J1939 identifier module does not implement payload decoding, address claiming or J1939 BAM/RTS/CTS transport. Payload definitions are available separately through the NMEA module.
+- The embedding application owns interface configuration, lifecycle, routing, bus addressing, concurrency and permission to transmit.
+
+See [operations and troubleshooting](docs/operations.md) and [offline CAN-log decoding](docs/offline-tools.md).
 
 ## Build
 
-Standard Maven multi-module build.
-
-```
-mvn clean install
+```sh
+mvn clean install -Dgpg.skip=true -Ddependency-check.skip=true
 ```
 
-Snapshots:
-```
-mvn clean deploy
-```
+The command builds/installs locally; it does not publish a release. Hardware tests may need a configured `vcan0`. For source and runnable example build details, use the [examples guide](examples/README.md).
 
-Releases (Maven Central):
-```
-mvn clean deploy -Prelease
-```
+## Definitions, attribution and license
 
----
+The bundled CANboat definitions and RDS character mapping derive from [CANboat](https://github.com/canboat/canboat), whose contributors developed the public PGN definitions through reverse engineering. Preserve the embedded upstream notices when redistributing definition files. See [CANboat migration and provenance](docs/canboat-migration.md) for the pinned source/version and compatibility history.
 
-## Design Principles
+This repository is licensed under Apache License 2.0 with the Commons Clause; see [LICENSE](LICENSE). Upstream definition provenance is distinct from the library license. [Release notes](RELEASE_NOTES.md) describe release changes.
 
-- **Explicit layering**: CAN socket → framing → protocol → profile
-- **Protocol correctness first**
-- **No vendor lock-in**
-- **Transport-aware, application-agnostic**
-- **Extensible by construction**
-
----
-
-## License
-
-Licensed under the **Apache License, Version 2.0**, with the **Commons Clause**.
-
-See the LICENSE file for details.
+[DeepWiki](https://deepwiki.com/Maps-Messaging/canbus_interface)

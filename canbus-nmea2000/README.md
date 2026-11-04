@@ -1,218 +1,50 @@
-# CAN Bus Interface
+# NMEA 2000 and J1939 payloads
 
-Java CAN bus integration libraries for MapsMessaging.
+This module parses public CANboat XML, compiles PGN definitions and encodes/decodes complete payloads as Gson JSON. It includes separate packaged NMEA 2000 and J1939 databases, variant/lookup metadata, JSON Schema generation and classic-CAN single/fast-packet framing helpers.
 
-This repository provides the lower-level CAN bus building blocks used by the
-MapsMessaging server and related tooling. It separates raw CAN device access
-from higher-level protocol decoding so each layer stays honest about what it
-does.
+Raw device access belongs to `canbus-core`. Identifier parsing/building belongs to `canbus-J1939`. J1939 payload codecs are supplied here through the shared CANboat implementation; an identifier parser alone does not decode SPNs or install transport sessions.
 
-The repository is organised as a set of Maven subprojects:
+## Start here
 
-- **CAN bus device layer**: raw CAN frame access over SocketCAN, virtual CAN,
-  serial CAN adapters, and Waveshare USB-CAN style devices
-- **CAN bus events**: event-level protocol decoding, currently including
-  CANaerospace
-- **J1939**: SAE J1939 support
-- **NMEA 2000**: N2K payload decoding based on public CANboat metadata
+| Guide/example | Coverage |
+| --- | --- |
+| [Payloads and schemas](../docs/payloads-and-schemas.md) | API boundaries, JSON fields, variants, fallback, schemas and framing limits |
+| [Dynamic definitions](../docs/dynamic-definitions.md) | XML file/stream loading, compilation and application-owned replacement |
+| [Build/run examples](../examples/README.md) | Shared executable instructions |
+| [NmeaPayloadExample.java](../examples/java/NmeaPayloadExample.java) | Independent N2K byte vector and shared J1939 payload decoding |
+| [NmeaFramingExample.java](../examples/java/NmeaFramingExample.java) | Pack PGN 126998, reassemble and check decoded strings without hardware |
+| [XmlReloadExample.java](../examples/java/XmlReloadExample.java) | File/stream loading, candidate checks, atomic publication and rejected reload |
 
----
+## Core APIs
 
-## Project Scope
-
-This repository is not a single monolithic CAN stack.
-
-It is intentionally split into layers:
-
-1. Open or connect to a CAN-capable device
-2. Read and write raw CAN frames
-3. Decode frames into protocol-specific events where supported
-4. Let higher layers handle routing, transformation, storage, and messaging
-
-That separation matters because CAN itself is only a broadcast frame bus.
-Everything above that belongs in a protocol-specific module, not in the raw
-device layer.
-
----
-
-## Subprojects
-
-### CAN Bus Device Layer
-
-The device layer provides raw CAN frame access.
-
-It supports:
-
-- Linux SocketCAN interfaces such as `can0` and `can1`
-- Linux virtual CAN interfaces such as `vcan0`
-- Serial CAN adapters
-- Waveshare USB-CAN style devices
-- Classic CAN frames
-- CAN FD capability detection where supported by the device and interface
-
-This layer is deliberately thin. It opens the device, reads frames, writes
-frames, and exposes capabilities. It does not decode protocols, fragment
-messages, reassemble multi-frame payloads, or invent transport semantics.
-
-Higher layers are expected to decide what a frame means.
-
----
-
-### CAN Bus Events
-
-The event layer converts raw CAN frames into structured protocol events.
-
-Currently supported:
-
-- **CANaerospace**
-
-This module is intended for protocols where the CAN identifier and payload can
-be interpreted into meaningful event data for routing, inspection, logging, or
-conversion into other message formats.
-
-The event layer sits above the raw CAN device layer and below the wider
-MapsMessaging event pipeline.
-
----
-
-### J1939
-
-The J1939 module provides support for SAE J1939-style CAN traffic.
-
-J1939 is a higher-level CAN protocol commonly used in heavy vehicles,
-industrial systems, marine engines, and machinery. It defines message structure,
-parameter groups, source addressing, and related semantics above raw CAN frames.
-
-This module belongs above the raw CAN device layer. It should not be treated as
-a device driver.
-
----
-
-### NMEA 2000
-
-The NMEA 2000 module provides payload decoding for N2K messages.
-
-It parses PGN definitions derived from public CANboat XML metadata, compiles
-message definitions, and decodes N2K payload bytes into structured Java values.
-
-The N2K decoder is intentionally scoped to payload decoding. CAN transport,
-frame acquisition, fast-packet handling, source addresses, and device-level
-behaviour are handled outside the payload codec.
-
-Important limitations:
-
-- Only public PGNs from CANboat-style metadata are included
-- Proprietary PGNs are not decoded unless definitions are supplied elsewhere
-- Some metadata contains inconsistencies or ambiguities
-- Some PGNs may decode partially or require special handling
-
-The decoder is designed for inspection, telemetry ingestion, validation, and
-protocol bridge work.
-
----
-
-## Layering Model
-
-```text
-+--------------------------------------------------+
-| MapsMessaging server / routing / transformation  |
-+--------------------------------------------------+
-| Protocol event modules                           |
-| - CANaerospace                                   |
-| - J1939                                          |
-| - NMEA 2000                                      |
-+--------------------------------------------------+
-| Raw CAN device layer                             |
-| - SocketCAN                                      |
-| - vcan                                           |
-| - serial CAN adapters                            |
-| - Waveshare USB-CAN                              |
-+--------------------------------------------------+
-| Linux kernel / serial devices / CAN hardware     |
-+--------------------------------------------------+
+```java
+N2kCompiledRegistry registry = N2kParserFactory.getN2kParser();
+N2kMessageParser parser = new N2kMessageParser(registry);
+JsonObject envelope = parser.decodeToJson(pgn, completePayload);
+byte[] encoded = parser.encodeFromJson(pgn, envelope);
+N2kSchemaRegistry schemas = new N2kSchemaRegistry(registry);
+JsonObject schema = schemas.getSchema(pgn).deepCopy();
 ```
 
-The raw device layer should remain protocol-agnostic. Protocol modules should
-consume frames and produce meaningful decoded events or payload structures.
+This excerpt shows the sequence; linked complete examples include imports, checked exceptions, known PGNs and expected byte/value checks. Select `N2kParserFactory.getJ1939Parser()` for J1939. Both factories cache registries; neither watches or reloads XML files.
 
----
+| Packaged resource | Purpose |
+| --- | --- |
+| `n2k/canboat.xml` | Default CANboat NMEA 2000 database |
+| `n2k/canboat-j1939.xml` | CANboat J1939 database |
+| `n2k/NMEA_database_1_300.xml` | Explicitly loadable legacy dialect |
 
-## Design Goals
+CANboat decode returns `{"packet": {...}, "name": "variantId"}`. PGN is a separate argument; addresses/timestamps are not added to JSON. Encode uses `packet` and optional `name` for layout selection. Repeated sets use `list`/`list2`; binary/raw fallback uses Base64. Lookup values remain numeric rather than automatically becoming labels.
 
-- Keep raw CAN access separate from protocol decoding
-- Avoid hiding kernel or device behaviour
-- Support both physical and virtual CAN interfaces
-- Allow protocol modules to evolve independently
-- Provide deterministic decoding where metadata and protocol rules allow it
-- Fail explicitly rather than silently corrupting decoded data
+## Integration limits
 
----
+- `N2kMessageParser` consumes complete payloads without fast-packet headers. Use a matching `FrameHandler` for CAN frames.
+- `FramePacker.pack` supports classic-CAN single frames and N2K fast packets up to 223 payload bytes. It rejects `ISO`/J1939 transport-protocol output; it does not implement BAM/RTS/CTS sessions.
+- Preserve unknown/error messages and raw fallback instead of treating every decoded wrapper as complete semantic coverage.
+- Schema generation does not run a validator or express every wire/transport rule. Canonical and legacy schema contracts differ.
+- Runtime XML requires explicit application preparation/verification/publication. Preserve `CanboatDefinitions` metadata when compiling; ordinary list copying changes compiler selection.
+- Assemblers have state and ordering/expiry/concurrency limits; read the framing guide before integrating concurrent streams or live reload.
 
-## What This Repository Does Not Do
+The [pinned conformance corpus](src/test/resources/conformance/README.md) and [migration tests](src/test/java/io/mapsmessaging/canbus/j1939/n2k/CanboatMigrationTest.java) provide concrete byte/value evidence. They do not establish compatibility with every proprietary PGN, upstream revision or device.
 
-This repository does not try to make CAN look like TCP, UDP, MQTT, or any other
-message transport invented by people who wanted life to be tidier than physics
-allows.
-
-It does not provide:
-
-- A universal CAN protocol abstraction
-- Guaranteed decoding of every proprietary payload
-- Automatic interpretation of unknown frames
-- Safety-certified marine, automotive, or aerospace behaviour
-- A single all-knowing transport stack
-
-Each module has a defined responsibility. That boundary is deliberate.
-
----
-
-## Intended Use
-
-These libraries are intended for:
-
-- MapsMessaging CAN bus integration
-- CAN telemetry ingestion
-- Protocol bridge development
-- Log replay and inspection tools
-- Device and protocol validation
-- Embedded and industrial data collection
-
-A typical pipeline is:
-
-1. Read CAN frames from a device
-2. Pass frames into the relevant protocol module
-3. Decode supported frames into structured events or payload data
-4. Publish, route, transform, store, or bridge the decoded output
-
----
-
-## Platform Notes
-
-SocketCAN and `vcan` support require Linux.
-
-Serial CAN adapters can be used where supported by the relevant device module,
-but behaviour depends on the adapter firmware, framing format, and configured
-baud rate. Naturally, because one standard bus was apparently not enough.
-
----
-
-## Build
-
-This is a Maven multi-module project.
-
-From the repository root:
-
-```bash
-mvn clean install
-```
-
-Individual modules may also be built separately from their subproject
-directories.
-
----
-
-## License
-
-Apache License 2.0 with the Commons Clause.
-
-See the repository license files for details.
+See the [repository overview](../README.md) for module selection and device integration.
