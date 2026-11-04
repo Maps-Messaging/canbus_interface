@@ -1,6 +1,6 @@
 # CANboat message-definition migration (MSG-422)
 
-Confirmed scope: load CANboat 9.1.0 / schema 2.8.0 NMEA 2000 and J1939 XML as separate registries. Adopt canonical names. J1939 transport remains excluded. Source commit: 5b8340403e009b935f6a398b1ef0244a03e3d128.
+The original migration adopted CANboat 9.1.0 / schema 2.8.0 NMEA 2000 and J1939 XML as separate registries. The bundled NMEA 2000 catalogue is now CANboat 9.2.0; J1939 remains at the original 9.1.0 baseline. Canonical names are used, and J1939 transport remains excluded.
 
 ## Review and design
 
@@ -37,7 +37,26 @@ For unknown manufacturers on known PGNs, decoding uses the lower-priority range 
 
 ## Sources and verification
 
-Both XML resources are from `canboat/canboat` commit `5b8340403e009b935f6a398b1ef0244a03e3d128`, version 9.1.0, schema 2.8.0 (`docs/canboat.xml` and `docs/canboat-j1939.xml`). The NMEA XML was already tracked in development; the J1939 XML is added here. Embedded upstream notices are preserved. RDS G0 mappings in `CanboatText` are attributed to CANboat's Apache-licensed charset source.
+Current bundled sources from `canboat/canboat`:
+
+| Catalogue | Upstream file | Version | Source commit | Schema |
+| --- | --- | --- | --- | --- |
+| NMEA 2000 | `docs/canboat.xml` | [9.2.0](https://github.com/canboat/canboat/releases/tag/v9.2.0) | `5add9cefe5711d3d3ab600ea4b37caa95a17f2f6` | 2.8.0 |
+| J1939 | `docs/canboat-j1939.xml` | 9.1.0 | `5b8340403e009b935f6a398b1ef0244a03e3d128` | 2.8.0 |
+
+Embedded upstream notices are preserved. RDS G0 mappings in `CanboatText` are attributed to CANboat's Apache-licensed charset source.
+
+### NMEA 2000 update to 9.2.0
+
+[CANbus issue #24](https://github.com/Maps-Messaging/canbus_interface/issues/24) is implemented in [commit 832aa1b](https://github.com/Maps-Messaging/canbus_interface/commit/832aa1ba93a28bff8d51a816dd6f55c78b7cd1a2). Only `canbus-nmea2000/src/main/resources/n2k/canboat.xml` was replaced, byte-for-byte, with the upstream release file (Git blob `ef785cf008cdd9e3720540e8c929b1a34dbf269a`). It retains 640 definitions across 348 PGNs and schema 2.8.0. The J1939 resources and decoder implementation were not changed.
+
+The catalogue update includes heave delay fields, BEP CZone output-status fields, the Furuno satellite-azimuth signedness correction, and revised proprietary-field layouts and lookup names. Consumers of affected decoded messages should review the [upstream release notes](https://github.com/canboat/canboat/releases/tag/v9.2.0) for field changes. Upstream CANboat executable fixes are not Java codec changes supplied by this XML replacement.
+
+Validation with JDK 25: `mvn -pl canbus-nmea2000 -am test '-Dtest=Canboat*Test' -Dsurefire.failIfNoSpecifiedTests=false -Dgpg.skip=true -Ddependency-check.skip=true` passed 899 focused tests with zero failures, errors or skips. XML parsing, catalogue counts and the upstream Git blob identity were also checked. The broader reactor test attempt stopped in `canbus-core` because Mockito's agent could not initialise in the test environment. Full-suite and hardware interoperability validation are not established by this update.
+
+The existing wire-vector corpus remains pinned to CANboat 9.1.0 commit `5b8340403e009b935f6a398b1ef0244a03e3d128`; it was not regenerated as part of this catalogue update.
+
+### Original 9.1.0 migration verification
 
 Verification uses JDK 25 with `javac --release 21` and JUnit Platform. Tests cover every non-fallback definition, independent upstream wire vectors, discriminator selection, both repeat groups, dynamic values, referenced fields, character encodings, sentinels, unsigned values, typed schemas, malformed payloads and the existing legacy/capture regressions. An independent review found and resolved fallback re-encoding, string lengths/encodings, dynamic length/sentinel handling, bit-field padding and partial-repeat handling.
 
