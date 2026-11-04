@@ -22,7 +22,6 @@ import com.google.gson.JsonObject;
 import io.mapsmessaging.canbus.j1939.n2k.compile.N2kCompiledField;
 
 public class LookupProcessor implements Processor {
-
   @Override
   public int pack(N2kCompiledField field, byte[] payload, int cursor, JsonObject decoded) {
     if (!decoded.has(field.getId()) || decoded.get(field.getId()).isJsonNull()) {
@@ -53,22 +52,13 @@ public class LookupProcessor implements Processor {
       startByte = field.getStartByte();
       startBit = field.getStartBit();
       bytesToRead = field.getBytesToRead();
-    }
-    else {
+    } else {
       startByte = cursor;
       startBit = 0;
       bytesToRead = computeRelativeBytes(field);
     }
 
-    long raw =
-        N2kBitCodec.extractBits(
-            payload,
-            startByte,
-            startBit,
-            bytesToRead,
-            field.getMask(),
-            field.isSigned(),
-            field.getBitLength());
+    long raw = N2kBitCodec.extractBits(payload, startByte, startBit, bytesToRead, field.getMask(), field.isSigned(), field.getBitLength());
 
     long maskValue = (raw & field.getMask());
     decoded.addProperty(field.getId(), maskValue);
@@ -104,21 +94,13 @@ public class LookupProcessor implements Processor {
       startByte = field.getStartByte();
       startBit = field.getStartBit();
       bytesToRead = field.getBytesToRead();
-    }
-    else {
+    } else {
       startByte = cursor;
       startBit = 0;
       bytesToRead = computeRelativeBytes(field);
     }
 
-    N2kBitCodec.insertBits(
-        payload,
-        startByte,
-        startBit,
-        bytesToRead,
-        field.getMask(),
-        rawValue
-    );
+    N2kBitCodec.insertBits(payload, startByte, startBit, bytesToRead, field.getMask(), rawValue);
 
     return field.isCompileTimeFixed() ? cursor : cursor + bytesToRead;
   }

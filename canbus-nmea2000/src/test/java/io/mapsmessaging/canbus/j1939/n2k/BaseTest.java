@@ -32,7 +32,6 @@ public class BaseTest {
   protected static final long BASE_SEED = 0x6b8b4567L;
   protected static final String DIALECT_RESOURCE_PATH = "n2k/NMEA_database_1_300.xml";
 
-
   protected static long clampRawValue(N2kCompiledField field, long rawValue) {
     if (!field.isSigned()) {
       if (rawValue < 0L) {
@@ -107,13 +106,11 @@ public class BaseTest {
       if (bitLength >= 64) {
         bitMin = Long.MIN_VALUE;
         bitMax = Long.MAX_VALUE;
-      }
-      else {
+      } else {
         bitMin = -(1L << (bitLength - 1));
         bitMax = (1L << (bitLength - 1)) - 1L;
       }
-    }
-    else {
+    } else {
       bitMin = 0L;
       bitMax = field.getMask();
       if (bitMax <= 0L) {
@@ -185,7 +182,6 @@ public class BaseTest {
     }
   }
 
-
   protected static long nextLongBounded(Random random, long boundExclusive) {
     if (boundExclusive <= 0L) {
       return 0L;
@@ -205,7 +201,6 @@ public class BaseTest {
 
     return u % boundExclusive;
   }
-
 
   protected static long randomRawValueFromDefinition(N2kFieldDefinition field, Random random) {
     RawRange range = computeAllowedRawRange(field);
@@ -238,18 +233,15 @@ public class BaseTest {
       if (bitLength >= 64) {
         bitMin = Long.MIN_VALUE;
         bitMax = Long.MAX_VALUE;
-      }
-      else {
+      } else {
         bitMin = -(1L << (bitLength - 1));
         bitMax = (1L << (bitLength - 1)) - 1L;
       }
-    }
-    else {
+    } else {
       bitMin = 0L;
       if (bitLength >= 63) {
         bitMax = Long.MAX_VALUE;
-      }
-      else {
+      } else {
         bitMax = (1L << bitLength) - 1L;
       }
     }
@@ -300,8 +292,7 @@ public class BaseTest {
     long raw;
     if (range.min == range.max) {
       raw = range.min;
-    }
-    else {
+    } else {
       long span = range.max - range.min;
       long offset = nextLongBounded(random, span + 1L);
       raw = range.min + offset;

@@ -17,11 +17,11 @@
  */
 package io.mapsmessaging.canbus.device;
 
-
 import com.sun.jna.Structure;
-
 import java.util.List;
 
+// Native structures intentionally retain JNA Structure pointer-based equality.
+@SuppressWarnings("java:S2160")
 public final class IfReq extends Structure {
   static final int IFNAMSIZ = 16;
 

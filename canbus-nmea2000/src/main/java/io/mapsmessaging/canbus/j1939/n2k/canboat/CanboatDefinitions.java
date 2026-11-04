@@ -24,8 +24,9 @@ import java.util.List;
 import java.util.RandomAccess;
 
 /** Retains schema metadata while preserving the existing parser's list API. */
-public final class CanboatDefinitions extends AbstractList<N2kMessageDefinition>
-    implements RandomAccess {
+// Inherit AbstractList element equality and hashCode; schema metadata is not part of List equality.
+@SuppressWarnings("java:S2160")
+public final class CanboatDefinitions extends AbstractList<N2kMessageDefinition> implements RandomAccess {
   private final List<N2kMessageDefinition> definitions;
   private final CanboatDatabase database;
 

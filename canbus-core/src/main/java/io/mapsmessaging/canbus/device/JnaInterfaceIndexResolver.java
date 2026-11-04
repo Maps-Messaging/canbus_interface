@@ -17,11 +17,9 @@
  */
 package io.mapsmessaging.canbus.device;
 
-
 import java.io.IOException;
 
 public final class JnaInterfaceIndexResolver implements InterfaceIndexResolver {
-
   private final LibCFacade libC;
 
   public JnaInterfaceIndexResolver(LibCFacade libC) {

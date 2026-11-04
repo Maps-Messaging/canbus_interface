@@ -19,16 +19,14 @@ package io.mapsmessaging.canbus.device;
 
 import io.mapsmessaging.canbus.device.codec.CanFrameStreamCodec;
 import io.mapsmessaging.canbus.device.frames.CanFrame;
-import lombok.Getter;
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Objects;
+import lombok.Getter;
 
 public final class SerialCanDevice implements CanDevice, Closeable {
-
   private final InputStream inputStream;
   private final OutputStream outputStream;
   private final CanFrameStreamCodec canFrameStreamCodec;
@@ -36,10 +34,7 @@ public final class SerialCanDevice implements CanDevice, Closeable {
   @Getter
   private final String deviceName;
 
-  public SerialCanDevice(String deviceName,
-                         InputStream inputStream,
-                         OutputStream outputStream,
-                         CanFrameStreamCodec canFrameStreamCodec) throws IOException {
+  public SerialCanDevice(String deviceName, InputStream inputStream, OutputStream outputStream, CanFrameStreamCodec canFrameStreamCodec) throws IOException {
     if (deviceName == null || deviceName.isBlank()) {
       throw new IllegalArgumentException("deviceName must not be null or blank");
     }

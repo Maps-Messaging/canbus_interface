@@ -23,7 +23,6 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public class CanId {
-
   private static final int EXTENDED_ID_MASK = 0x1FFFFFFF;
 
   private static final int PRIORITY_SHIFT = 26;
@@ -69,13 +68,7 @@ public class CanId {
       pgn = (dataPage << 16) | (pduFormat << 8) | groupExtension;
     }
 
-    return new CanId(
-        priority,
-        pgn,
-        sourceAddress,
-        destinationAddress,
-        pduFormat,
-        groupExtension);
+    return new CanId(priority, pgn, sourceAddress, destinationAddress, pduFormat, groupExtension);
   }
 
   public boolean isPdu1() {

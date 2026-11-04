@@ -18,10 +18,9 @@
 
 package io.mapsmessaging.canbus.canaerospace.schema;
 
+import java.util.Map;
 import lombok.Builder;
 import lombok.Value;
-
-import java.util.Map;
 
 @Value
 @Builder

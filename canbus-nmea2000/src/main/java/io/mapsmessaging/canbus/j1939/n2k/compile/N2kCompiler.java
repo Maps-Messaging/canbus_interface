@@ -18,6 +18,8 @@
 
 package io.mapsmessaging.canbus.j1939.n2k.compile;
 
+import io.mapsmessaging.canbus.j1939.n2k.canboat.CanboatDatabase;
+import io.mapsmessaging.canbus.j1939.n2k.canboat.CanboatDefinitions;
 import io.mapsmessaging.canbus.j1939.n2k.model.N2kFieldDefinition;
 import io.mapsmessaging.canbus.j1939.n2k.model.N2kFieldType;
 import io.mapsmessaging.canbus.j1939.n2k.model.N2kMessageDefinition;
@@ -28,12 +30,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import lombok.experimental.UtilityClass;
-import io.mapsmessaging.canbus.j1939.n2k.canboat.CanboatDefinitions;
-import io.mapsmessaging.canbus.j1939.n2k.canboat.CanboatDatabase;
 
 @UtilityClass
 public class N2kCompiler {
-
   public static N2kCompiledRegistry compile(List<N2kMessageDefinition> messageDefinitions) {
     Map<Integer, N2kCompiledMessage> messagesByPgn = HashMap.newHashMap(messageDefinitions.size());
 
@@ -42,8 +41,11 @@ public class N2kCompiler {
     for (N2kMessageDefinition messageDefinition : messageDefinitions) {
       N2kCompiledMessage compiledMessage = compileMessage(messageDefinition);
       variants.computeIfAbsent(compiledMessage.getPgn(), ignored -> new ArrayList<>()).add(compiledMessage);
-      if (database == null) { messagesByPgn.put(compiledMessage.getPgn(), compiledMessage); }
-      else { messagesByPgn.putIfAbsent(compiledMessage.getPgn(), compiledMessage); }
+      if (database == null) {
+        messagesByPgn.put(compiledMessage.getPgn(), compiledMessage);
+      } else {
+        messagesByPgn.putIfAbsent(compiledMessage.getPgn(), compiledMessage);
+      }
     }
 
     Map<Integer, List<N2kCompiledMessage>> immutableVariants = new HashMap<>();
@@ -54,10 +56,10 @@ public class N2kCompiler {
   private static int computeMinimumLengthBytes(List<N2kCompiledField> compiledFields) {
     int maxBitExclusive = 0;
     for (N2kCompiledField field : compiledFields) {
-      if (!field.isCompileTimeFixed() || field.getBitLength() <= 0 ){
+      if (!field.isCompileTimeFixed() || field.getBitLength() <= 0) {
         continue;
       }
-      int endBit = field.getBitOffset() +  field.getBitLength();
+      int endBit = field.getBitOffset() + field.getBitLength();
       if (endBit > maxBitExclusive) {
         maxBitExclusive = endBit;
       }
@@ -79,15 +81,11 @@ public class N2kCompiler {
     if (messageDefinition.getLengthType() == N2kMessageLengthType.FIXED) {
       Integer fixedLengthBytes = messageDefinition.getFixedLengthBytes();
       if (fixedLengthBytes == null) {
-        throw new IllegalArgumentException(
-            "FIXED lengthType but fixedLengthBytes is null for PGN " + messageDefinition.getPgn()
-        );
+        throw new IllegalArgumentException("FIXED lengthType but fixedLengthBytes is null for PGN " + messageDefinition.getPgn());
       }
       if (fixedLengthBytes < minimumLengthBytes) {
         throw new IllegalArgumentException(
-            "Declared lengthBytes " + fixedLengthBytes + " is smaller than minimum " + minimumLengthBytes +
-                " for PGN " + messageDefinition.getPgn()
-        );
+            "Declared lengthBytes " + fixedLengthBytes + " is smaller than minimum " + minimumLengthBytes + " for PGN " + messageDefinition.getPgn());
       }
     }
     return N2kCompiledMessage.builder()
@@ -103,12 +101,12 @@ public class N2kCompiler {
         .build();
   }
 
-  private boolean computeField(N2kFieldDefinition fieldDefinition,  HashSet<String> seenIds, boolean isPositionFixed, List<N2kCompiledField> compiledFields){
+  private boolean computeField(N2kFieldDefinition fieldDefinition, HashSet<String> seenIds, boolean isPositionFixed, List<N2kCompiledField> compiledFields) {
     N2kFieldType fieldType = fieldDefinition.getFieldType();
     boolean reserved = fieldType == N2kFieldType.RESERVED;
 
     String id = fieldDefinition.getId();
-    if (!reserved && (id == null || id.isBlank() ||!seenIds.add(id))) {
+    if (!reserved && (id == null || id.isBlank() || !seenIds.add(id))) {
       return isPositionFixed;
     }
     if (fieldType == N2kFieldType.STRING_LAU) {
@@ -116,27 +114,25 @@ public class N2kCompiler {
     }
     boolean compileTimeFixed = isPositionFixed;
 
-    N2kCompiledField.N2kCompiledFieldBuilder builder =
-        N2kCompiledField.builder()
-            .id(fieldDefinition.getId())
-            .compileTimeFixed(compileTimeFixed)
-            .name(fieldDefinition.getName())
-            .signed(fieldDefinition.isSigned())
-            .resolution(fieldDefinition.getResolution())
-            .offset(fieldDefinition.getOffset())
-            .rangeMin(fieldDefinition.getRangeMin())
-            .rangeMax(fieldDefinition.getRangeMax())
-            .unit(fieldDefinition.getUnit())
-            .fieldType(fieldType)
-            .reserved(reserved);
+    N2kCompiledField.N2kCompiledFieldBuilder builder = N2kCompiledField.builder()
+                                                           .id(fieldDefinition.getId())
+                                                           .compileTimeFixed(compileTimeFixed)
+                                                           .name(fieldDefinition.getName())
+                                                           .signed(fieldDefinition.isSigned())
+                                                           .resolution(fieldDefinition.getResolution())
+                                                           .offset(fieldDefinition.getOffset())
+                                                           .rangeMin(fieldDefinition.getRangeMin())
+                                                           .rangeMax(fieldDefinition.getRangeMax())
+                                                           .unit(fieldDefinition.getUnit())
+                                                           .fieldType(fieldType)
+                                                           .reserved(reserved);
 
     if (supportsBitStorage(fieldType)) {
       Integer bitLength = resolveBitLength(fieldDefinition);
       if (bitLength != null && bitLength > 0) {
         int bytesToRead = computeBytesToRead(bitLength);
 
-        builder
-            .bitLength(bitLength)
+        builder.bitLength(bitLength)
             .bytesToRead(bytesToRead)
             .mask(computeMask(bitLength))
             .rawMin(computeRawMin(fieldDefinition.isSigned(), bitLength))
@@ -144,23 +140,16 @@ public class N2kCompiler {
       }
     }
 
-    if (compileTimeFixed
-        && fieldDefinition.getBitOffset() != null
-        && supportsBitStorage(fieldType)) {
-
+    if (compileTimeFixed && fieldDefinition.getBitOffset() != null && supportsBitStorage(fieldType)) {
       int bitOffset = fieldDefinition.getBitOffset();
       int startByte = bitOffset >>> 3;
       int startBit = bitOffset & 7;
 
-      if ( builder.build().getBitLength() > 0) {
+      if (builder.build().getBitLength() > 0) {
         int totalBits = startBit + builder.build().getBitLength();
         int bytesToRead = (totalBits + 7) >>> 3;
 
-        builder
-            .bitOffset(bitOffset)
-            .startByte(startByte)
-            .startBit(startBit)
-            .bytesToRead(bytesToRead);
+        builder.bitOffset(bitOffset).startByte(startByte).startBit(startBit).bytesToRead(bytesToRead);
       }
     }
 
@@ -169,8 +158,7 @@ public class N2kCompiler {
   }
 
   private static boolean supportsBitStorage(N2kFieldType fieldType) {
-    return fieldType != N2kFieldType.STRING_LAU
-        && fieldType != N2kFieldType.REPEAT_MARKER;
+    return fieldType != N2kFieldType.STRING_LAU && fieldType != N2kFieldType.REPEAT_MARKER;
   }
 
   private static Integer resolveBitLength(N2kFieldDefinition fieldDefinition) {

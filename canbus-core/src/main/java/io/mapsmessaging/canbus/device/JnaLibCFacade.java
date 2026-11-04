@@ -23,7 +23,6 @@ import com.sun.jna.Structure;
 import com.sun.jna.ptr.IntByReference;
 
 public final class JnaLibCFacade implements LibCFacade {
-
   private final LibC libC;
 
   public JnaLibCFacade() {
@@ -76,7 +75,6 @@ public final class JnaLibCFacade implements LibCFacade {
   }
 
   private interface LibC extends com.sun.jna.Library {
-
     int socket(int domain, int type, int protocol);
 
     int bind(int socketFileDescriptor, Structure address, int addressLength);
@@ -91,6 +89,8 @@ public final class JnaLibCFacade implements LibCFacade {
 
     int getsockopt(int sockfd, int level, int optname, IntByReference optval, IntByReference optlen);
 
+    // JNA resolves this method name directly to the libc symbol.
+    @SuppressWarnings("java:S100")
     int if_nametoindex(String interfaceName);
   }
 }

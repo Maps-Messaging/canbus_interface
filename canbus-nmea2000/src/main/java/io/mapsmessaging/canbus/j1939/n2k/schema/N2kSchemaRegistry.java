@@ -25,13 +25,12 @@ import io.mapsmessaging.canbus.j1939.n2k.compile.N2kCompiledField;
 import io.mapsmessaging.canbus.j1939.n2k.compile.N2kCompiledMessage;
 import io.mapsmessaging.canbus.j1939.n2k.compile.N2kCompiledRegistry;
 import io.mapsmessaging.canbus.j1939.n2k.model.N2kFieldType;
-
 import java.util.*;
-
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 public class N2kSchemaRegistry {
+  private static final String PROPERTIES = "properties";
 
   private final N2kCompiledRegistry registry;
 
@@ -47,9 +46,7 @@ public class N2kSchemaRegistry {
 
   public List<JsonObject> getSchemas() {
     List<JsonObject> list = new ArrayList<>(schemas().values());
-    list.sort(Comparator.comparingInt(o -> o.get("properties").getAsJsonObject()
-        .get("pgn").getAsJsonObject()
-        .get("const").getAsInt()));
+    list.sort(Comparator.comparingInt(o -> o.get(PROPERTIES).getAsJsonObject().get("pgn").getAsJsonObject().get("const").getAsInt()));
     return List.copyOf(list);
   }
 
@@ -101,65 +98,22 @@ public class N2kSchemaRegistry {
     JsonArray required = new JsonArray();
 
     for (N2kCompiledField field : message.getFields()) {
-      if (field.isReserved()) {
-        continue;
-      }
-
       String id = field.getId();
-      if (id == null || id.isBlank()) {
-        continue;
-      }
-
-      JsonObject fieldSchema = new JsonObject();
-
-      if (field.getFieldType() == N2kFieldType.STRING_FIX || field.getFieldType() == N2kFieldType.STRING_LAU) {
-        fieldSchema.addProperty("type", "string");
-      }
-      else {
-        fieldSchema.addProperty("type", "number");
-      }
-
-      if (field.getUnit() != null && !field.getUnit().isBlank()) {
-        fieldSchema.addProperty("unit", field.getUnit());
-      }
-
-      if (field.getName() != null && !field.getName().isBlank()) {
-        fieldSchema.addProperty("description", field.getName());
-      }
-
-      // IMPORTANT:
-      // The N2K XML's RangeMin/RangeMax are *physical* ranges, while in round-trip tests
-      // we're often emitting quantized values that can slightly exceed due to scaling/rounding
-      // or because the field is really an enum/lookup/source selector with a "range" that isn't strict.
-      //
-      // So: only emit min/max when we can trust it to be enforceable:
-      // - numeric non-string
-      // - and resolution is meaningful
-      // - and range is not obviously "enum-ish"
-      //
-      // This prevents false negatives like PGN 126992 'source'.
-      if (shouldEmitRangeConstraints(field)) {
-        if (field.getRangeMin() != null) {
-          fieldSchema.addProperty("minimum", field.getRangeMin());
+      if (!field.isReserved() && id != null && !id.isBlank()) {
+        decodedProperties.add(id, buildFieldSchema(field));
+        if (field.getFieldType() != N2kFieldType.REPEAT_MARKER) {
+          required.add(id);
         }
-        if (field.getRangeMax() != null) {
-          fieldSchema.addProperty("maximum", field.getRangeMax());
-        }
-      }
-
-      decodedProperties.add(id, fieldSchema);
-      if(field.getFieldType() != N2kFieldType.REPEAT_MARKER) {
-        required.add(id);
       }
     }
 
-    decodedProperty.add("properties", decodedProperties);
+    decodedProperty.add(PROPERTIES, decodedProperties);
     decodedProperty.add("required", required);
     decodedProperty.addProperty("additionalProperties", false);
 
     properties.add("packet", decodedProperty);
 
-    root.add("properties", properties);
+    root.add(PROPERTIES, properties);
 
     JsonArray rootRequired = new JsonArray();
     rootRequired.add("pgn");
@@ -170,8 +124,7 @@ public class N2kSchemaRegistry {
 
     if (message.getId() != null && !message.getId().isBlank()) {
       root.addProperty("title", "N2K PGN " + pgn + " " + message.getId());
-    }
-    else {
+    } else {
       root.addProperty("title", "N2K PGN " + pgn);
     }
 
@@ -180,6 +133,46 @@ public class N2kSchemaRegistry {
     }
 
     return root;
+  }
+
+  private static JsonObject buildFieldSchema(N2kCompiledField field) {
+    JsonObject fieldSchema = new JsonObject();
+
+    if (field.getFieldType() == N2kFieldType.STRING_FIX || field.getFieldType() == N2kFieldType.STRING_LAU) {
+      fieldSchema.addProperty("type", "string");
+    } else {
+      fieldSchema.addProperty("type", "number");
+    }
+
+    if (field.getUnit() != null && !field.getUnit().isBlank()) {
+      fieldSchema.addProperty("unit", field.getUnit());
+    }
+
+    if (field.getName() != null && !field.getName().isBlank()) {
+      fieldSchema.addProperty("description", field.getName());
+    }
+
+    // IMPORTANT:
+    // The N2K XML's RangeMin/RangeMax are *physical* ranges, while in round-trip tests
+    // we're often emitting quantized values that can slightly exceed due to scaling/rounding
+    // or because the field is really an enum/lookup/source selector with a "range" that isn't strict.
+    //
+    // So: only emit min/max when we can trust it to be enforceable:
+    // - numeric non-string
+    // - and resolution is meaningful
+    // - and range is not obviously "enum-ish"
+    //
+    // This prevents false negatives like PGN 126992 'source'.
+    if (shouldEmitRangeConstraints(field)) {
+      if (field.getRangeMin() != null) {
+        fieldSchema.addProperty("minimum", field.getRangeMin());
+      }
+      if (field.getRangeMax() != null) {
+        fieldSchema.addProperty("maximum", field.getRangeMax());
+      }
+    }
+
+    return fieldSchema;
   }
 
   private static boolean shouldEmitRangeConstraints(N2kCompiledField field) {
@@ -197,6 +190,6 @@ public class N2kSchemaRegistry {
     }
 
     // If the scaling isn't meaningful, range checks tend to be misleading.
-    return (field.getResolution() > 0.0);
+    return field.getResolution() > 0.0;
   }
 }

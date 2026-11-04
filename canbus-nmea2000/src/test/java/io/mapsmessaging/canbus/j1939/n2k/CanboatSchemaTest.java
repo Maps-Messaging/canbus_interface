@@ -33,16 +33,13 @@ class CanboatSchemaTest {
   void variantsHaveDistinctEnvelopeNamesAndTwoTypedRepeatGroups() throws Exception {
     JsonObject schema = new N2kSchemaRegistry(N2kParserFactory.getN2kParser()).getSchema(126208);
     assertEquals(126208, properties(schema).getAsJsonObject("pgn").get("const").getAsInt());
-    assertFalse(
-        schema.getAsJsonArray("required").contains(new com.google.gson.JsonPrimitive("pgn")));
+    assertFalse(schema.getAsJsonArray("required").contains(new com.google.gson.JsonPrimitive("pgn")));
     JsonObject read = variant(schema, "nmeaReadFieldsGroupFunction");
     JsonObject packetProperties = properties(properties(read).getAsJsonObject("packet"));
     JsonObject list = packetProperties.getAsJsonObject("list");
     assertEquals("array", list.get("type").getAsString());
     assertNotNull(properties(list.getAsJsonObject("items")).get("selectionValue"));
-    assertNotNull(
-        properties(packetProperties.getAsJsonObject("list2").getAsJsonObject("items"))
-            .get("parameter"));
+    assertNotNull(properties(packetProperties.getAsJsonObject("list2").getAsJsonObject("items")).get("parameter"));
     assertFalse(packetProperties.has("selectionValue"));
     assertFalse(packetProperties.has("reserved"));
     assertNotNull(packetProperties.get("manufacturerCode"));
@@ -56,16 +53,9 @@ class CanboatSchemaTest {
     assertEquals("18446744073709551615", name.get("maximum").getAsString());
     assertTrue(name.getAsJsonArray("type").contains(new com.google.gson.JsonPrimitive("null")));
     JsonObject config = properties(properties(schemas.getSchema(126998)).getAsJsonObject("packet"));
-    assertTrue(
-        config
-            .getAsJsonObject("installationDescription1")
-            .getAsJsonArray("type")
-            .contains(new com.google.gson.JsonPrimitive("string")));
-    JsonObject fallback =
-        variant(
-            schemas.getSchema(130816), "0x1ff000x1ffffManufacturerSpecificFastPacketNonAddressed");
-    JsonObject data =
-        properties(properties(fallback).getAsJsonObject("packet")).getAsJsonObject("data");
+    assertTrue(config.getAsJsonObject("installationDescription1").getAsJsonArray("type").contains(new com.google.gson.JsonPrimitive("string")));
+    JsonObject fallback = variant(schemas.getSchema(130816), "0x1ff000x1ffffManufacturerSpecificFastPacketNonAddressed");
+    JsonObject data = properties(properties(fallback).getAsJsonObject("packet")).getAsJsonObject("data");
     assertEquals("base64", data.get("contentEncoding").getAsString());
   }
 
@@ -82,14 +72,8 @@ class CanboatSchemaTest {
   @Test
   void unmatchedManufacturerFallbackIsRepresentedForKnownPgn() throws Exception {
     JsonObject schema = new N2kSchemaRegistry(N2kParserFactory.getN2kParser()).getSchema(130945);
-    JsonObject fallback =
-        variant(schema, "0x1ff000x1ffffManufacturerSpecificFastPacketNonAddressed");
-    assertEquals(
-        "base64",
-        properties(properties(fallback).getAsJsonObject("packet"))
-            .getAsJsonObject("data")
-            .get("contentEncoding")
-            .getAsString());
+    JsonObject fallback = variant(schema, "0x1ff000x1ffffManufacturerSpecificFastPacketNonAddressed");
+    assertEquals("base64", properties(properties(fallback).getAsJsonObject("packet")).getAsJsonObject("data").get("contentEncoding").getAsString());
   }
 
   private static JsonObject properties(JsonObject schema) {

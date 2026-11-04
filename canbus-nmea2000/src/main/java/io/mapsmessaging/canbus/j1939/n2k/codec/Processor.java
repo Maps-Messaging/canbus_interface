@@ -22,7 +22,6 @@ import com.google.gson.JsonObject;
 import io.mapsmessaging.canbus.j1939.n2k.compile.N2kCompiledField;
 
 public interface Processor {
-
   default int computePayloadLength(N2kCompiledField field, JsonObject decoded) {
     if (field.isCompileTimeFixed()) {
       return 0;

@@ -18,22 +18,20 @@
 
 package io.mapsmessaging.canbus.canaerospace.schema;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.*;
 import lombok.Getter;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.Constructor;
 
-import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.*;
-
 public class CanaerospaceSchemaRegistry {
-
   public static final String DEFAULT_SCHEMA_RESOURCE = "canaerospace_schema.yaml";
   private static final int MIN_CANAEROSPACE_IDENTIFIER = 0;
   private static final int MAX_CANAEROSPACE_IDENTIFIER = 0x7FF; // ( max 11 bits)
-  private static final int MAX_IDENTIFIER_RANGE_EXPANSION = MAX_CANAEROSPACE_IDENTIFIER + 1;
 
   @Getter
   private final CanaerospaceSchema schema;
@@ -75,7 +73,7 @@ public class CanaerospaceSchemaRegistry {
     return Optional.ofNullable(dataTypeNameByNumber.get(payloadDataTypeNumber));
   }
 
-  public static CanaerospaceSchemaRegistry load(Path yamlPath) throws Exception {
+  public static CanaerospaceSchemaRegistry load(Path yamlPath) throws IOException {
     if (yamlPath == null) {
       throw new IllegalArgumentException("yamlPath must not be null");
     }
@@ -89,11 +87,11 @@ public class CanaerospaceSchemaRegistry {
     }
   }
 
-  public static CanaerospaceSchemaRegistry loadFromClasspath() throws Exception {
+  public static CanaerospaceSchemaRegistry loadFromClasspath() throws IOException {
     return loadFromClasspath(DEFAULT_SCHEMA_RESOURCE);
   }
 
-  public static CanaerospaceSchemaRegistry loadFromClasspath(String resourceName) throws Exception {
+  public static CanaerospaceSchemaRegistry loadFromClasspath(String resourceName) throws IOException {
     if (resourceName == null || resourceName.isBlank()) {
       throw new IllegalArgumentException("resourceName must not be blank");
     }
@@ -121,67 +119,62 @@ public class CanaerospaceSchemaRegistry {
   }
 
   private static Map<Integer, IdentifierDefinition> buildIdentifiersById(CanaerospaceSchema schema, List<IdentifierRangeDefinition> sortedRanges) {
+    Map<Integer, IdentifierDefinition> result = buildExplicitIdentifiers(schema.getIdentifiers());
+    if (sortedRanges != null) {
+      for (IdentifierRangeDefinition range : sortedRanges) {
+        addRangeIdentifiers(result, range);
+      }
+    }
+    return Collections.unmodifiableMap(result);
+  }
+
+  private static Map<Integer, IdentifierDefinition> buildExplicitIdentifiers(List<IdentifierDefinition> identifiers) {
     Map<Integer, IdentifierDefinition> result = new LinkedHashMap<>();
+    if (identifiers == null) {
+      return result;
+    }
 
-    List<IdentifierDefinition> identifiers = schema.getIdentifiers();
-    if (identifiers != null && !identifiers.isEmpty()) {
-
-      Map<Integer, List<IdentifierDefinition>> grouped = new LinkedHashMap<>();
-      for (IdentifierDefinition identifier : identifiers) {
-        Integer id = extractIdentifierId(identifier);
-        if (id == null) {
-          continue;
-        }
+    Map<Integer, List<IdentifierDefinition>> grouped = new LinkedHashMap<>();
+    for (IdentifierDefinition identifier : identifiers) {
+      Integer id = extractIdentifierId(identifier);
+      if (id != null) {
         grouped.computeIfAbsent(id, ignored -> new ArrayList<>()).add(identifier);
       }
+    }
+    for (Map.Entry<Integer, List<IdentifierDefinition>> entry : grouped.entrySet()) {
+      result.put(entry.getKey(), selectBestIdentifier(entry.getValue()));
+    }
+    return result;
+  }
 
-      for (Map.Entry<Integer, List<IdentifierDefinition>> entry : grouped.entrySet()) {
-        Integer id = entry.getKey();
-        List<IdentifierDefinition> values = entry.getValue();
-        if (values.size() == 1) {
-          result.put(id, values.getFirst());
-        } else {
-          IdentifierDefinition best = values.getFirst();
-          for (IdentifierDefinition candidate : values) {
-            if (isBetterIdentifier(candidate, best)) {
-              best = candidate;
-            }
-          }
-          result.put(id, best);
+  private static IdentifierDefinition selectBestIdentifier(List<IdentifierDefinition> identifiers) {
+    IdentifierDefinition best = identifiers.getFirst();
+    if (identifiers.size() > 1) {
+      for (IdentifierDefinition candidate : identifiers) {
+        if (isBetterIdentifier(candidate, best)) {
+          best = candidate;
         }
       }
     }
+    return best;
+  }
 
-    if (sortedRanges != null && !sortedRanges.isEmpty()) {
-      for (IdentifierRangeDefinition range : sortedRanges) {
-        IdRange idRange = range.getIdRange();
-        if (idRange == null || idRange.getMin() == null || idRange.getMax() == null) {
-          continue;
-        }
-
-        int min = idRange.getMin();
-        int max = idRange.getMax();
-
-        if (min < MIN_CANAEROSPACE_IDENTIFIER || max > MAX_CANAEROSPACE_IDENTIFIER || max < min) {
-          throw new IllegalArgumentException(
-              "Invalid CANaerospace identifier range: "
-                  + min
-                  + " to "
-                  + max
-                  + ". Expected range within 0 to "
-                  + MAX_CANAEROSPACE_IDENTIFIER);
-        }
-
-        for (int canId = min; canId <= max; canId++) {
-          if (!result.containsKey(canId)) {
-            IdentifierDefinition expanded = expandRangeIdentifier(range, canId);
-            result.put(canId, expanded);
-          }
-        }
-      }
+  private static void addRangeIdentifiers(Map<Integer, IdentifierDefinition> result, IdentifierRangeDefinition range) {
+    IdRange idRange = range.getIdRange();
+    if (idRange == null || idRange.getMin() == null || idRange.getMax() == null) {
+      return;
     }
 
-    return Collections.unmodifiableMap(result);
+    int min = idRange.getMin();
+    int max = idRange.getMax();
+    if (min < MIN_CANAEROSPACE_IDENTIFIER || max > MAX_CANAEROSPACE_IDENTIFIER || max < min) {
+      throw new IllegalArgumentException("Invalid CANaerospace identifier range: " + min + " to " + max + ". Expected range within 0 to " + MAX_CANAEROSPACE_IDENTIFIER);
+    }
+    for (int canId = min; canId <= max; canId++) {
+      if (!result.containsKey(canId)) {
+        result.put(canId, expandRangeIdentifier(range, canId));
+      }
+    }
   }
 
   private static IdentifierDefinition expandRangeIdentifier(IdentifierRangeDefinition range, int canId) {

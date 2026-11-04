@@ -40,16 +40,7 @@ class N2kCodecRoundTripTest {
     N2kMessageParser parser = new N2kMessageParser(registry);
 
     int unknownPgn = 130999;
-    byte[] payload = new byte[] {
-        0x01,
-        0x02,
-        0x03,
-        0x04,
-        0x05,
-        0x06,
-        0x07,
-        0x08
-    };
+    byte[] payload = new byte[] {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
 
     JsonObject decodedBack = parser.decodeToJson(unknownPgn, payload);
     assertNotNull(decodedBack);
@@ -81,20 +72,11 @@ class N2kCodecRoundTripTest {
 
     JsonObject decodedFields = decodedBack.getAsJsonObject("packet");
 
-    assertEquals(
-        "Maps Messaging Server",
-        decodedFields.get("installationDescription1").getAsString()
-    );
+    assertEquals("Maps Messaging Server", decodedFields.get("installationDescription1").getAsString());
 
-    assertEquals(
-        "AIS Source Bridge",
-        decodedFields.get("installationDescription2").getAsString()
-    );
+    assertEquals("AIS Source Bridge", decodedFields.get("installationDescription2").getAsString());
 
-    assertEquals(
-        "MapsMessaging B.V.",
-        decodedFields.get("manufacturerInformation").getAsString()
-    );
+    assertEquals("MapsMessaging B.V.", decodedFields.get("manufacturerInformation").getAsString());
   }
 
   @Test
@@ -154,7 +136,6 @@ class N2kCodecRoundTripTest {
     assertEquals(-0.1000, decodedFields.get("deviation").getAsDouble(), 0.00005);
     assertEquals(0.2000, decodedFields.get("variation").getAsDouble(), 0.00005);
   }
-
 
   private static N2kCompiledRegistry buildRegistry() throws Exception {
     return N2kParserFactory.getN2kParser();

@@ -16,16 +16,15 @@
  */
 package io.mapsmessaging.canbus.j1939.n2k.codec;
 
-import com.google.gson.JsonObject;
-import io.mapsmessaging.canbus.j1939.n2k.compile.N2kCompiledField;
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-class StringLauProcessorTest {
+import com.google.gson.JsonObject;
+import io.mapsmessaging.canbus.j1939.n2k.compile.N2kCompiledField;
+import org.junit.jupiter.api.Test;
 
+class StringLauProcessorTest {
   private final N2kCompiledField field = N2kCompiledField.builder().id("Text").build();
   private final StringLauProcessor processor = new StringLauProcessor();
 
@@ -37,7 +36,7 @@ class StringLauProcessorTest {
 
     assertEquals(4, processor.computePayloadLength(field, input));
     assertEquals(4, processor.pack(field, payload, 0, input));
-    assertArrayEquals(new byte[]{3, 1, (byte) 0xC2, (byte) 0xB5}, payload);
+    assertArrayEquals(new byte[] {3, 1, (byte) 0xC2, (byte) 0xB5}, payload);
 
     JsonObject decoded = new JsonObject();
     assertEquals(4, processor.unpack(field, payload, 0, decoded));
@@ -48,7 +47,7 @@ class StringLauProcessorTest {
   void nonUtf8EncodingMarkerUsesLatin1() {
     JsonObject decoded = new JsonObject();
 
-    int next = processor.unpack(field, new byte[]{3, 0, (byte) 0xE9, 'A'}, 0, decoded);
+    int next = processor.unpack(field, new byte[] {3, 0, (byte) 0xE9, 'A'}, 0, decoded);
 
     assertEquals(4, next);
     assertEquals("éA", decoded.get("Text").getAsString());
@@ -58,7 +57,7 @@ class StringLauProcessorTest {
   void truncatedPayloadDoesNotReadBeyondAvailableBytes() {
     JsonObject decoded = new JsonObject();
 
-    int next = processor.unpack(field, new byte[]{6, 1, 'A', 'B'}, 0, decoded);
+    int next = processor.unpack(field, new byte[] {6, 1, 'A', 'B'}, 0, decoded);
 
     assertEquals(4, next);
     assertEquals("AB", decoded.get("Text").getAsString());
@@ -77,8 +76,8 @@ class StringLauProcessorTest {
 
     JsonObject decoded = new JsonObject();
     assertEquals(0, processor.unpack(field, new byte[0], 0, decoded));
-    assertEquals(1, processor.unpack(field, new byte[]{0}, 0, decoded));
-    assertEquals(1, processor.unpack(field, new byte[]{2}, 0, decoded));
+    assertEquals(1, processor.unpack(field, new byte[] {0}, 0, decoded));
+    assertEquals(1, processor.unpack(field, new byte[] {2}, 0, decoded));
     assertFalse(decoded.has("Text"));
   }
 
@@ -90,7 +89,7 @@ class StringLauProcessorTest {
 
     assertEquals(4, processor.computePayloadLength(field, source));
     assertEquals(5, processor.pack(field, payload, 1, source));
-    assertArrayEquals(new byte[]{0, 3, 1, (byte) 0xC2, (byte) 0xB5}, payload);
+    assertArrayEquals(new byte[] {0, 3, 1, (byte) 0xC2, (byte) 0xB5}, payload);
   }
 
   @Test

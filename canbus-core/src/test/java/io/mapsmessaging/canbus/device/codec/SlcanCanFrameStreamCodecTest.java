@@ -19,45 +19,29 @@
 
 package io.mapsmessaging.canbus.device.codec;
 
-import io.mapsmessaging.canbus.device.frames.CanFrame;
-import org.junit.jupiter.api.Test;
-
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class SlcanCanFrameStreamCodecTest {
+import io.mapsmessaging.canbus.device.frames.CanFrame;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import org.junit.jupiter.api.Test;
 
+class SlcanCanFrameStreamCodecTest {
   @Test
   void shouldReadExtendedFrame() throws IOException {
     SlcanCanFrameStreamCodec codec = new SlcanCanFrameStreamCodec();
-    ByteArrayInputStream inputStream = new ByteArrayInputStream(
-        "T18F1120A8C0F4B2161BD8330E\r".getBytes()
-    );
+    ByteArrayInputStream inputStream = new ByteArrayInputStream("T18F1120A8C0F4B2161BD8330E\r".getBytes());
 
     CanFrame canFrame = codec.read(inputStream);
 
     assertEquals(0x18F1120A, canFrame.canIdentifier());
     assertEquals(true, canFrame.extendedFrame());
     assertEquals(8, canFrame.dataLengthCode());
-    assertArrayEquals(
-        new byte[]{
-            (byte) 0xC0,
-            (byte) 0xF4,
-            (byte) 0xB2,
-            0x16,
-            0x1B,
-            (byte) 0xD8,
-            0x33,
-            0x0E
-        },
-        canFrame.data()
-    );
+    assertArrayEquals(new byte[] {(byte) 0xC0, (byte) 0xF4, (byte) 0xB2, 0x16, 0x1B, (byte) 0xD8, 0x33, 0x0E}, canFrame.data());
   }
 
   @Test
@@ -70,15 +54,7 @@ class SlcanCanFrameStreamCodecTest {
     assertEquals(0x123, canFrame.canIdentifier());
     assertEquals(false, canFrame.extendedFrame());
     assertEquals(4, canFrame.dataLengthCode());
-    assertArrayEquals(
-        new byte[]{
-            (byte) 0xAA,
-            (byte) 0xBB,
-            (byte) 0xCC,
-            (byte) 0xDD
-        },
-        canFrame.data()
-    );
+    assertArrayEquals(new byte[] {(byte) 0xAA, (byte) 0xBB, (byte) 0xCC, (byte) 0xDD}, canFrame.data());
   }
 
   @Test
@@ -86,21 +62,7 @@ class SlcanCanFrameStreamCodecTest {
     SlcanCanFrameStreamCodec codec = new SlcanCanFrameStreamCodec();
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
-    CanFrame canFrame = new CanFrame(
-        0x18F1120A,
-        true,
-        8,
-        new byte[]{
-            (byte) 0xC0,
-            (byte) 0xF4,
-            (byte) 0xB2,
-            0x16,
-            0x1B,
-            (byte) 0xD8,
-            0x33,
-            0x0E
-        }
-    );
+    CanFrame canFrame = new CanFrame(0x18F1120A, true, 8, new byte[] {(byte) 0xC0, (byte) 0xF4, (byte) 0xB2, 0x16, 0x1B, (byte) 0xD8, 0x33, 0x0E});
 
     codec.write(outputStream, canFrame);
 
@@ -112,17 +74,7 @@ class SlcanCanFrameStreamCodecTest {
     SlcanCanFrameStreamCodec codec = new SlcanCanFrameStreamCodec();
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
-    CanFrame canFrame = new CanFrame(
-        0x123,
-        false,
-        4,
-        new byte[]{
-            (byte) 0xAA,
-            (byte) 0xBB,
-            (byte) 0xCC,
-            (byte) 0xDD
-        }
-    );
+    CanFrame canFrame = new CanFrame(0x123, false, 4, new byte[] {(byte) 0xAA, (byte) 0xBB, (byte) 0xCC, (byte) 0xDD});
 
     codec.write(outputStream, canFrame);
 
@@ -132,21 +84,7 @@ class SlcanCanFrameStreamCodecTest {
   @Test
   void shouldRoundTripExtendedFrame() throws IOException {
     SlcanCanFrameStreamCodec codec = new SlcanCanFrameStreamCodec();
-    CanFrame expected = new CanFrame(
-        0x18F1120A,
-        true,
-        8,
-        new byte[]{
-            (byte) 0xC0,
-            (byte) 0xF4,
-            (byte) 0xB2,
-            0x16,
-            0x1B,
-            (byte) 0xD8,
-            0x33,
-            0x0E
-        }
-    );
+    CanFrame expected = new CanFrame(0x18F1120A, true, 8, new byte[] {(byte) 0xC0, (byte) 0xF4, (byte) 0xB2, 0x16, 0x1B, (byte) 0xD8, 0x33, 0x0E});
 
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
     codec.write(outputStream, expected);
@@ -173,9 +111,7 @@ class SlcanCanFrameStreamCodecTest {
   @Test
   void shouldSkipBlankLines() throws IOException {
     SlcanCanFrameStreamCodec codec = new SlcanCanFrameStreamCodec();
-    ByteArrayInputStream inputStream = new ByteArrayInputStream(
-        "\r\n\r\nT18F1120A8C0F4B2161BD8330E\r".getBytes()
-    );
+    ByteArrayInputStream inputStream = new ByteArrayInputStream("\r\n\r\nT18F1120A8C0F4B2161BD8330E\r".getBytes());
 
     CanFrame canFrame = codec.read(inputStream);
 
@@ -195,9 +131,7 @@ class SlcanCanFrameStreamCodecTest {
   @Test
   void shouldRejectInvalidFrameLength() {
     SlcanCanFrameStreamCodec codec = new SlcanCanFrameStreamCodec();
-    ByteArrayInputStream inputStream = new ByteArrayInputStream(
-        "T18F1120A8C0F4B2161BD833\r".getBytes()
-    );
+    ByteArrayInputStream inputStream = new ByteArrayInputStream("T18F1120A8C0F4B2161BD833\r".getBytes());
 
     assertThrows(IOException.class, () -> codec.read(inputStream));
   }

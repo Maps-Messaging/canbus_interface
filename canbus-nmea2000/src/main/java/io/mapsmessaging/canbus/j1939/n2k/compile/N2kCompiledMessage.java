@@ -28,7 +28,6 @@ import lombok.Value;
 @Value
 @Builder
 public class N2kCompiledMessage {
-
   int pgn;
   String id;
   String description;

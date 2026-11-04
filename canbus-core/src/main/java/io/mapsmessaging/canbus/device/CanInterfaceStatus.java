@@ -21,7 +21,6 @@ import lombok.Data;
 
 @Data
 public class CanInterfaceStatus {
-
   private String interfaceName;
 
   private String operState;
@@ -31,5 +30,4 @@ public class CanInterfaceStatus {
   private Integer restartMs;
 
   private Integer bitrate;
-
 }

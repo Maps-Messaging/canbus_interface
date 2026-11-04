@@ -21,12 +21,10 @@ package io.mapsmessaging.canbus.canaerospace.parser;
 import io.mapsmessaging.canbus.canaerospace.schema.CanaerospaceSchemaRegistry;
 import io.mapsmessaging.canbus.canaerospace.schema.IdentifierDefinition;
 import io.mapsmessaging.canbus.canaerospace.schema.MessageTypeDefinition;
-
 import java.util.Arrays;
 import java.util.Optional;
 
 public class CanaerospaceFrameParser {
-
   private final CanaerospaceSchemaRegistry registry;
 
   public CanaerospaceFrameParser(CanaerospaceSchemaRegistry registry) {
@@ -36,7 +34,7 @@ public class CanaerospaceFrameParser {
     this.registry = registry;
   }
 
-   public ParsedCanaerospaceMessage parse(int canId, byte[] payload) {
+  public ParsedCanaerospaceMessage parse(int canId, byte[] payload) {
     if (payload == null) {
       throw new IllegalArgumentException("payload must not be null");
     }
@@ -73,7 +71,7 @@ public class CanaerospaceFrameParser {
       } else if (raw instanceof Float floatValue) {
         engineeringValue = floatValue.doubleValue();
       } else if (raw instanceof Double doubleValue) {
-        engineeringValue =doubleValue;
+        engineeringValue = doubleValue;
       }
     }
 

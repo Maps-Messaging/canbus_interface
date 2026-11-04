@@ -16,6 +16,11 @@
  */
 package io.mapsmessaging.canbus.canaerospace.schema;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -23,13 +28,7 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 class CanaerospaceSchemaRegistryBehaviorTest {
-
   @TempDir
   Path temporaryDirectory;
 
@@ -87,8 +86,7 @@ class CanaerospaceSchemaRegistryBehaviorTest {
       range.setIdRange(bounds);
       schema.setIdentifierRanges(List.of(range));
 
-      IllegalArgumentException failure = assertThrows(IllegalArgumentException.class,
-          () -> new CanaerospaceSchemaRegistry(schema));
+      IllegalArgumentException failure = assertThrows(IllegalArgumentException.class, () -> new CanaerospaceSchemaRegistry(schema));
       assertTrue(failure.getMessage().contains("Invalid CANaerospace identifier range"));
     }
   }
@@ -97,10 +95,8 @@ class CanaerospaceSchemaRegistryBehaviorTest {
   void rejectsMissingAndEmptySchemas() throws Exception {
     assertThrows(IllegalArgumentException.class, () -> new CanaerospaceSchemaRegistry(null));
     assertThrows(IllegalArgumentException.class, () -> CanaerospaceSchemaRegistry.load(null));
-    assertThrows(IllegalArgumentException.class,
-        () -> CanaerospaceSchemaRegistry.load(temporaryDirectory.resolve("missing.yaml")));
-    assertThrows(IllegalArgumentException.class,
-        () -> CanaerospaceSchemaRegistry.loadFromClasspath("missing-schema.yaml"));
+    assertThrows(IllegalArgumentException.class, () -> CanaerospaceSchemaRegistry.load(temporaryDirectory.resolve("missing.yaml")));
+    assertThrows(IllegalArgumentException.class, () -> CanaerospaceSchemaRegistry.loadFromClasspath("missing-schema.yaml"));
     Path empty = temporaryDirectory.resolve("empty.yaml");
     Files.writeString(empty, "");
     assertThrows(IllegalStateException.class, () -> CanaerospaceSchemaRegistry.load(empty));

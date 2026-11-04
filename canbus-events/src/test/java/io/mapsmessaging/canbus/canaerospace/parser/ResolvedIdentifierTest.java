@@ -16,6 +16,9 @@
  */
 package io.mapsmessaging.canbus.canaerospace.parser;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 import io.mapsmessaging.canbus.canaerospace.schema.IdRange;
 import io.mapsmessaging.canbus.canaerospace.schema.IdentifierDefinition;
 import io.mapsmessaging.canbus.canaerospace.schema.IdentifierRangeDefinition;
@@ -23,11 +26,7 @@ import io.mapsmessaging.canbus.canaerospace.schema.NumericRange;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-
 class ResolvedIdentifierTest {
-
   @Test
   void exactIdentifierKeepsMetadataAndDecimalBounds() {
     IdentifierDefinition definition = new IdentifierDefinition();

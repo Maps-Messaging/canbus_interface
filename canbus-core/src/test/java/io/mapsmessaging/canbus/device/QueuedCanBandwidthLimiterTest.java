@@ -17,16 +17,14 @@
  */
 package io.mapsmessaging.canbus.device;
 
-import org.junit.jupiter.api.Test;
-
-import java.lang.reflect.Field;
-import java.util.concurrent.TimeUnit;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class QueuedCanBandwidthLimiterTest {
+import java.lang.reflect.Field;
+import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.Test;
 
+class QueuedCanBandwidthLimiterTest {
   @Test
   void oversized_group_accumulates_tokens_across_refills_and_consumes_its_full_cost() throws Exception {
     QueuedCanBandwidthLimiter limiter = new QueuedCanBandwidthLimiter(250_000, 0.1);

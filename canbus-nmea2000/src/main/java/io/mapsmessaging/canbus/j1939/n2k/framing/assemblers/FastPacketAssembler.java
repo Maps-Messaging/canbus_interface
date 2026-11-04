@@ -19,14 +19,12 @@
 package io.mapsmessaging.canbus.j1939.n2k.framing.assemblers;
 
 import io.mapsmessaging.canbus.j1939.CanId;
-
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
 public class FastPacketAssembler {
-
   private final Map<FastPacketKey, FastPacketAssembly> inProgress;
 
   public FastPacketAssembler() {
@@ -47,6 +45,7 @@ public class FastPacketAssembler {
    * @param frameData DLC bytes (<= 8)
    * @return full payload when complete, else null
    */
+  @SuppressWarnings("java:S1168") // Null signals an incomplete or discarded packet; an empty payload would indicate completion.
   public byte[] accept(CanId canId, int sequenceId, int frameIndex, byte[] frameData) {
     Objects.requireNonNull(canId, "canId");
     Objects.requireNonNull(frameData, "frameData");
@@ -115,12 +114,7 @@ public class FastPacketAssembler {
     }
 
     private static FastPacketKey from(CanId canId, int sequenceId) {
-      return new FastPacketKey(
-          canId.getPgn(),
-          canId.getSourceAddress(),
-          canId.getDestinationAddress(),
-          sequenceId & 0x07
-      );
+      return new FastPacketKey(canId.getPgn(), canId.getSourceAddress(), canId.getDestinationAddress(), sequenceId & 0x07);
     }
 
     @Override
@@ -131,10 +125,7 @@ public class FastPacketAssembler {
       if (!(o instanceof FastPacketKey other)) {
         return false;
       }
-      return pgn == other.pgn
-          && source == other.source
-          && destination == other.destination
-          && sequenceId == other.sequenceId;
+      return pgn == other.pgn && source == other.source && destination == other.destination && sequenceId == other.sequenceId;
     }
 
     @Override

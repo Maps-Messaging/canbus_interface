@@ -20,13 +20,11 @@ package io.mapsmessaging.canbus.j1939.n2k.framing.message;
 
 import com.google.gson.JsonObject;
 import io.mapsmessaging.canbus.j1939.CanId;
-import lombok.Getter;
-
 import java.util.Objects;
+import lombok.Getter;
 
 @Getter
 public class KnownMessage implements Message {
-
   private final CanId canId;
   private final int rawCanIdentifier;
   private final byte[] payload;

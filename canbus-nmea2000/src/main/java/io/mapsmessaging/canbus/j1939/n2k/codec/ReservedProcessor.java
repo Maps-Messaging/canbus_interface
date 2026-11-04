@@ -22,7 +22,6 @@ import com.google.gson.JsonObject;
 import io.mapsmessaging.canbus.j1939.n2k.compile.N2kCompiledField;
 
 public class ReservedProcessor implements Processor {
-
   @Override
   public int pack(N2kCompiledField field, byte[] payload, int cursor, JsonObject decoded) {
     return writeReserved(field, payload, cursor);
@@ -62,8 +61,7 @@ public class ReservedProcessor implements Processor {
       startByte = field.getStartByte();
       startBit = field.getStartBit();
       nextCursor = cursor;
-    }
-    else {
+    } else {
       startByte = cursor;
       startBit = 0;
       nextCursor = cursor + computeRelativeBytes(field);
@@ -91,14 +89,7 @@ public class ReservedProcessor implements Processor {
       int totalBits = chunkStartBit + chunkBits;
       int bytesToRead = (totalBits + 7) >>> 3;
 
-      N2kBitCodec.insertBits(
-          payload,
-          chunkStartByte,
-          chunkStartBit,
-          bytesToRead,
-          mask,
-          -1L
-      );
+      N2kBitCodec.insertBits(payload, chunkStartByte, chunkStartBit, bytesToRead, mask, -1L);
 
       bitOffset += chunkBits;
       bitsRemaining -= chunkBits;

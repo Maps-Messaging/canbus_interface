@@ -18,8 +18,4 @@
 
 package io.mapsmessaging.canbus.j1939.n2k.model;
 
-public enum N2kTransportType {
-  SINGLE_FRAME,
-  FAST_PACKET,
-  TRANSPORT_PROTOCOL
-}
+public enum N2kTransportType { SINGLE_FRAME, FAST_PACKET, TRANSPORT_PROTOCOL }

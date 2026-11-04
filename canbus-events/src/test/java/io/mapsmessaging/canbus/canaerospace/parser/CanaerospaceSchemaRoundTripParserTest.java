@@ -28,9 +28,6 @@ import io.mapsmessaging.canbus.canaerospace.schema.DataTypesDefinition;
 import io.mapsmessaging.canbus.canaerospace.schema.IdRange;
 import io.mapsmessaging.canbus.canaerospace.schema.IdentifierDefinition;
 import io.mapsmessaging.canbus.canaerospace.schema.IdentifierRangeDefinition;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
-
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
@@ -39,9 +36,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 class CanaerospaceSchemaRoundTripParserTest {
-
   private static final Gson GSON = new Gson();
 
   private static CanaerospaceFrameParser frameParser;
@@ -56,8 +54,7 @@ class CanaerospaceSchemaRoundTripParserTest {
     Map<String, DataTypeEntry> dataTypesByName = extractDataTypesByName(schema);
     Assertions.assertFalse(dataTypesByName.isEmpty(), "Schema dataTypes.byName is empty");
 
-    List<IdentifierDefinition> concreteIdentifiers = Optional.ofNullable(schema.getIdentifiers())
-        .orElseGet(Collections::emptyList);
+    List<IdentifierDefinition> concreteIdentifiers = Optional.ofNullable(schema.getIdentifiers()).orElseGet(Collections::emptyList);
 
     List<ExpandedIdentifier> allIdentifiers = new ArrayList<>();
 
@@ -90,13 +87,7 @@ class CanaerospaceSchemaRoundTripParserTest {
         continue;
       }
 
-      byte[] payload = buildPayload(
-          typeNumber,
-          identifier.dataTypeName,
-          identifier.rangeMin,
-          identifier.rangeMax,
-          identifier.resolution
-      );
+      byte[] payload = buildPayload(typeNumber, identifier.dataTypeName, identifier.rangeMin, identifier.rangeMax, identifier.resolution);
       JsonObject json = parsePayloadToJson(identifier.id, payload);
       Assertions.assertNotNull(json, "Parser returned null JSON for id=" + identifier.id);
 
@@ -109,21 +100,13 @@ class CanaerospaceSchemaRoundTripParserTest {
       }
 
       byte[] rebuiltPayload = encodePayloadFromJson(json);
-      Assertions.assertArrayEquals(
-          payload,
-          rebuiltPayload,
-          "Payload round trip failed for id=" + identifier.id + " name=" + identifier.name
-      );
+      Assertions.assertArrayEquals(payload, rebuiltPayload, "Payload round trip failed for id=" + identifier.id + " name=" + identifier.name);
       roundTripped.incrementAndGet();
     }
 
     Assertions.assertTrue(executed.get() > 0, "No packets were executed through the parser");
     Assertions.assertEquals(executed.get(), roundTripped.get(), "Not all executed packets round-tripped");
-    System.out.println(
-        "Executed packets: " + executed.get()
-            + ", numeric validations: " + validated.get()
-            + ", round trips: " + roundTripped.get()
-    );
+    System.out.println("Executed packets: " + executed.get() + ", numeric validations: " + validated.get() + ", round trips: " + roundTripped.get());
   }
 
   /**
@@ -207,13 +190,7 @@ class CanaerospaceSchemaRoundTripParserTest {
     return payload;
   }
 
-  private static byte[] buildPayload(
-      int dataTypeNumber,
-      String dataTypeName,
-      Double rangeMin,
-      Double rangeMax,
-      Double resolution
-  ) {
+  private static byte[] buildPayload(int dataTypeNumber, String dataTypeName, Double rangeMin, Double rangeMax, Double resolution) {
     byte nodeId = 1;
     byte serviceCode = 0;
     byte messageCode = 0;
@@ -243,10 +220,7 @@ class CanaerospaceSchemaRoundTripParserTest {
     switch (dataTypeName) {
       case "SHORT" -> {
         int raw = toRawSigned(chosenEngineeringValue, resolution);
-        Assertions.assertTrue(
-            raw >= Short.MIN_VALUE && raw <= Short.MAX_VALUE,
-            "SHORT raw overflow for raw=" + raw + " value=" + chosenEngineeringValue + " res=" + resolution
-        );
+        Assertions.assertTrue(raw >= Short.MIN_VALUE && raw <= Short.MAX_VALUE, "SHORT raw overflow for raw=" + raw + " value=" + chosenEngineeringValue + " res=" + resolution);
         putInt16BigEndian(out, (short) raw);
       }
       case "USHORT" -> {
@@ -449,13 +423,7 @@ class CanaerospaceSchemaRoundTripParserTest {
     double tolerance = Math.abs(identifier.resolution) * 2.0;
     double delta = Math.abs(actual - expected);
 
-    Assertions.assertTrue(
-        delta <= tolerance,
-        "Value mismatch for id=" + identifier.id
-            + " expected~" + expected
-            + " actual=" + actual
-            + " tol=" + tolerance
-    );
+    Assertions.assertTrue(delta <= tolerance, "Value mismatch for id=" + identifier.id + " expected~" + expected + " actual=" + actual + " tol=" + tolerance);
 
     return true;
   }
@@ -478,8 +446,7 @@ class CanaerospaceSchemaRoundTripParserTest {
   }
 
   private static List<ExpandedIdentifier> expandIdentifierRanges(CanaerospaceSchema schema) {
-    List<IdentifierRangeDefinition> list = Optional.ofNullable(schema.getIdentifierRanges())
-        .orElseGet(Collections::emptyList);
+    List<IdentifierRangeDefinition> list = Optional.ofNullable(schema.getIdentifierRanges()).orElseGet(Collections::emptyList);
 
     List<ExpandedIdentifier> expanded = new ArrayList<>();
     for (IdentifierRangeDefinition rangeDefinition : list) {
@@ -491,25 +458,14 @@ class CanaerospaceSchemaRoundTripParserTest {
       int minimum = idRange.getMin().intValue();
       int maximum = idRange.getMax().intValue();
 
-      Double rangeMinimum = rangeDefinition.getRange() == null || rangeDefinition.getRange().getMin() == null
-          ? null
-          : rangeDefinition.getRange().getMin().doubleValue();
+      Double rangeMinimum = rangeDefinition.getRange() == null || rangeDefinition.getRange().getMin() == null ? null : rangeDefinition.getRange().getMin().doubleValue();
 
-      Double rangeMaximum = rangeDefinition.getRange() == null || rangeDefinition.getRange().getMax() == null
-          ? null
-          : rangeDefinition.getRange().getMax().doubleValue();
+      Double rangeMaximum = rangeDefinition.getRange() == null || rangeDefinition.getRange().getMax() == null ? null : rangeDefinition.getRange().getMax().doubleValue();
 
       Double resolution = rangeDefinition.getResolution();
 
       for (int id = minimum; id <= maximum; id++) {
-        ExpandedIdentifier expandedIdentifier = ExpandedIdentifier.fromRange(
-            rangeDefinition,
-            id,
-            (id - minimum) + 1,
-            rangeMinimum,
-            rangeMaximum,
-            resolution
-        );
+        ExpandedIdentifier expandedIdentifier = ExpandedIdentifier.fromRange(rangeDefinition, id, (id - minimum) + 1, rangeMinimum, rangeMaximum, resolution);
         expanded.add(expandedIdentifier);
       }
     }
@@ -597,7 +553,6 @@ class CanaerospaceSchemaRoundTripParserTest {
   }
 
   private static final class ExpandedIdentifier {
-
     private final int id;
     private final String name;
     private final String dataTypeName;
@@ -605,14 +560,7 @@ class CanaerospaceSchemaRoundTripParserTest {
     private final Double rangeMax;
     private final Double resolution;
 
-    private ExpandedIdentifier(
-        int id,
-        String name,
-        String dataTypeName,
-        Double rangeMin,
-        Double rangeMax,
-        Double resolution
-    ) {
+    private ExpandedIdentifier(int id, String name, String dataTypeName, Double rangeMin, Double rangeMax, Double resolution) {
       this.id = id;
       this.name = name;
       this.dataTypeName = dataTypeName;
@@ -622,43 +570,18 @@ class CanaerospaceSchemaRoundTripParserTest {
     }
 
     static ExpandedIdentifier fromConcrete(IdentifierDefinition identifier) {
-      Double minimum = identifier.getRange() == null || identifier.getRange().getMin() == null
-          ? null
-          : identifier.getRange().getMin().doubleValue();
+      Double minimum = identifier.getRange() == null || identifier.getRange().getMin() == null ? null : identifier.getRange().getMin().doubleValue();
 
-      Double maximum = identifier.getRange() == null || identifier.getRange().getMax() == null
-          ? null
-          : identifier.getRange().getMax().doubleValue();
+      Double maximum = identifier.getRange() == null || identifier.getRange().getMax() == null ? null : identifier.getRange().getMax().doubleValue();
 
-      return new ExpandedIdentifier(
-          identifier.getId(),
-          identifier.getName(),
-          identifier.getDataType(),
-          minimum,
-          maximum,
-          identifier.getResolution()
-      );
+      return new ExpandedIdentifier(identifier.getId(), identifier.getName(), identifier.getDataType(), minimum, maximum, identifier.getResolution());
     }
 
-    static ExpandedIdentifier fromRange(
-        IdentifierRangeDefinition rangeDefinition,
-        int id,
-        int ordinal,
-        Double rangeMin,
-        Double rangeMax,
-        Double resolution
-    ) {
+    static ExpandedIdentifier fromRange(IdentifierRangeDefinition rangeDefinition, int id, int ordinal, Double rangeMin, Double rangeMax, Double resolution) {
       String template = rangeDefinition.getTitleTemplate();
       String name = template == null ? null : template.replace("{n}", String.valueOf(ordinal));
 
-      return new ExpandedIdentifier(
-          id,
-          name,
-          rangeDefinition.getDataType(),
-          rangeMin,
-          rangeMax,
-          resolution
-      );
+      return new ExpandedIdentifier(id, name, rangeDefinition.getDataType(), rangeMin, rangeMax, resolution);
     }
   }
 }

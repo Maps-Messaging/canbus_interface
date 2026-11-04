@@ -20,11 +20,11 @@ package io.mapsmessaging.canbus.j1939.n2k.parser;
 
 import io.mapsmessaging.canbus.j1939.n2k.canboat.CanboatDatabase;
 import io.mapsmessaging.canbus.j1939.n2k.canboat.CanboatDefinitions;
-
 import io.mapsmessaging.canbus.j1939.n2k.model.N2kFieldDefinition;
 import io.mapsmessaging.canbus.j1939.n2k.model.N2kFieldType;
 import io.mapsmessaging.canbus.j1939.n2k.model.N2kMessageDefinition;
 import io.mapsmessaging.canbus.j1939.n2k.model.N2kMessageLengthType;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -38,15 +38,15 @@ import lombok.experimental.UtilityClass;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
+import org.xml.sax.SAXException;
 
 @UtilityClass
 public class N2kXmlDialectParser {
-
-  public static List<N2kMessageDefinition> parseFromClasspath() throws Exception {
+  public static List<N2kMessageDefinition> parseFromClasspath() throws IOException, SAXException, ParserConfigurationException {
     return parseFromClasspath("n2k/canboat.xml");
   }
 
-  public static List<N2kMessageDefinition> parseFromClasspath(String resourcePath) throws Exception {
+  public static List<N2kMessageDefinition> parseFromClasspath(String resourcePath) throws IOException, SAXException, ParserConfigurationException {
     String normalizedPath = normalizeResourcePath(resourcePath);
     ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
     if (classLoader == null) {
@@ -60,13 +60,13 @@ public class N2kXmlDialectParser {
     }
   }
 
-  public static List<N2kMessageDefinition> parseFromFile(Path filePath) throws Exception {
+  public static List<N2kMessageDefinition> parseFromFile(Path filePath) throws IOException, SAXException, ParserConfigurationException {
     try (InputStream inputStream = Files.newInputStream(filePath)) {
       return parse(inputStream);
     }
   }
 
-  public static List<N2kMessageDefinition> parse(InputStream inputStream) throws Exception {
+  public static List<N2kMessageDefinition> parse(InputStream inputStream) throws IOException, SAXException, ParserConfigurationException {
     DocumentBuilderFactory documentBuilderFactory = createSecureDocumentBuilderFactory();
     Document document = documentBuilderFactory.newDocumentBuilder().parse(inputStream);
     Element rootElement = document.getDocumentElement();
@@ -116,23 +116,14 @@ public class N2kXmlDialectParser {
     if (fieldsElement != null) {
       List<Element> fieldElements = directChildElements(fieldsElement, "Field");
       for (Element fieldElement : fieldElements) {
-        fieldDefinitions.add(parseField(fieldElement, pgn, modern));
+        fieldDefinitions.add(parseField(fieldElement, modern));
       }
     }
 
     fieldDefinitions.sort(Comparator.comparingInt(N2kFieldDefinition::getOrder));
 
     return new N2kMessageDefinition(
-        pgn,
-        id,
-        description,
-        priority,
-        type,
-        complete,
-        lengthResult.getLengthType(),
-        lengthResult.getFixedLengthBytes(),
-        List.copyOf(fieldDefinitions)
-    );
+        pgn, id, description, priority, type, complete, lengthResult.getLengthType(), lengthResult.getFixedLengthBytes(), List.copyOf(fieldDefinitions));
   }
 
   private static N2kMessageLengthParseResult parseLength(Element pgnElement, int pgn) {
@@ -149,13 +140,12 @@ public class N2kXmlDialectParser {
     try {
       int lengthBytes = Integer.parseInt(trimmed);
       return new N2kMessageLengthParseResult(N2kMessageLengthType.FIXED, lengthBytes);
-    }
-    catch (NumberFormatException exception) {
+    } catch (NumberFormatException exception) {
       throw new IllegalArgumentException("Invalid <Length> '" + trimmed + "' for PGN " + pgn, exception);
     }
   }
 
-  private static N2kFieldDefinition parseField(Element fieldElement, int pgn, boolean modern) {
+  private static N2kFieldDefinition parseField(Element fieldElement, boolean modern) {
     int order = parseIntChildOptional(fieldElement, "Order", 0);
 
     String id = normalizeFieldId(parseStringChild(fieldElement, "Id", null));
@@ -166,9 +156,11 @@ public class N2kXmlDialectParser {
     String fieldTypeText = parseStringChild(fieldElement, "FieldType", null);
     N2kFieldType fieldType = resolveFieldType(fieldTypeText, typeInPdf, name);
     if (!modern && switch (fieldType) {
-      case NUMBER, FLOAT, LOOKUP, RESERVED, STRING_FIX, STRING_LAU, REPEAT_MARKER -> false;
-      default -> true;
-    }) { fieldType = N2kFieldType.NUMBER; }
+          case NUMBER, FLOAT, LOOKUP, RESERVED, STRING_FIX, STRING_LAU, REPEAT_MARKER -> false;
+          default -> true;
+        }) {
+      fieldType = N2kFieldType.NUMBER;
+    }
 
     Integer bitOffset = parseNullableIntChild(fieldElement, "BitOffset");
     Integer bitLength = parseNullableIntChild(fieldElement, "BitLength");
@@ -184,22 +176,7 @@ public class N2kXmlDialectParser {
 
     String unit = parseStringChild(fieldElement, "Unit", null);
 
-    return new N2kFieldDefinition(
-        order,
-        id,
-        name,
-        bitOffset,
-        bitLength,
-        bitStart,
-        signed,
-        fieldType,
-        resolution,
-        offset,
-        rangeMin,
-        rangeMax,
-        unit,
-        typeInPdf
-    );
+    return new N2kFieldDefinition(order, id, name, bitOffset, bitLength, bitStart, signed, fieldType, resolution, offset, rangeMin, rangeMax, unit, typeInPdf);
   }
 
   private static String normalizeFieldId(String id) {
@@ -225,8 +202,8 @@ public class N2kXmlDialectParser {
       String normalized = fieldTypeText.trim().toUpperCase();
       try {
         return N2kFieldType.valueOf(normalized);
-      }
-      catch (IllegalArgumentException ignored) {
+      } catch (IllegalArgumentException ignored) {
+        // Unknown field types fall back to the legacy repeat-marker/name heuristics below.
       }
     }
 
@@ -255,8 +232,7 @@ public class N2kXmlDialectParser {
 
     try {
       return Integer.parseInt(text.trim());
-    }
-    catch (NumberFormatException exception) {
+    } catch (NumberFormatException exception) {
       throw new IllegalArgumentException("Invalid <" + tagName + "> '" + text + "'", exception);
     }
   }
@@ -269,8 +245,7 @@ public class N2kXmlDialectParser {
 
     try {
       return Integer.parseInt(text.trim());
-    }
-    catch (NumberFormatException exception) {
+    } catch (NumberFormatException exception) {
       throw new IllegalArgumentException("Invalid <" + tagName + "> '" + text + "' in " + context, exception);
     }
   }
@@ -283,8 +258,7 @@ public class N2kXmlDialectParser {
 
     try {
       return Integer.parseInt(text.trim());
-    }
-    catch (NumberFormatException exception) {
+    } catch (NumberFormatException exception) {
       throw new IllegalArgumentException("Invalid <" + tagName + "> '" + text + "'", exception);
     }
   }
@@ -297,8 +271,7 @@ public class N2kXmlDialectParser {
 
     try {
       return Double.parseDouble(text.trim());
-    }
-    catch (NumberFormatException exception) {
+    } catch (NumberFormatException exception) {
       throw new IllegalArgumentException("Invalid <" + tagName + "> '" + text + "'", exception);
     }
   }
@@ -311,8 +284,7 @@ public class N2kXmlDialectParser {
 
     try {
       return Double.parseDouble(text.trim());
-    }
-    catch (NumberFormatException exception) {
+    } catch (NumberFormatException exception) {
       throw new IllegalArgumentException("Invalid <" + tagName + "> '" + text + "'", exception);
     }
   }

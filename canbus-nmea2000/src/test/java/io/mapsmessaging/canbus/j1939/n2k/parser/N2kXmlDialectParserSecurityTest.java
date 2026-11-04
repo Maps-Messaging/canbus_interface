@@ -13,7 +13,6 @@ import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
 
 class N2kXmlDialectParserSecurityTest {
-
   @Test
   void rejectsDoctypeDeclarations() {
     String xml = """
@@ -29,8 +28,7 @@ class N2kXmlDialectParserSecurityTest {
         </PGNDefinitions>
         """;
 
-    ByteArrayInputStream inputStream =
-        new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8));
+    ByteArrayInputStream inputStream = new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8));
 
     assertThrows(Exception.class, () -> N2kXmlDialectParser.parse(inputStream));
   }

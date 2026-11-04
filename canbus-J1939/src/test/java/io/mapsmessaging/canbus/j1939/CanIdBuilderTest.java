@@ -18,12 +18,11 @@
 
 package io.mapsmessaging.canbus.j1939;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.*;
 
-class CanIdBuilderTest {
+import org.junit.jupiter.api.Test;
 
+class CanIdBuilderTest {
   @Test
   void build_pdu1_pfLessThan240_usesDestinationAddressInPs() {
     int pgn = 0x00EA00; // PF=0xEA (234) < 240, DP=0
@@ -65,10 +64,8 @@ class CanIdBuilderTest {
     int sourceAddress = 0x01;
     int destinationAddress = 0x02;
 
-    assertThrows(IllegalArgumentException.class,
-        () -> CanIdBuilder.build(pgn, priority, sourceAddress, destinationAddress));
+    assertThrows(IllegalArgumentException.class, () -> CanIdBuilder.build(pgn, priority, sourceAddress, destinationAddress));
   }
-
 
   @Test
   void build_priorityIsPreservedWhenValid() {
@@ -82,14 +79,11 @@ class CanIdBuilderTest {
     assertEquals(7, extractPriority(id));
   }
 
-
   @Test
   void build_sourceAndDestinationOutside8BitsAreRejected() {
-    assertAll(
-        () -> assertThrows(IllegalArgumentException.class,
-            () -> CanIdBuilder.build(0x00EA00, 1, 0x123, 0x55)),
-        () -> assertThrows(IllegalArgumentException.class,
-            () -> CanIdBuilder.build(0x00EA00, 1, 0x23, 0x1FE)));
+    assertAll(()
+                  -> assertThrows(IllegalArgumentException.class, () -> CanIdBuilder.build(0x00EA00, 1, 0x123, 0x55)),
+        () -> assertThrows(IllegalArgumentException.class, () -> CanIdBuilder.build(0x00EA00, 1, 0x23, 0x1FE)));
   }
 
   @Test

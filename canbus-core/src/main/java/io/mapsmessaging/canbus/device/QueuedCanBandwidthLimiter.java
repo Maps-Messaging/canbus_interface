@@ -20,7 +20,6 @@ package io.mapsmessaging.canbus.device;
 import java.util.concurrent.TimeUnit;
 
 final class QueuedCanBandwidthLimiter {
-
   private static final int MINIMUM_BUCKET_BITS = 512;
 
   private final double allowedBitsPerSecond;

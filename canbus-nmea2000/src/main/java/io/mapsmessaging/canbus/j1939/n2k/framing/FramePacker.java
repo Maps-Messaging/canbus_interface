@@ -20,17 +20,15 @@ package io.mapsmessaging.canbus.j1939.n2k.framing;
 
 import com.google.gson.JsonObject;
 import io.mapsmessaging.canbus.device.frames.CanFrame;
-import io.mapsmessaging.canbus.j1939.n2k.codec.N2kMessageParser;
 import io.mapsmessaging.canbus.j1939.CanIdBuilder;
+import io.mapsmessaging.canbus.j1939.n2k.codec.N2kMessageParser;
 import io.mapsmessaging.canbus.j1939.n2k.model.N2kTransportType;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
 public class FramePacker {
-
-  private final N2kMessageParser  payloadEncoder;
+  private final N2kMessageParser payloadEncoder;
   private final SequenceProvider sequenceProvider;
 
   public FramePacker(N2kMessageParser payloadEncoder) {
@@ -73,13 +71,7 @@ public class FramePacker {
     return payloadEncoder.getRegistry().getTransportType(pgn, payloadLength);
   }
 
-  public List<CanFrame> packFastPacket(
-      int pgn,
-      int canIdentifier,
-      int sourceAddress,
-      int destinationAddress,
-      byte[] payload
-  ) {
+  public List<CanFrame> packFastPacket(int pgn, int canIdentifier, int sourceAddress, int destinationAddress, byte[] payload) {
     int sequenceId = sequenceProvider.nextSequenceId(pgn, sourceAddress, destinationAddress);
 
     List<CanFrame> frames = new ArrayList<>();
@@ -89,7 +81,7 @@ public class FramePacker {
 
     // Frame 0: byte0 = seq+index(0), byte1 = totalLength, bytes2..7 = first 6 payload bytes
     byte[] frame0 = new byte[8];
-    frame0[0] = (byte) (((sequenceId & 0x07) << 5));
+    frame0[0] = (byte) ((sequenceId & 0x07) << 5);
     frame0[1] = (byte) (totalLength & 0xFF);
 
     int firstChunk = Math.min(6, totalLength);
@@ -121,5 +113,4 @@ public class FramePacker {
 
     return frames;
   }
-
 }

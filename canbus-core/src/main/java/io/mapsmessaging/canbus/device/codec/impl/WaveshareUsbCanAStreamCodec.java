@@ -18,17 +18,14 @@
 
 package io.mapsmessaging.canbus.device.codec.impl;
 
-
 import io.mapsmessaging.canbus.device.codec.CanFrameStreamCodec;
 import io.mapsmessaging.canbus.device.frames.CanFrame;
-
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
 public class WaveshareUsbCanAStreamCodec implements CanFrameStreamCodec {
-
   private static final int PACKET_HEADER = 0xAA;
   private static final int PACKET_END = 0x55;
 
@@ -120,11 +117,7 @@ public class WaveshareUsbCanAStreamCodec implements CanFrameStreamCodec {
     return canIdentifier & MAX_STANDARD_IDENTIFIER;
   }
 
-  private static void writeCanIdentifier(
-      OutputStream outputStream,
-      int canIdentifier,
-      boolean extendedFrame
-  ) throws IOException {
+  private static void writeCanIdentifier(OutputStream outputStream, int canIdentifier, boolean extendedFrame) throws IOException {
     int identifierByteCount = extendedFrame ? EXTENDED_IDENTIFIER_BYTES : STANDARD_IDENTIFIER_BYTES;
 
     for (int index = 0; index < identifierByteCount; index++) {
@@ -163,12 +156,7 @@ public class WaveshareUsbCanAStreamCodec implements CanFrameStreamCodec {
     }
   }
 
-  private static void validateCanFrame(
-      int canIdentifier,
-      boolean extendedFrame,
-      int dataLengthCode,
-      byte[] payload
-  ) {
+  private static void validateCanFrame(int canIdentifier, boolean extendedFrame, int dataLengthCode, byte[] payload) {
     if (dataLengthCode < 0 || dataLengthCode > MAX_CLASSIC_CAN_DATA_LENGTH) {
       throw new IllegalArgumentException("Invalid classic CAN DLC: " + dataLengthCode);
     }

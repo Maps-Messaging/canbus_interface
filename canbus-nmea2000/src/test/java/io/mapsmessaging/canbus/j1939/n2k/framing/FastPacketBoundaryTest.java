@@ -17,6 +17,8 @@
  */
 package io.mapsmessaging.canbus.j1939.n2k.framing;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import io.mapsmessaging.canbus.device.frames.CanFrame;
 import io.mapsmessaging.canbus.j1939.CanId;
 import io.mapsmessaging.canbus.j1939.n2k.codec.N2kMessageParser;
@@ -25,11 +27,9 @@ import io.mapsmessaging.canbus.j1939.n2k.framing.assemblers.FastPacketAssembler;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
 
 /** MSG-207: all five frame-index bits remain usable, including index 31. */
 class FastPacketBoundaryTest {
-
   private static final int PGN = 126208;
   private static final int IDENTIFIER = 0x19ED4D2A;
 
@@ -52,8 +52,7 @@ class FastPacketBoundaryTest {
   void pack_224_bytes_rejects_frame_index_overflow() {
     FramePacker packer = packer();
 
-    assertThrows(IllegalStateException.class,
-        () -> packer.packFastPacket(PGN, IDENTIFIER, 42, 77, new byte[224]));
+    assertThrows(IllegalStateException.class, () -> packer.packFastPacket(PGN, IDENTIFIER, 42, 77, new byte[224]));
   }
 
   private static void assertBoundary(int length, int expectedFrameCount) {

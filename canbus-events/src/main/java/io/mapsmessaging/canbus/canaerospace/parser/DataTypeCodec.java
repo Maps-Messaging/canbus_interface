@@ -23,11 +23,9 @@ import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 
 public class DataTypeCodec {
-
   private static final ByteOrder BYTE_ORDER = ByteOrder.BIG_ENDIAN;
 
-  private DataTypeCodec() {
-  }
+  private DataTypeCodec() {}
 
   public static Object decode(String schemaDataTypeName, byte[] dataBytes) {
     if (schemaDataTypeName == null) {
@@ -64,28 +62,28 @@ public class DataTypeCodec {
       case "CHAR2" -> {
         int a = dataBytes[0];
         int b = dataBytes[1];
-        return new int[]{a, b};
+        return new int[] {a, b};
       }
       case "UCHAR2" -> {
         int a = dataBytes[0] & 0xFF;
         int b = dataBytes[1] & 0xFF;
-        return new int[]{a, b};
+        return new int[] {a, b};
       }
       case "CHAR4" -> {
-        return new int[]{dataBytes[0], dataBytes[1], dataBytes[2], dataBytes[3]};
+        return new int[] {dataBytes[0], dataBytes[1], dataBytes[2], dataBytes[3]};
       }
       case "UCHAR4" -> {
-        return new int[]{dataBytes[0] & 0xFF, dataBytes[1] & 0xFF, dataBytes[2] & 0xFF, dataBytes[3] & 0xFF};
+        return new int[] {dataBytes[0] & 0xFF, dataBytes[1] & 0xFF, dataBytes[2] & 0xFF, dataBytes[3] & 0xFF};
       }
       case "SHORT2" -> {
         int a = buffer.getShort(0);
         int b = buffer.getShort(2);
-        return new int[]{a, b};
+        return new int[] {a, b};
       }
       case "USHORT2" -> {
         int a = buffer.getShort(0) & 0xFFFF;
         int b = buffer.getShort(2) & 0xFFFF;
-        return new int[]{a, b};
+        return new int[] {a, b};
       }
       case "BSHORT" -> {
         return buffer.getShort(0) & 0xFFFF;
@@ -97,10 +95,10 @@ public class DataTypeCodec {
         return dataBytes[0] & 0xFF;
       }
       case "ACHAR2" -> {
-        return new int[]{dataBytes[0] & 0xFF, dataBytes[1] & 0xFF};
+        return new int[] {dataBytes[0] & 0xFF, dataBytes[1] & 0xFF};
       }
       case "ACHAR4" -> {
-        return new String(new byte[]{dataBytes[0], dataBytes[1], dataBytes[2], dataBytes[3]});
+        return new String(new byte[] {dataBytes[0], dataBytes[1], dataBytes[2], dataBytes[3]});
       }
       case "VARIABLE3" -> {
         return decodeSigned24(dataBytes);
@@ -135,41 +133,31 @@ public class DataTypeCodec {
       }
       case "ULONG" -> {
         long longValue = toLong(value);
-        if (longValue < 0 || longValue > 0xFFFFFFFFL) {
-          throw new IllegalArgumentException("ULONG out of range: " + longValue);
-        }
+        validateUnsignedLong(longValue, "ULONG");
         buffer.putInt(0, (int) longValue);
         return buffer.array();
       }
       case "SHORT" -> {
         int intValue = toInt(value);
-        if (intValue < Short.MIN_VALUE || intValue > Short.MAX_VALUE) {
-          throw new IllegalArgumentException("SHORT out of range: " + intValue);
-        }
+        validateRange(intValue, Short.MIN_VALUE, Short.MAX_VALUE, "SHORT");
         buffer.putShort(2, (short) intValue);
         return buffer.array();
       }
       case "USHORT" -> {
         int intValue = toInt(value);
-        if (intValue < 0 || intValue > 0xFFFF) {
-          throw new IllegalArgumentException("USHORT out of range: " + intValue);
-        }
+        validateRange(intValue, 0, 0xFFFF, "USHORT");
         buffer.putShort(2, (short) intValue);
         return buffer.array();
       }
       case "CHAR" -> {
         int intValue = toInt(value);
-        if (intValue < -128 || intValue > 127) {
-          throw new IllegalArgumentException("CHAR out of range: " + intValue);
-        }
+        validateRange(intValue, -128, 127, "CHAR");
         buffer.put(0, (byte) intValue);
         return buffer.array();
       }
       case "UCHAR", "ACHAR" -> {
         int intValue = toInt(value);
-        if (intValue < 0 || intValue > 0xFF) {
-          throw new IllegalArgumentException(schemaDataTypeName + " out of range: " + intValue);
-        }
+        validateRange(intValue, 0, 0xFF, schemaDataTypeName);
         buffer.put(0, (byte) intValue);
         return buffer.array();
       }
@@ -231,17 +219,13 @@ public class DataTypeCodec {
       }
       case "BSHORT" -> {
         int intValue = toInt(value);
-        if (intValue < 0 || intValue > 0xFFFF) {
-          throw new IllegalArgumentException("BSHORT out of range: " + intValue);
-        }
+        validateRange(intValue, 0, 0xFFFF, "BSHORT");
         buffer.putShort(0, (short) intValue);
         return buffer.array();
       }
       case "BLONG", "MEMID", "CHKSUM" -> {
         long longValue = toLong(value);
-        if (longValue < 0 || longValue > 0xFFFFFFFFL) {
-          throw new IllegalArgumentException(schemaDataTypeName + " out of range: " + longValue);
-        }
+        validateUnsignedLong(longValue, schemaDataTypeName);
         buffer.putInt(0, (int) longValue);
         return buffer.array();
       }
@@ -262,14 +246,24 @@ public class DataTypeCodec {
         return new byte[4];
       }
       default -> {
-        if (value instanceof byte[] bytes) {
-          if (bytes.length != 4) {
-            throw new IllegalArgumentException("byte[] value must be 4 bytes for type " + schemaDataTypeName);
-          }
-          return bytes.clone();
-        }
-        throw new IllegalArgumentException("Unsupported schemaDataTypeName: " + schemaDataTypeName);
+        return encodeRaw(schemaDataTypeName, value);
       }
+    }
+  }
+
+  private static byte[] encodeRaw(String schemaDataTypeName, Object value) {
+    if (value instanceof byte[] bytes) {
+      if (bytes.length != 4) {
+        throw new IllegalArgumentException("byte[] value must be 4 bytes for type " + schemaDataTypeName);
+      }
+      return bytes.clone();
+    }
+    throw new IllegalArgumentException("Unsupported schemaDataTypeName: " + schemaDataTypeName);
+  }
+
+  private static void validateUnsignedLong(long value, String fieldName) {
+    if (value < 0 || value > 0xFFFFFFFFL) {
+      throw new IllegalArgumentException(fieldName + " out of range: " + value);
     }
   }
 
@@ -292,12 +286,7 @@ public class DataTypeCodec {
     if (value < 0 || value > 0xFFFFFF) {
       throw new IllegalArgumentException("UVARIABLE3 out of range: " + value);
     }
-    return new byte[]{
-        0,
-        (byte) ((value >> 16) & 0xFF),
-        (byte) ((value >> 8) & 0xFF),
-        (byte) (value & 0xFF)
-    };
+    return new byte[] {0, (byte) ((value >> 16) & 0xFF), (byte) ((value >> 8) & 0xFF), (byte) (value & 0xFF)};
   }
 
   private static byte[] encodeSigned24(int value) {
@@ -305,12 +294,7 @@ public class DataTypeCodec {
       throw new IllegalArgumentException("VARIABLE3 out of range: " + value);
     }
     int encoded = value & 0xFFFFFF;
-    return new byte[]{
-        0,
-        (byte) ((encoded >> 16) & 0xFF),
-        (byte) ((encoded >> 8) & 0xFF),
-        (byte) (encoded & 0xFF)
-    };
+    return new byte[] {0, (byte) ((encoded >> 16) & 0xFF), (byte) ((encoded >> 8) & 0xFF), (byte) (encoded & 0xFF)};
   }
 
   private static int toInt(Object value) {
@@ -361,20 +345,24 @@ public class DataTypeCodec {
       return result;
     }
     if (value instanceof java.util.List<?> list) {
-      if (list.size() != expectedLength) {
-        throw new IllegalArgumentException("Expected list length " + expectedLength + " but was " + list.size());
-      }
-      int[] result = new int[expectedLength];
-      for (int index = 0; index < expectedLength; index++) {
-        Object entry = list.get(index);
-        if (!(entry instanceof Number number)) {
-          throw new IllegalArgumentException("List entry at index " + index + " is not numeric: " + entry);
-        }
-        result[index] = number.intValue();
-      }
-      return result;
+      return listToIntArray(list, expectedLength);
     }
     throw new IllegalArgumentException("Unable to convert value to int[" + expectedLength + "]: " + value);
+  }
+
+  private static int[] listToIntArray(java.util.List<?> list, int expectedLength) {
+    if (list.size() != expectedLength) {
+      throw new IllegalArgumentException("Expected list length " + expectedLength + " but was " + list.size());
+    }
+    int[] result = new int[expectedLength];
+    for (int index = 0; index < expectedLength; index++) {
+      Object entry = list.get(index);
+      if (!(entry instanceof Number number)) {
+        throw new IllegalArgumentException("List entry at index " + index + " is not numeric: " + entry);
+      }
+      result[index] = number.intValue();
+    }
+    return result;
   }
 
   private static byte[] toAchar4(Object value) {

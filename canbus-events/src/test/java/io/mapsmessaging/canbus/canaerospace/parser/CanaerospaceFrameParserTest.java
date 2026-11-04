@@ -22,15 +22,13 @@ import io.mapsmessaging.canbus.canaerospace.schema.CanaerospaceSchemaRegistry;
 import io.mapsmessaging.canbus.canaerospace.schema.IdentifierDefinition;
 import io.mapsmessaging.canbus.canaerospace.schema.MessageTypeDefinition;
 import io.mapsmessaging.canbus.canaerospace.schema.NumericRange;
+import java.math.BigDecimal;
+import java.util.Optional;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import java.math.BigDecimal;
-import java.util.Optional;
-
 class CanaerospaceFrameParserTest {
-
   @Test
   void parsesFlightStateBodyLongitudinalAccelerationCanId300() {
     int canId = 0x12C;
@@ -66,10 +64,10 @@ class CanaerospaceFrameParserTest {
     // CANaerospace payload layout (your parser):
     // [0]=nodeId, [1]=payloadDataTypeNumber, [2]=serviceCode, [3]=messageCode, [4..7]=data
     byte[] payload = new byte[] {
-        (byte) 0x2A,                 // nodeId = 42
+        (byte) 0x2A, // nodeId = 42
         (byte) payloadDataTypeNumber, // payload data type number
-        (byte) 0x00,                 // serviceCode
-        (byte) 0x00,                 // messageCode
+        (byte) 0x00, // serviceCode
+        (byte) 0x00, // messageCode
         (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00 // raw data = 0
     };
 

@@ -18,9 +18,8 @@
 
 package io.mapsmessaging.canbus.canaerospace.schema;
 
-import lombok.Data;
-
 import java.math.BigDecimal;
+import lombok.Data;
 
 @Data
 public class NumericRange {

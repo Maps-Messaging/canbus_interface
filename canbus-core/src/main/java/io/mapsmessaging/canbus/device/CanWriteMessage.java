@@ -18,15 +18,13 @@
 package io.mapsmessaging.canbus.device;
 
 import io.mapsmessaging.canbus.device.frames.CanFrame;
-import lombok.Getter;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import lombok.Getter;
 
 @Getter
 final class CanWriteMessage {
-
   private final List<CanFrame> canFrames;
   private final int estimatedBits;
 

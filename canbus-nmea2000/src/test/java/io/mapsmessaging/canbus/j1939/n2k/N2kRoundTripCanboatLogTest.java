@@ -38,7 +38,6 @@ import java.util.*;
 import org.junit.jupiter.api.Test;
 
 class N2kRoundTripCanboatLogTest {
-
   @Test
   void roundTrip_canboatCsv_payloadBytesMustMatch() throws Exception {
     // Adjust wiring to your actual constructors/singletons.
@@ -71,7 +70,7 @@ class N2kRoundTripCanboatLogTest {
         }
 
         N2kCompiledMessage compiledMessage = parser.getRegistry().getRequiredMessage(row.pgn);
-        if(compiledMessage == null){
+        if (compiledMessage == null) {
           List<byte[]> list = unknown.computeIfAbsent(row.pgn, k -> new ArrayList<>());
           list.add(row.payloadBytes);
           continue;
@@ -92,11 +91,11 @@ class N2kRoundTripCanboatLogTest {
         assertNotNull(decoded1, "Missing decoded object in first envelope. line=" + totalLines);
         assertNotNull(decoded2, "Missing decoded object in second envelope. line=" + totalLines);
 
-// 1) semantic checks (preferred)
+        // 1) semantic checks (preferred)
         assertSemanticallyEqual(row.pgn, decoded1, decoded2, totalLines);
 
-// 2) byte checks (masked for fields that cannot be bit-perfect via double)
-// 2) byte checks (masked for fields that cannot be bit-perfect via double)
+        // 2) byte checks (masked for fields that cannot be bit-perfect via double)
+        // 2) byte checks (masked for fields that cannot be bit-perfect via double)
         int size = Math.min(reencoded.length, row.payloadBytes.length);
 
         byte[] sourceTrimmed = Arrays.copyOf(row.payloadBytes, size);
@@ -105,53 +104,50 @@ class N2kRoundTripCanboatLogTest {
         byte[] sourceMasked = Arrays.copyOf(sourceTrimmed, size);
         byte[] encodedMasked = Arrays.copyOf(encodedTrimmed, size);
 
-// Apply mask for known unstable numeric fields (lat/lon/alt etc)
+        // Apply mask for known unstable numeric fields (lat/lon/alt etc)
         maskUnstableFields(row.pgn, sourceMasked, encodedMasked);
         List<N2kFieldDefinition> fields = compiledMessage.getDefinitions();
         maskNonPayloadBits(sourceMasked, fields);
         maskNonPayloadBits(encodedMasked, fields);
 
-// Compare masked arrays, with STRING_FIX padding tolerance
+        // Compare masked arrays, with STRING_FIX padding tolerance
         if (!equalsWithStringFixPaddingTolerance(compiledMessage, sourceMasked, encodedMasked)) {
-          String message =
-              "N2K round-trip mismatch (masked)\n" +
-                  "line=" + totalLines + "\n" +
-                  "pgn=" + row.pgn + "\n" +
-                  "src=" + row.source + " dst=" + row.destination + " prio=" + row.priority + "\n" +
-                  "len=" + row.length + "\n" +
-                  "original=" + toHex(sourceTrimmed) + "\n" +
-                  "encoded =" + toHex(encodedTrimmed) + "\n" +
-                  "maskedOriginal=" + toHex(sourceMasked) + "\n" +
-                  "maskedEncoded =" + toHex(encodedMasked) + "\n" +
-                  "decoded1=" + decodedEnvelope + "\n" +
-                  "decoded2=" + decoded2Envelope;
+          String message = "N2K round-trip mismatch (masked)\n"
+              + "line=" + totalLines + "\n"
+              + "pgn=" + row.pgn + "\n"
+              + "src=" + row.source + " dst=" + row.destination + " prio=" + row.priority + "\n"
+              + "len=" + row.length + "\n"
+              + "original=" + toHex(sourceTrimmed) + "\n"
+              + "encoded =" + toHex(encodedTrimmed) + "\n"
+              + "maskedOriginal=" + toHex(sourceMasked) + "\n"
+              + "maskedEncoded =" + toHex(encodedMasked) + "\n"
+              + "decoded1=" + decodedEnvelope + "\n"
+              + "decoded2=" + decoded2Envelope;
           fail(message);
         }
-
 
         processed++;
       }
     }
 
     assertTrue(processed > 0, "No rows processed. lines=" + totalLines);
-    System.err.println("Parsed and processed "+processed+" rows with "+unknown.size()+" of unknown PGN");
-    for(Map.Entry<Integer, List<byte[]>> entry: unknown.entrySet()){
-      System.err.println("pgn="+entry.getKey());
+    System.err.println("Parsed and processed " + processed + " rows with " + unknown.size() + " of unknown PGN");
+    for (Map.Entry<Integer, List<byte[]>> entry : unknown.entrySet()) {
+      System.err.println("pgn=" + entry.getKey());
       int end = Math.min(10, entry.getValue().size());
-      for(int x=0;x<end;x++){
-        System.err.println("\t"+dump(entry.getValue().get(x)));
+      for (int x = 0; x < end; x++) {
+        System.err.println("\t" + dump(entry.getValue().get(x)));
       }
     }
   }
 
-  private String dump(byte[] line){
+  private String dump(byte[] line) {
     StringBuilder sb = new StringBuilder();
-    for(byte b:line){
-      String t = Long.toHexString(b&0xff);
-      if(t.length()<2){
+    for (byte b : line) {
+      String t = Long.toHexString(b & 0xff);
+      if (t.length() < 2) {
         sb.append("0x0");
-      }
-      else{
+      } else {
         sb.append("0x");
       }
       sb.append(t).append(" ");
@@ -178,11 +174,8 @@ class N2kRoundTripCanboatLogTest {
 
     int expectedParts = 6 + length;
     if (parts.length < expectedParts) {
-      throw new IllegalArgumentException(
-          "Line has fewer payload bytes than declared length. " +
-              "pgn=" + pgn + " declaredLen=" + length + " parts=" + parts.length + " expected>=" + expectedParts +
-              " line=" + line
-      );
+      throw new IllegalArgumentException("Line has fewer payload bytes than declared length. "
+          + "pgn=" + pgn + " declaredLen=" + length + " parts=" + parts.length + " expected>=" + expectedParts + " line=" + line);
     }
 
     byte[] payload = new byte[length];
@@ -213,7 +206,7 @@ class N2kRoundTripCanboatLogTest {
   private static N2kMessageParser buildParser() throws Exception {
     List<N2kMessageDefinition> defs = N2kXmlDialectParser.parseFromClasspath("n2k/NMEA_database_1_300.xml");
     N2kCompiledRegistry registry = new N2kCompiledRegistry(N2kCompiler.compile(defs).getMessagesByPgn());
-    return  new N2kMessageParser(registry);
+    return new N2kMessageParser(registry);
   }
 
   private static final class CanboatRow {
@@ -249,8 +242,7 @@ class N2kRoundTripCanboatLogTest {
         double eps = epsilonFor(pgn, key);
         if (Double.isFinite(av) && Double.isFinite(bv)) {
           if (Math.abs(av - bv) > eps) {
-            fail("Unstable field drift too large. pgn=" + pgn + " line=" + line +
-                " key=" + key + " a=" + av + " b=" + bv + " eps=" + eps);
+            fail("Unstable field drift too large. pgn=" + pgn + " line=" + line + " key=" + key + " a=" + av + " b=" + bv + " eps=" + eps);
           }
         }
         continue;
@@ -258,11 +250,9 @@ class N2kRoundTripCanboatLogTest {
 
       // Exact compare for everything else (numbers/ints/lookup)
       if (!a.get(key).equals(b.get(key))) {
-        fail("Field mismatch. pgn=" + pgn + " line=" + line +
-            " key=" + key + " a=" + a.get(key) + " b=" + b.get(key));
+        fail("Field mismatch. pgn=" + pgn + " line=" + line + " key=" + key + " a=" + a.get(key) + " b=" + b.get(key));
       }
     }
-
   }
 
   private static boolean isUnstableNumericField(int pgn, String key) {
@@ -310,11 +300,7 @@ class N2kRoundTripCanboatLogTest {
     }
   }
 
-  private static boolean equalsWithStringFixPaddingTolerance(
-      N2kCompiledMessage message,
-      byte[] original,
-      byte[] encoded
-  ) {
+  private static boolean equalsWithStringFixPaddingTolerance(N2kCompiledMessage message, byte[] original, byte[] encoded) {
     int size = Math.min(original.length, encoded.length);
 
     for (int i = 0; i < size; i++) {
@@ -386,7 +372,4 @@ class N2kRoundTripCanboatLogTest {
       }
     }
   }
-
-
 }
-

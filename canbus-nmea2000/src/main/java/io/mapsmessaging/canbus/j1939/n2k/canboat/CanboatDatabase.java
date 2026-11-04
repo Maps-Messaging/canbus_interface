@@ -35,31 +35,8 @@ public final class CanboatDatabase {
   private final Map<Integer, List<CanboatMessage>> variants;
   private final Map<String, Map<String, Map<String, String>>> lookups;
   private static final Set<String> TYPES =
-      Set.of(
-          "NUMBER",
-          "FLOAT",
-          "LOOKUP",
-          "INDIRECT_LOOKUP",
-          "BITLOOKUP",
-          "BINARY",
-          "PGN",
-          "ADDRESS",
-          "DURATION",
-          "FIELD_INDEX",
-          "ISO_NAME",
-          "DATE",
-          "TIME",
-          "MMSI",
-          "DECIMAL",
-          "DYNAMIC_FIELD_KEY",
-          "DYNAMIC_FIELD_VALUE",
-          "DYNAMIC_FIELD_LENGTH",
-          "VARIABLE",
-          "RESERVED",
-          "SPARE",
-          "STRING_FIX",
-          "STRING_LAU",
-          "STRING_LZ");
+      Set.of("NUMBER", "FLOAT", "LOOKUP", "INDIRECT_LOOKUP", "BITLOOKUP", "BINARY", "PGN", "ADDRESS", "DURATION", "FIELD_INDEX", "ISO_NAME", "DATE", "TIME", "MMSI", "DECIMAL",
+          "DYNAMIC_FIELD_KEY", "DYNAMIC_FIELD_VALUE", "DYNAMIC_FIELD_LENGTH", "VARIABLE", "RESERVED", "SPARE", "STRING_FIX", "STRING_LAU", "STRING_LZ");
 
   private CanboatDatabase(Element root) {
     Map<String, String> metadata = properties(root);
@@ -72,66 +49,83 @@ public final class CanboatDatabase {
     if (!protocol.equals("nmea2000") && !protocol.equals("j1939")) {
       throw new IllegalArgumentException("Unsupported CANboat protocol: " + protocol);
     }
+    messages = parseMessages(root);
+    variants = groupVariants(messages);
+    lookups = parseLookups(root);
+  }
+
+  private static List<CanboatMessage> parseMessages(Element root) {
     List<CanboatMessage> all = new ArrayList<>();
-    Map<Integer, List<CanboatMessage>> grouped = new LinkedHashMap<>();
     Element pgns = child(root, "PGNs");
     if (pgns == null) {
       throw new IllegalArgumentException("Missing CANboat PGNs");
     }
     for (Element element : children(pgns, "PGNInfo")) {
-      List<CanboatField> fields = new ArrayList<>();
-      Element container = child(element, "Fields");
-      if (container != null) {
-        for (Element entry : children(container, "Field")) {
-          CanboatField field = new CanboatField(properties(entry));
-          if (!TYPES.contains(field.type())) {
-            throw new IllegalArgumentException("Unsupported CANboat field type: " + field.type());
-          }
-          fields.add(field);
-        }
-      }
+      List<CanboatField> fields = parseFields(element);
       CanboatMessage message = new CanboatMessage(properties(element), fields);
       if (message.id() == null || message.pgn() < 0) {
         throw new IllegalArgumentException("Invalid CANboat message metadata");
       }
       all.add(message);
+    }
+    return List.copyOf(all);
+  }
+
+  private static List<CanboatField> parseFields(Element message) {
+    List<CanboatField> fields = new ArrayList<>();
+    Element container = child(message, "Fields");
+    if (container != null) {
+      for (Element entry : children(container, "Field")) {
+        CanboatField field = new CanboatField(properties(entry));
+        if (!TYPES.contains(field.type())) {
+          throw new IllegalArgumentException("Unsupported CANboat field type: " + field.type());
+        }
+        fields.add(field);
+      }
+    }
+    return fields;
+  }
+
+  private static Map<Integer, List<CanboatMessage>> groupVariants(List<CanboatMessage> messages) {
+    Map<Integer, List<CanboatMessage>> grouped = new LinkedHashMap<>();
+    for (CanboatMessage message : messages) {
       grouped.computeIfAbsent(message.pgn(), ignored -> new ArrayList<>()).add(message);
     }
-    messages = List.copyOf(all);
     Map<Integer, List<CanboatMessage>> immutable = new LinkedHashMap<>();
     grouped.forEach((key, value) -> immutable.put(key, List.copyOf(value)));
-    variants = Map.copyOf(immutable);
+    return Map.copyOf(immutable);
+  }
+
+  private static Map<String, Map<String, Map<String, String>>> parseLookups(Element root) {
     Map<String, Map<String, Map<String, String>>> tables = new LinkedHashMap<>();
-    for (String container :
-        List.of(
-            "LookupEnumerations",
-            "LookupIndirectEnumerations",
-            "LookupBitEnumerations",
-            "LookupFieldTypeEnumerations")) {
+    for (String container : List.of("LookupEnumerations", "LookupIndirectEnumerations", "LookupBitEnumerations", "LookupFieldTypeEnumerations")) {
       Element list = child(root, container);
       if (list == null) {
         continue;
       }
       for (Element table : children(list, null)) {
-        Map<String, Map<String, String>> entries = new LinkedHashMap<>();
-        for (Element entry : children(table, null)) {
-          Map<String, String> values = new LinkedHashMap<>(properties(entry));
-          for (int index = 0; index < entry.getAttributes().getLength(); index++) {
-            Node attr = entry.getAttributes().item(index);
-            values.put(attr.getNodeName(), attr.getNodeValue());
-          }
-          String key =
-              values.getOrDefault(
-                  "Value", values.getOrDefault("Bit", values.getOrDefault("Value1", "")));
-          if (values.containsKey("Value2")) {
-            key += ":" + values.get("Value2");
-          }
-          entries.put(key, Map.copyOf(values));
-        }
-        tables.put(table.getAttribute("Name"), Map.copyOf(entries));
+        Map<String, Map<String, String>> entries = parseLookupEntries(table);
+        tables.put(table.getAttribute("Name"), entries);
       }
     }
-    lookups = Map.copyOf(tables);
+    return Map.copyOf(tables);
+  }
+
+  private static Map<String, Map<String, String>> parseLookupEntries(Element table) {
+    Map<String, Map<String, String>> entries = new LinkedHashMap<>();
+    for (Element entry : children(table, null)) {
+      Map<String, String> values = new LinkedHashMap<>(properties(entry));
+      for (int index = 0; index < entry.getAttributes().getLength(); index++) {
+        Node attr = entry.getAttributes().item(index);
+        values.put(attr.getNodeName(), attr.getNodeValue());
+      }
+      String key = values.getOrDefault("Value", values.getOrDefault("Bit", values.getOrDefault("Value1", "")));
+      if (values.containsKey("Value2")) {
+        key += ":" + values.get("Value2");
+      }
+      entries.put(key, Map.copyOf(values));
+    }
+    return Map.copyOf(entries);
   }
 
   public static CanboatDatabase parse(Element root) {
@@ -173,9 +167,7 @@ public final class CanboatDatabase {
     }
     CanboatMessage range = null;
     for (CanboatMessage message : messages) {
-      if (message.fallback()
-          && message.pgn() <= pgn
-          && (range == null || message.pgn() > range.pgn())) {
+      if (message.fallback() && message.pgn() <= pgn && (range == null || message.pgn() > range.pgn())) {
         range = message;
       }
     }

@@ -17,6 +17,8 @@
  */
 package io.mapsmessaging.canbus.j1939.n2k.framing;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import io.mapsmessaging.canbus.device.frames.CanFrame;
 import io.mapsmessaging.canbus.j1939.CanId;
 import io.mapsmessaging.canbus.j1939.CanIdBuilder;
@@ -35,20 +37,16 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * MSG-207: sequence IDs are scoped to each provider's PGN/source/destination tuple.
  * Reuse after eight messages is expected; concurrent uniqueness is bounded to one cycle.
  */
 class FastPacketSequenceTest {
-
   private static final int PGN = 126208;
   private static final int SOURCE = 42;
   private static final int DESTINATION = 77;
-  private static final byte[] PAYLOAD = {
-      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
-  };
+  private static final byte[] PAYLOAD = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20};
 
   @Test
   void consecutive_messages_advance_sequence_once_and_wrap_after_seven() {
@@ -77,8 +75,7 @@ class FastPacketSequenceTest {
   void pgn_source_and_destination_each_have_independent_sequences() {
     FramePacker packer = packer();
     // Both PGNs are PDU1: differing destinations are present in the wire identifier.
-    int[][] tuples = {{PGN, SOURCE, DESTINATION}, {126720, SOURCE, DESTINATION},
-        {PGN, 43, DESTINATION}, {PGN, SOURCE, 78}};
+    int[][] tuples = {{PGN, SOURCE, DESTINATION}, {126720, SOURCE, DESTINATION}, {PGN, 43, DESTINATION}, {PGN, SOURCE, 78}};
     for (int[] tuple : tuples) {
       assertPacket(pack(packer, tuple[0], tuple[1], tuple[2], PAYLOAD), 0, PAYLOAD);
     }
@@ -193,8 +190,7 @@ class FastPacketSequenceTest {
     for (int index = 0; index < frames.size(); index++) {
       CanFrame frame = frames.get(index);
       assertEquals(8, frame.dataLengthCode());
-      assertEquals((sequence << 5) | index, frame.data()[0] & 0xFF,
-          "Sequence/frame header at index " + index);
+      assertEquals((sequence << 5) | index, frame.data()[0] & 0xFF, "Sequence/frame header at index " + index);
       int start = index == 0 ? 2 : 1;
       int count = Math.min(8 - start, payload.length - offset);
       System.arraycopy(frame.data(), start, reconstructed, offset, count);

@@ -18,21 +18,18 @@
 
 package io.mapsmessaging.canbus.j1939.n2k.codec;
 
-
-import com.google.gson.JsonObject;
-import io.mapsmessaging.canbus.j1939.n2k.N2kParserFactory;
-import io.mapsmessaging.canbus.j1939.n2k.compile.N2kCompiledRegistry;
-import org.junit.jupiter.api.Test;
-
-import java.util.HashMap;
-import java.util.Map;
-
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class N2kMessageParserFieldValueSourceTest {
+import com.google.gson.JsonObject;
+import io.mapsmessaging.canbus.j1939.n2k.N2kParserFactory;
+import io.mapsmessaging.canbus.j1939.n2k.compile.N2kCompiledRegistry;
+import java.util.HashMap;
+import java.util.Map;
+import org.junit.jupiter.api.Test;
 
+class N2kMessageParserFieldValueSourceTest {
   @Test
   void shouldEncodeFromFieldValueSourceSameAsJsonForPgn127250() throws Exception {
     int pgn = 127250;
@@ -52,11 +49,11 @@ class N2kMessageParserFieldValueSourceTest {
     decoded.addProperty("headingSensorReference", 2L);
 
     FieldValueSource source = new MapFieldValueSource()
-        .withLong("sid", 9L)
-        .withDouble("headingSensorReading", 1.2345d)
-        .withDouble("deviation", -0.1d)
-        .withDouble("variation", 0.2d)
-        .withLong("headingSensorReference", 2L);
+                                  .withLong("sid", 9L)
+                                  .withDouble("headingSensorReading", 1.2345d)
+                                  .withDouble("deviation", -0.1d)
+                                  .withDouble("variation", 0.2d)
+                                  .withLong("headingSensorReference", 2L);
 
     byte[] jsonPayload = parser.encodeFromJson(pgn, envelope);
     byte[] sourcePayload = parser.encodeFromSource(pgn, source);
@@ -72,7 +69,6 @@ class N2kMessageParserFieldValueSourceTest {
   }
 
   private static final class MapFieldValueSource implements FieldValueSource {
-
     private final Map<String, Long> longValues;
     private final Map<String, Double> doubleValues;
     private final Map<String, String> stringValues;
@@ -100,9 +96,7 @@ class N2kMessageParserFieldValueSourceTest {
 
     @Override
     public boolean has(String fieldId) {
-      return longValues.containsKey(fieldId)
-          || doubleValues.containsKey(fieldId)
-          || stringValues.containsKey(fieldId);
+      return longValues.containsKey(fieldId) || doubleValues.containsKey(fieldId) || stringValues.containsKey(fieldId);
     }
 
     @Override

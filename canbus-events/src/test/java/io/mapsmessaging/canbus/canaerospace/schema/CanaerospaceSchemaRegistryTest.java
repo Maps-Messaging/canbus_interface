@@ -18,16 +18,13 @@
 
 package io.mapsmessaging.canbus.canaerospace.schema;
 
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
-
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
-
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 class CanaerospaceSchemaRegistryTest {
-
   @Test
   void loadFromClasspathAndDump() throws Exception {
     CanaerospaceSchemaRegistry registry = CanaerospaceSchemaRegistry.loadFromClasspath();
@@ -57,13 +54,8 @@ class CanaerospaceSchemaRegistryTest {
     if (identifiers != null && !identifiers.isEmpty()) {
       for (int index = 0; index < identifiers.size(); index++) {
         IdentifierDefinition entry = identifiers.get(index);
-        System.out.println("identifier[" + index + "]: id=" + entry.getId()
-            + " hex=" + entry.getHex()
-            + " name=" + entry.getName()
-            + " dataType=" + entry.getDataType()
-            + " units=" + entry.getUnits()
-            + " range=" + formatRange(entry.getRange())
-            + " resolution=" + entry.getResolution());
+        System.out.println("identifier[" + index + "]: id=" + entry.getId() + " hex=" + entry.getHex() + " name=" + entry.getName() + " dataType=" + entry.getDataType()
+            + " units=" + entry.getUnits() + " range=" + formatRange(entry.getRange()) + " resolution=" + entry.getResolution());
       }
     }
 
@@ -79,8 +71,7 @@ class CanaerospaceSchemaRegistryTest {
       }
     }
 
-
-      System.out.println("=== End Schema Dump ===");
+    System.out.println("=== End Schema Dump ===");
   }
 
   private static String formatRange(NumericRange range) {

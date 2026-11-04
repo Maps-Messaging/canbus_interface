@@ -22,7 +22,6 @@ package io.mapsmessaging.canbus.app;
 
 import io.mapsmessaging.canbus.device.SocketCanDevice;
 import io.mapsmessaging.canbus.device.frames.CanFrame;
-
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
@@ -30,7 +29,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 public final class Vcan0ReadWriteDemo {
-
   private static final int CAN_ID = 0x123;
   private static final int PAYLOAD_LENGTH = 8;
 
@@ -41,9 +39,7 @@ public final class Vcan0ReadWriteDemo {
     AtomicBoolean running = new AtomicBoolean(true);
     AtomicLong sentCount = new AtomicLong(0);
 
-    try (SocketCanDevice reader = new SocketCanDevice(interfaceName1);
-         SocketCanDevice writer = new SocketCanDevice(interfaceName2)) {
-
+    try (SocketCanDevice reader = new SocketCanDevice(interfaceName1); SocketCanDevice writer = new SocketCanDevice(interfaceName2)) {
       System.out.println("Opened reader on " + interfaceName1 + " capabilities=" + reader.getCanCapabilities());
       System.out.println("Opened writer on " + interfaceName2 + " capabilities=" + writer.getCanCapabilities());
       System.out.println("Press Ctrl+C to stop.");
@@ -87,6 +83,8 @@ public final class Vcan0ReadWriteDemo {
     }
   }
 
+  // The interactive demo deliberately sends at 5 Hz so its traffic remains observable.
+  @SuppressWarnings("java:S2925")
   private static void runWriteLoop(SocketCanDevice writer, AtomicBoolean running, AtomicLong sentCount) {
     long counter = 0;
 

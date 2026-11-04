@@ -19,7 +19,6 @@
 package io.mapsmessaging.canbus.j1939.n2k.codec;
 
 public interface FieldValueSource {
-
   boolean has(String fieldId);
 
   Long getLong(String fieldId);

@@ -21,17 +21,13 @@ package io.mapsmessaging.canbus.app;
 
 import io.mapsmessaging.canbus.device.CanCapabilities;
 import io.mapsmessaging.canbus.device.CanInterfaceStatus;
-import io.mapsmessaging.canbus.device.frames.CanFrame;
 import io.mapsmessaging.canbus.device.SocketCanDevice;
-
+import io.mapsmessaging.canbus.device.frames.CanFrame;
 import java.io.IOException;
 import java.util.concurrent.ThreadLocalRandom;
 
 public final class CanLoad {
-
-  private static void write(SocketCanDevice writer, int canId, boolean extended)
-      throws IOException {
-
+  private static void write(SocketCanDevice writer, int canId, boolean extended) throws IOException {
     // Classic CAN: max 8 bytes
     byte[] data = new byte[8];
     ThreadLocalRandom.current().nextBytes(data);
@@ -52,11 +48,11 @@ public final class CanLoad {
     boolean startSend = args.length > 1;
 
     try (SocketCanDevice reader = new SocketCanDevice(interfaceName)) {
-      CanCapabilities canCapabilities =  reader.getCanCapabilities();
-      CanInterfaceStatus status =reader.readInterfaceStatus();
+      CanCapabilities canCapabilities = reader.getCanCapabilities();
+      CanInterfaceStatus status = reader.readInterfaceStatus();
       System.err.println("CAN Capabilities: " + canCapabilities);
       System.err.println("CAN InterfaceStatus: " + status);
-      long reportTime = System.currentTimeMillis()+1000;
+      long reportTime = System.currentTimeMillis() + 1000;
       long count = 0;
       while (true) {
         count++;
@@ -65,9 +61,9 @@ public final class CanLoad {
         }
         read(reader);
         startSend = true;
-        if(System.currentTimeMillis() > reportTime){
-          reportTime = System.currentTimeMillis()+1000;
-          System.err.println("Sent:"+count);
+        if (System.currentTimeMillis() > reportTime) {
+          reportTime = System.currentTimeMillis() + 1000;
+          System.err.println("Sent:" + count);
           count = 0;
         }
       }

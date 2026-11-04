@@ -19,6 +19,7 @@
 package io.mapsmessaging.canbus.j1939.n2k.framing;
 
 import com.google.gson.JsonObject;
+import io.mapsmessaging.canbus.j1939.CanId;
 import io.mapsmessaging.canbus.j1939.n2k.codec.N2kMessageParser;
 import io.mapsmessaging.canbus.j1939.n2k.compile.N2kCompiledMessage;
 import io.mapsmessaging.canbus.j1939.n2k.framing.assemblers.FastPacketAssembler;
@@ -28,14 +29,11 @@ import io.mapsmessaging.canbus.j1939.n2k.framing.message.UnknownMessage;
 import io.mapsmessaging.canbus.j1939.n2k.framing.message.UnknownReason;
 import io.mapsmessaging.canbus.j1939.n2k.model.N2kMessageLengthType;
 import io.mapsmessaging.canbus.j1939.n2k.model.N2kTransportType;
-import io.mapsmessaging.canbus.j1939.CanId;
-
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 
 public class FrameHandler {
-
   private final N2kMessageParser payloadParser;
   private final FastPacketAssembler fastPacketAssembler;
 
@@ -67,26 +65,12 @@ public class FrameHandler {
 
     if (!extendedFrame) {
       byte[] rawPayload = Arrays.copyOf(data, dataLengthCode);
-      return Optional.of(new UnknownMessage(
-          UnknownReason.NOT_EXTENDED_FRAME,
-          null,
-          canIdentifier,
-          dataLengthCode,
-          rawPayload,
-          "11-bit CAN frame (not N2K/J1939 extended frame)"
-      ));
+      return Optional.of(new UnknownMessage(UnknownReason.NOT_EXTENDED_FRAME, null, canIdentifier, dataLengthCode, rawPayload, "11-bit CAN frame (not N2K/J1939 extended frame)"));
     }
 
     if ((canIdentifier & 0xE0000000) != 0) {
       byte[] rawPayload = Arrays.copyOf(data, dataLengthCode);
-      return Optional.of(new UnknownMessage(
-          UnknownReason.INVALID_IDENTIFIER,
-          null,
-          canIdentifier,
-          dataLengthCode,
-          rawPayload,
-          "CAN identifier out of 29-bit range"
-      ));
+      return Optional.of(new UnknownMessage(UnknownReason.INVALID_IDENTIFIER, null, canIdentifier, dataLengthCode, rawPayload, "CAN identifier out of 29-bit range"));
     }
 
     CanId parsedCanId = CanId.parse(canIdentifier);
@@ -95,8 +79,8 @@ public class FrameHandler {
     try {
       payload = tryAssemblePayload(parsedCanId, dataLengthCode, data);
     } catch (UnsupportedOperationException exception) {
-      return Optional.of(new UnknownMessage(UnknownReason.UNSUPPORTED_PGN, parsedCanId,
-          canIdentifier, dataLengthCode, Arrays.copyOf(data, dataLengthCode), exception.getMessage()));
+      return Optional.of(
+          new UnknownMessage(UnknownReason.UNSUPPORTED_PGN, parsedCanId, canIdentifier, dataLengthCode, Arrays.copyOf(data, dataLengthCode), exception.getMessage()));
     }
     if (payload == null) {
       return Optional.empty();
@@ -105,38 +89,18 @@ public class FrameHandler {
     int pgn = parsedCanId.getPgn();
 
     if (payloadParser.getRegistry().getRequiredMessage(pgn) == null) {
-      return Optional.of(new UnknownMessage(
-          UnknownReason.UNSUPPORTED_PGN,
-          parsedCanId,
-          canIdentifier,
-          dataLengthCode,
-          payload,
-          "PGN not supported by parser: " + pgn
-      ));
+      return Optional.of(new UnknownMessage(UnknownReason.UNSUPPORTED_PGN, parsedCanId, canIdentifier, dataLengthCode, payload, "PGN not supported by parser: " + pgn));
     }
 
     try {
       JsonObject decoded = payloadParser.decodeToJson(pgn, payload);
       if (decoded == null) {
-        return Optional.of(new UnknownMessage(
-            UnknownReason.DECODE_FAILED,
-            parsedCanId,
-            canIdentifier,
-            dataLengthCode,
-            payload,
-            "Parser returned null for PGN: " + pgn
-        ));
+        return Optional.of(new UnknownMessage(UnknownReason.DECODE_FAILED, parsedCanId, canIdentifier, dataLengthCode, payload, "Parser returned null for PGN: " + pgn));
       }
       return Optional.of(new KnownMessage(parsedCanId, canIdentifier, payload, decoded));
     } catch (Exception exception) {
       return Optional.of(new UnknownMessage(
-          UnknownReason.DECODE_FAILED,
-          parsedCanId,
-          canIdentifier,
-          dataLengthCode,
-          payload,
-          exception.getClass().getSimpleName() + ": " + exception.getMessage()
-      ));
+          UnknownReason.DECODE_FAILED, parsedCanId, canIdentifier, dataLengthCode, payload, exception.getClass().getSimpleName() + ": " + exception.getMessage()));
     }
   }
 
@@ -155,12 +119,8 @@ public class FrameHandler {
       return fastPacketAssembler.accept(parsedCanId, sequenceId, frameIndex, frameData);
     }
     boolean looksLikeFastPacketStart = frameIndex == 0 && frameData.length >= 2 && ((frameData[1] & 0xFF) > 8);
-    if (looksLikeFastPacketStart) {
-      if (compiled != null) {
-        if (compiled.getLengthType() == N2kMessageLengthType.FIXED && compiled.getFixedLengthBytes() <= 8) {
-          looksLikeFastPacketStart = false;
-        }
-      }
+    if (looksLikeFastPacketStart && compiled != null && compiled.getLengthType() == N2kMessageLengthType.FIXED && compiled.getFixedLengthBytes() <= 8) {
+      looksLikeFastPacketStart = false;
     }
 
     boolean hasInProgress = fastPacketAssembler.hasInProgress(parsedCanId, sequenceId);

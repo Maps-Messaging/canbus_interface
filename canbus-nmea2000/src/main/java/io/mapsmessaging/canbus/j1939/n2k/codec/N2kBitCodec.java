@@ -22,16 +22,7 @@ import lombok.experimental.UtilityClass;
 
 @UtilityClass
 public class N2kBitCodec {
-
-  public static long extractBits(
-      byte[] buffer,
-      int startByte,
-      int startBit,
-      int bytesToRead,
-      long mask,
-      boolean signed,
-      int bitLength
-  ) {
+  public static long extractBits(byte[] buffer, int startByte, int startBit, int bytesToRead, long mask, boolean signed, int bitLength) {
     long value = 0L;
 
     for (int i = 0; i < bytesToRead; i++) {

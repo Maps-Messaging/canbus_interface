@@ -34,7 +34,6 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 class N2kJsonSchemaGeneratorTest {
-
   @Test
   void generateSchema_basics_includesSchemaTitleTypeRequiredAndNoAdditionalProperties() {
     N2kMessageDefinition messageDefinition = mock(N2kMessageDefinition.class);
@@ -76,21 +75,7 @@ class N2kJsonSchemaGeneratorTest {
 
   @Test
   void generateSchema_includesValidNumericField_withDescriptionRangeMultipleOfAndMetadata() {
-    N2kFieldDefinition field = mockField(
-        10,
-        "waterTemp",
-        "Water Temperature",
-        "K",
-        16,
-        32,
-        true,
-        0.1,
-        273.15,
-        0.0,
-        400.0,
-        "Temperature (Kelvin)",
-        N2kFieldType.FLOAT
-    );
+    N2kFieldDefinition field = mockField(10, "waterTemp", "Water Temperature", "K", 16, 32, true, 0.1, 273.15, 0.0, 400.0, "Temperature (Kelvin)", N2kFieldType.FLOAT);
 
     N2kMessageDefinition messageDefinition = mock(N2kMessageDefinition.class);
     when(messageDefinition.getPgn()).thenReturn(130310);
@@ -100,10 +85,7 @@ class N2kJsonSchemaGeneratorTest {
 
     JsonObject schema = N2kJsonSchemaGenerator.generateSchema(messageDefinition);
 
-    JsonObject decodedProperties = schema
-        .getAsJsonObject("properties")
-        .getAsJsonObject("packet")
-        .getAsJsonObject("properties");
+    JsonObject decodedProperties = schema.getAsJsonObject("properties").getAsJsonObject("packet").getAsJsonObject("properties");
 
     JsonObject prop = decodedProperties.getAsJsonObject("waterTemp");
     assertNotNull(prop);
@@ -129,117 +111,19 @@ class N2kJsonSchemaGeneratorTest {
   void generateSchema_filtersOutNonSchemaFieldTypes_andLeavesOnlyValidFields() {
     List<N2kFieldDefinition> fields = new ArrayList<>();
 
-    fields.add(mockField(
-        1,
-        "validNumber",
-        "Valid Number",
-        "",
-        8,
-        0,
-        false,
-        0.0,
-        0.0,
-        null,
-        null,
-        null,
-        N2kFieldType.NUMBER
-    ));
+    fields.add(mockField(1, "validNumber", "Valid Number", "", 8, 0, false, 0.0, 0.0, null, null, null, N2kFieldType.NUMBER));
 
-    fields.add(mockField(
-        2,
-        "validFloat",
-        "Valid Float",
-        "",
-        8,
-        8,
-        false,
-        0.0,
-        0.0,
-        null,
-        null,
-        null,
-        N2kFieldType.FLOAT
-    ));
+    fields.add(mockField(2, "validFloat", "Valid Float", "", 8, 8, false, 0.0, 0.0, null, null, null, N2kFieldType.FLOAT));
 
-    fields.add(mockField(
-        3,
-        "validLookup",
-        "Valid Lookup",
-        "",
-        8,
-        16,
-        false,
-        0.0,
-        0.0,
-        null,
-        null,
-        null,
-        N2kFieldType.LOOKUP
-    ));
+    fields.add(mockField(3, "validLookup", "Valid Lookup", "", 8, 16, false, 0.0, 0.0, null, null, null, N2kFieldType.LOOKUP));
 
-    fields.add(mockField(
-        4,
-        "fixedString",
-        "Fixed String",
-        "",
-        8,
-        24,
-        false,
-        0.0,
-        0.0,
-        null,
-        null,
-        null,
-        N2kFieldType.STRING_FIX
-    ));
+    fields.add(mockField(4, "fixedString", "Fixed String", "", 8, 24, false, 0.0, 0.0, null, null, null, N2kFieldType.STRING_FIX));
 
-    fields.add(mockField(
-        5,
-        "lauString",
-        "LAU String",
-        "",
-        8,
-        32,
-        false,
-        0.0,
-        0.0,
-        null,
-        null,
-        null,
-        N2kFieldType.STRING_LAU
-    ));
+    fields.add(mockField(5, "lauString", "LAU String", "", 8, 32, false, 0.0, 0.0, null, null, null, N2kFieldType.STRING_LAU));
 
-    fields.add(mockField(
-        6,
-        "repeatMarker",
-        "Repeat Marker",
-        "",
-        8,
-        40,
-        false,
-        0.0,
-        0.0,
-        null,
-        null,
-        null,
-        N2kFieldType.REPEAT_MARKER
-    ));
+    fields.add(mockField(6, "repeatMarker", "Repeat Marker", "", 8, 40, false, 0.0, 0.0, null, null, null, N2kFieldType.REPEAT_MARKER));
 
-    fields.add(mockField(
-        7,
-        "reserved",
-        "Reserved",
-        "",
-        8,
-        48,
-        false,
-        0.0,
-        0.0,
-        null,
-        null,
-        null,
-        N2kFieldType.RESERVED
-    ));
+    fields.add(mockField(7, "reserved", "Reserved", "", 8, 48, false, 0.0, 0.0, null, null, null, N2kFieldType.RESERVED));
 
     N2kMessageDefinition messageDefinition = mock(N2kMessageDefinition.class);
     when(messageDefinition.getPgn()).thenReturn(123456);
@@ -249,10 +133,7 @@ class N2kJsonSchemaGeneratorTest {
 
     JsonObject schema = N2kJsonSchemaGenerator.generateSchema(messageDefinition);
 
-    JsonObject decodedProperties = schema
-        .getAsJsonObject("properties")
-        .getAsJsonObject("packet")
-        .getAsJsonObject("properties");
+    JsonObject decodedProperties = schema.getAsJsonObject("properties").getAsJsonObject("packet").getAsJsonObject("properties");
 
     assertTrue(decodedProperties.has("validNumber"));
     assertTrue(decodedProperties.has("validFloat"));
@@ -268,37 +149,9 @@ class N2kJsonSchemaGeneratorTest {
 
   @Test
   void generateSchema_sortsFieldsByOrder_inInsertionOrderOfDecodedProperties() {
-    N2kFieldDefinition later = mockField(
-        20,
-        "later",
-        "Later",
-        "",
-        8,
-        8,
-        false,
-        0.0,
-        0.0,
-        null,
-        null,
-        null,
-        N2kFieldType.NUMBER
-    );
+    N2kFieldDefinition later = mockField(20, "later", "Later", "", 8, 8, false, 0.0, 0.0, null, null, null, N2kFieldType.NUMBER);
 
-    N2kFieldDefinition earlier = mockField(
-        10,
-        "earlier",
-        "Earlier",
-        "",
-        8,
-        0,
-        false,
-        0.0,
-        0.0,
-        null,
-        null,
-        null,
-        N2kFieldType.NUMBER
-    );
+    N2kFieldDefinition earlier = mockField(10, "earlier", "Earlier", "", 8, 0, false, 0.0, 0.0, null, null, null, N2kFieldType.NUMBER);
 
     N2kMessageDefinition messageDefinition = mock(N2kMessageDefinition.class);
     when(messageDefinition.getPgn()).thenReturn(999);
@@ -308,10 +161,7 @@ class N2kJsonSchemaGeneratorTest {
 
     JsonObject schema = N2kJsonSchemaGenerator.generateSchema(messageDefinition);
 
-    JsonObject decodedProperties = schema
-        .getAsJsonObject("properties")
-        .getAsJsonObject("packet")
-        .getAsJsonObject("properties");
+    JsonObject decodedProperties = schema.getAsJsonObject("properties").getAsJsonObject("packet").getAsJsonObject("properties");
 
     Iterator<Map.Entry<String, JsonElement>> iterator = decodedProperties.entrySet().iterator();
     assertTrue(iterator.hasNext());
@@ -346,21 +196,7 @@ class N2kJsonSchemaGeneratorTest {
     when(missingLength.getBitLength()).thenReturn(null);
     when(missingLength.getFieldType()).thenReturn(N2kFieldType.NUMBER);
 
-    N2kFieldDefinition valid = mockField(
-        4,
-        "ok",
-        "Ok",
-        "",
-        8,
-        0,
-        false,
-        0.0,
-        0.0,
-        null,
-        null,
-        null,
-        N2kFieldType.NUMBER
-    );
+    N2kFieldDefinition valid = mockField(4, "ok", "Ok", "", 8, 0, false, 0.0, 0.0, null, null, null, N2kFieldType.NUMBER);
 
     N2kMessageDefinition messageDefinition = mock(N2kMessageDefinition.class);
     when(messageDefinition.getPgn()).thenReturn(321);
@@ -370,10 +206,7 @@ class N2kJsonSchemaGeneratorTest {
 
     JsonObject schema = N2kJsonSchemaGenerator.generateSchema(messageDefinition);
 
-    JsonObject decodedProperties = schema
-        .getAsJsonObject("properties")
-        .getAsJsonObject("packet")
-        .getAsJsonObject("properties");
+    JsonObject decodedProperties = schema.getAsJsonObject("properties").getAsJsonObject("packet").getAsJsonObject("properties");
 
     assertFalse(decodedProperties.has("missingOffset"));
     assertFalse(decodedProperties.has("missingLength"));
@@ -383,53 +216,11 @@ class N2kJsonSchemaGeneratorTest {
 
   @Test
   void generateSchema_descriptionLogic_nameUnitVariants() {
-    N2kFieldDefinition nameOnly = mockField(
-        1,
-        "nameOnly",
-        "Speed",
-        "",
-        8,
-        0,
-        false,
-        0.0,
-        0.0,
-        null,
-        null,
-        null,
-        N2kFieldType.NUMBER
-    );
+    N2kFieldDefinition nameOnly = mockField(1, "nameOnly", "Speed", "", 8, 0, false, 0.0, 0.0, null, null, null, N2kFieldType.NUMBER);
 
-    N2kFieldDefinition unitOnly = mockField(
-        2,
-        "unitOnly",
-        "",
-        "m/s",
-        8,
-        8,
-        false,
-        0.0,
-        0.0,
-        null,
-        null,
-        null,
-        N2kFieldType.NUMBER
-    );
+    N2kFieldDefinition unitOnly = mockField(2, "unitOnly", "", "m/s", 8, 8, false, 0.0, 0.0, null, null, null, N2kFieldType.NUMBER);
 
-    N2kFieldDefinition neither = mockField(
-        3,
-        "neither",
-        "",
-        "",
-        8,
-        16,
-        false,
-        0.0,
-        0.0,
-        null,
-        null,
-        null,
-        N2kFieldType.NUMBER
-    );
+    N2kFieldDefinition neither = mockField(3, "neither", "", "", 8, 16, false, 0.0, 0.0, null, null, null, N2kFieldType.NUMBER);
 
     N2kMessageDefinition messageDefinition = mock(N2kMessageDefinition.class);
     when(messageDefinition.getPgn()).thenReturn(1);
@@ -439,10 +230,7 @@ class N2kJsonSchemaGeneratorTest {
 
     JsonObject schema = N2kJsonSchemaGenerator.generateSchema(messageDefinition);
 
-    JsonObject decodedProperties = schema
-        .getAsJsonObject("properties")
-        .getAsJsonObject("packet")
-        .getAsJsonObject("properties");
+    JsonObject decodedProperties = schema.getAsJsonObject("properties").getAsJsonObject("packet").getAsJsonObject("properties");
 
     JsonObject nameOnlyProp = decodedProperties.getAsJsonObject("nameOnly");
     assertNotNull(nameOnlyProp);
@@ -457,21 +245,8 @@ class N2kJsonSchemaGeneratorTest {
     assertFalse(neitherProp.has("description"));
   }
 
-  private static N2kFieldDefinition mockField(
-      int order,
-      String id,
-      String name,
-      String unit,
-      Integer bitLength,
-      Integer bitOffset,
-      boolean signed,
-      double resolution,
-      double offset,
-      Double rangeMin,
-      Double rangeMax,
-      String typeInPdf,
-      N2kFieldType fieldType
-  ) {
+  private static N2kFieldDefinition mockField(int order, String id, String name, String unit, Integer bitLength, Integer bitOffset, boolean signed, double resolution,
+      double offset, Double rangeMin, Double rangeMax, String typeInPdf, N2kFieldType fieldType) {
     N2kFieldDefinition field = mock(N2kFieldDefinition.class);
 
     when(field.getOrder()).thenReturn(order);

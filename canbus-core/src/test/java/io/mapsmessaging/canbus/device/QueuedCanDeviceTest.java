@@ -17,9 +17,12 @@
  */
 package io.mapsmessaging.canbus.device;
 
-import io.mapsmessaging.canbus.device.frames.CanFrame;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.mapsmessaging.canbus.device.frames.CanFrame;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -32,14 +35,9 @@ import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
 
 class QueuedCanDeviceTest {
-
   @Test
   void shouldCancelDequeuedGroupWhenClosedBeforeBandwidthWaitStarts() throws Exception {
     TestCanDevice delegate = new TestCanDevice();
@@ -215,13 +213,7 @@ class QueuedCanDeviceTest {
   @Test
   void shouldWriteQueuedFrameToDelegate() throws Exception {
     TestCanDevice delegate = new TestCanDevice();
-    QueuedCanDevice queuedCanDevice = new QueuedCanDevice(
-        delegate,
-        10,
-        250_000,
-        100.0,
-        QueueFullPolicy.DROP_OLDEST
-    );
+    QueuedCanDevice queuedCanDevice = new QueuedCanDevice(delegate, 10, 250_000, 100.0, QueueFullPolicy.DROP_OLDEST);
 
     try {
       CanFrame canFrame = createFrame(1);
@@ -240,20 +232,10 @@ class QueuedCanDeviceTest {
   @Test
   void shouldWriteQueuedFramesAsOneLogicalMessage() throws Exception {
     TestCanDevice delegate = new TestCanDevice();
-    QueuedCanDevice queuedCanDevice = new QueuedCanDevice(
-        delegate,
-        10,
-        250_000,
-        100.0,
-        QueueFullPolicy.DROP_OLDEST
-    );
+    QueuedCanDevice queuedCanDevice = new QueuedCanDevice(delegate, 10, 250_000, 100.0, QueueFullPolicy.DROP_OLDEST);
 
     try {
-      List<CanFrame> canFrames = List.of(
-          createFrame(1),
-          createFrame(2),
-          createFrame(3)
-      );
+      List<CanFrame> canFrames = List.of(createFrame(1), createFrame(2), createFrame(3));
 
       queuedCanDevice.writeFrames(canFrames);
 
@@ -271,19 +253,10 @@ class QueuedCanDeviceTest {
   @Test
   void shouldWriteGroupedFramesBackToBackWithoutPerFrameLimiterDelay() throws Exception {
     TimingTestCanDevice delegate = new TimingTestCanDevice();
-    QueuedCanDevice queuedCanDevice = new QueuedCanDevice(
-        delegate,
-        10,
-        250_000,
-        0.1,
-        QueueFullPolicy.DROP_OLDEST
-    );
+    QueuedCanDevice queuedCanDevice = new QueuedCanDevice(delegate, 10, 250_000, 0.1, QueueFullPolicy.DROP_OLDEST);
 
     try {
-      List<CanFrame> canFrames = List.of(
-          createFrame(1),
-          createFrame(2)
-      );
+      List<CanFrame> canFrames = List.of(createFrame(1), createFrame(2));
 
       queuedCanDevice.writeFrames(canFrames);
 
@@ -344,13 +317,7 @@ class QueuedCanDeviceTest {
   @Test
   void shouldDropOldestFrameWhenQueueIsFull() throws Exception {
     BlockingTestCanDevice delegate = new BlockingTestCanDevice();
-    QueuedCanDevice queuedCanDevice = new QueuedCanDevice(
-        delegate,
-        2,
-        250_000,
-        100.0,
-        QueueFullPolicy.DROP_OLDEST
-    );
+    QueuedCanDevice queuedCanDevice = new QueuedCanDevice(delegate, 2, 250_000, 100.0, QueueFullPolicy.DROP_OLDEST);
 
     try {
       CanFrame firstFrame = createFrame(1);
@@ -383,31 +350,13 @@ class QueuedCanDeviceTest {
   @Test
   void shouldDropOldestLogicalMessageWhenQueueIsFull() throws Exception {
     BlockingTestCanDevice delegate = new BlockingTestCanDevice();
-    QueuedCanDevice queuedCanDevice = new QueuedCanDevice(
-        delegate,
-        2,
-        250_000,
-        100.0,
-        QueueFullPolicy.DROP_OLDEST
-    );
+    QueuedCanDevice queuedCanDevice = new QueuedCanDevice(delegate, 2, 250_000, 100.0, QueueFullPolicy.DROP_OLDEST);
 
     try {
-      List<CanFrame> firstMessage = List.of(
-          createFrame(10),
-          createFrame(11)
-      );
-      List<CanFrame> secondMessage = List.of(
-          createFrame(20),
-          createFrame(21)
-      );
-      List<CanFrame> thirdMessage = List.of(
-          createFrame(30),
-          createFrame(31)
-      );
-      List<CanFrame> fourthMessage = List.of(
-          createFrame(40),
-          createFrame(41)
-      );
+      List<CanFrame> firstMessage = List.of(createFrame(10), createFrame(11));
+      List<CanFrame> secondMessage = List.of(createFrame(20), createFrame(21));
+      List<CanFrame> thirdMessage = List.of(createFrame(30), createFrame(31));
+      List<CanFrame> fourthMessage = List.of(createFrame(40), createFrame(41));
 
       queuedCanDevice.writeFrames(firstMessage);
       assertEventually(() -> delegate.getWriteAttempts() == 1);
@@ -437,13 +386,7 @@ class QueuedCanDeviceTest {
   @Test
   void shouldRejectNewestFrameWhenQueueIsFullAndPolicyIsRejectNew() throws Exception {
     BlockingTestCanDevice delegate = new BlockingTestCanDevice();
-    QueuedCanDevice queuedCanDevice = new QueuedCanDevice(
-        delegate,
-        1,
-        250_000,
-        100.0,
-        QueueFullPolicy.REJECT_NEW
-    );
+    QueuedCanDevice queuedCanDevice = new QueuedCanDevice(delegate, 1, 250_000, 100.0, QueueFullPolicy.REJECT_NEW);
 
     try {
       queuedCanDevice.writeFrame(createFrame(1));
@@ -451,10 +394,7 @@ class QueuedCanDeviceTest {
 
       queuedCanDevice.writeFrame(createFrame(2));
 
-      IOException exception = assertThrows(
-          IOException.class,
-          () -> queuedCanDevice.writeFrame(createFrame(3))
-      );
+      IOException exception = assertThrows(IOException.class, () -> queuedCanDevice.writeFrame(createFrame(3)));
 
       assertTrue(exception.getMessage().contains("full"));
       assertEquals(1, queuedCanDevice.getStats().getRejectedCount());
@@ -468,13 +408,7 @@ class QueuedCanDeviceTest {
   @Test
   void shouldRejectNewestLogicalMessageWhenQueueIsFullAndPolicyIsRejectNew() throws Exception {
     BlockingTestCanDevice delegate = new BlockingTestCanDevice();
-    QueuedCanDevice queuedCanDevice = new QueuedCanDevice(
-        delegate,
-        1,
-        250_000,
-        100.0,
-        QueueFullPolicy.REJECT_NEW
-    );
+    QueuedCanDevice queuedCanDevice = new QueuedCanDevice(delegate, 1, 250_000, 100.0, QueueFullPolicy.REJECT_NEW);
 
     try {
       queuedCanDevice.writeFrames(List.of(createFrame(1), createFrame(2)));
@@ -482,10 +416,7 @@ class QueuedCanDeviceTest {
 
       queuedCanDevice.writeFrames(List.of(createFrame(3), createFrame(4)));
 
-      IOException exception = assertThrows(
-          IOException.class,
-          () -> queuedCanDevice.writeFrames(List.of(createFrame(5), createFrame(6)))
-      );
+      IOException exception = assertThrows(IOException.class, () -> queuedCanDevice.writeFrames(List.of(createFrame(5), createFrame(6))));
 
       assertTrue(exception.getMessage().contains("full"));
       assertEquals(1, queuedCanDevice.getStats().getRejectedCount());
@@ -519,13 +450,7 @@ class QueuedCanDeviceTest {
   @Test
   void shouldFlushDelegateWhenWriterQueueBecomesEmptyAfterSingleMessage() throws Exception {
     TestCanDevice delegate = new TestCanDevice();
-    QueuedCanDevice queuedCanDevice = new QueuedCanDevice(
-        delegate,
-        10,
-        250_000,
-        100.0,
-        QueueFullPolicy.DROP_OLDEST
-    );
+    QueuedCanDevice queuedCanDevice = new QueuedCanDevice(delegate, 10, 250_000, 100.0, QueueFullPolicy.DROP_OLDEST);
 
     try {
       queuedCanDevice.writeFrame(createFrame(1));
@@ -543,19 +468,10 @@ class QueuedCanDeviceTest {
   @Test
   void shouldNotDrainQueueWhenFlushIsCalled() throws Exception {
     BlockingTestCanDevice delegate = new BlockingTestCanDevice();
-    QueuedCanDevice queuedCanDevice = new QueuedCanDevice(
-        delegate,
-        10,
-        250_000,
-        100.0,
-        QueueFullPolicy.DROP_OLDEST
-    );
+    QueuedCanDevice queuedCanDevice = new QueuedCanDevice(delegate, 10, 250_000, 100.0, QueueFullPolicy.DROP_OLDEST);
 
     try {
-      List<CanFrame> firstMessage = List.of(
-          createFrame(1),
-          createFrame(2)
-      );
+      List<CanFrame> firstMessage = List.of(createFrame(1), createFrame(2));
 
       queuedCanDevice.writeFrames(firstMessage);
 
@@ -580,13 +496,7 @@ class QueuedCanDeviceTest {
   @Test
   void shouldNotUseFlushToBypassBandwidthThrottle() throws Exception {
     TestCanDevice delegate = new TestCanDevice();
-    QueuedCanDevice queuedCanDevice = new QueuedCanDevice(
-        delegate,
-        10,
-        250_000,
-        0.1,
-        QueueFullPolicy.DROP_OLDEST
-    );
+    QueuedCanDevice queuedCanDevice = new QueuedCanDevice(delegate, 10, 250_000, 0.1, QueueFullPolicy.DROP_OLDEST);
 
     try {
       long startTime = System.nanoTime();
@@ -634,13 +544,7 @@ class QueuedCanDeviceTest {
   @Test
   void shouldLimitWriteRateBetweenLogicalMessages() throws Exception {
     TestCanDevice delegate = new TestCanDevice();
-    QueuedCanDevice queuedCanDevice = new QueuedCanDevice(
-        delegate,
-        10,
-        250_000,
-        0.1,
-        QueueFullPolicy.DROP_OLDEST
-    );
+    QueuedCanDevice queuedCanDevice = new QueuedCanDevice(delegate, 10, 250_000, 0.1, QueueFullPolicy.DROP_OLDEST);
 
     try {
       long startTime = System.nanoTime();
@@ -661,13 +565,7 @@ class QueuedCanDeviceTest {
   @Test
   void shouldLimitWriteRateForWholeLogicalMessageAndWriteFramesBackToBack() throws Exception {
     TimingTestCanDevice delegate = new TimingTestCanDevice();
-    QueuedCanDevice queuedCanDevice = new QueuedCanDevice(
-        delegate,
-        10,
-        250_000,
-        0.1,
-        QueueFullPolicy.DROP_OLDEST
-    );
+    QueuedCanDevice queuedCanDevice = new QueuedCanDevice(delegate, 10, 250_000, 0.1, QueueFullPolicy.DROP_OLDEST);
 
     try {
       long startTime = System.nanoTime();
@@ -693,13 +591,7 @@ class QueuedCanDeviceTest {
   @Test
   void shouldRecordWriteFailureAndContinue() throws Exception {
     FailingOnceTestCanDevice delegate = new FailingOnceTestCanDevice();
-    QueuedCanDevice queuedCanDevice = new QueuedCanDevice(
-        delegate,
-        10,
-        250_000,
-        100.0,
-        QueueFullPolicy.DROP_OLDEST
-    );
+    QueuedCanDevice queuedCanDevice = new QueuedCanDevice(delegate, 10, 250_000, 100.0, QueueFullPolicy.DROP_OLDEST);
 
     try {
       queuedCanDevice.writeFrame(createFrame(1));
@@ -718,13 +610,7 @@ class QueuedCanDeviceTest {
   @Test
   void shouldRecordGroupedWriteFailureAndContinueWithNextLogicalMessage() throws Exception {
     FailingOnceTestCanDevice delegate = new FailingOnceTestCanDevice();
-    QueuedCanDevice queuedCanDevice = new QueuedCanDevice(
-        delegate,
-        10,
-        250_000,
-        100.0,
-        QueueFullPolicy.DROP_OLDEST
-    );
+    QueuedCanDevice queuedCanDevice = new QueuedCanDevice(delegate, 10, 250_000, 100.0, QueueFullPolicy.DROP_OLDEST);
 
     try {
       queuedCanDevice.writeFrames(List.of(createFrame(1), createFrame(2)));
@@ -746,14 +632,7 @@ class QueuedCanDeviceTest {
   @Test
   void shouldUseConfiguredWriteFailureBackoff() throws Exception {
     AlwaysFailingTestCanDevice delegate = new AlwaysFailingTestCanDevice();
-    QueuedCanDevice queuedCanDevice = new QueuedCanDevice(
-        delegate,
-        10,
-        250_000,
-        100.0,
-        QueueFullPolicy.DROP_OLDEST,
-        250L
-    );
+    QueuedCanDevice queuedCanDevice = new QueuedCanDevice(delegate, 10, 250_000, 100.0, QueueFullPolicy.DROP_OLDEST, 250L);
 
     try {
       queuedCanDevice.writeFrame(createFrame(1));
@@ -777,14 +656,7 @@ class QueuedCanDeviceTest {
   @Test
   void shouldExposeConfiguredWriteFailureBackoff() throws Exception {
     TestCanDevice delegate = new TestCanDevice();
-    QueuedCanDevice queuedCanDevice = new QueuedCanDevice(
-        delegate,
-        10,
-        250_000,
-        100.0,
-        QueueFullPolicy.DROP_OLDEST,
-        123L
-    );
+    QueuedCanDevice queuedCanDevice = new QueuedCanDevice(delegate, 10, 250_000, 100.0, QueueFullPolicy.DROP_OLDEST, 123L);
 
     try {
       assertEquals(123L, queuedCanDevice.getWriteFailureBackoffMilliseconds());
@@ -797,30 +669,11 @@ class QueuedCanDeviceTest {
   void shouldRejectNegativeWriteFailureBackoff() {
     TestCanDevice delegate = new TestCanDevice();
 
-    assertThrows(
-        IllegalArgumentException.class,
-        () -> new QueuedCanDevice(
-            delegate,
-            10,
-            250_000,
-            100.0,
-            QueueFullPolicy.DROP_OLDEST,
-            -1L
-        )
-    );
+    assertThrows(IllegalArgumentException.class, () -> new QueuedCanDevice(delegate, 10, 250_000, 100.0, QueueFullPolicy.DROP_OLDEST, -1L));
   }
 
   private static CanFrame createFrame(int canIdentifier) {
-    byte[] data = new byte[]{
-        (byte) canIdentifier,
-        2,
-        3,
-        4,
-        5,
-        6,
-        7,
-        8
-    };
+    byte[] data = new byte[] {(byte) canIdentifier, 2, 3, 4, 5, 6, 7, 8};
 
     return new CanFrame(canIdentifier, true, data.length, data);
   }
@@ -856,7 +709,6 @@ class QueuedCanDeviceTest {
   }
 
   private static final class PausingWriteQueue extends LinkedBlockingDeque<CanWriteMessage> {
-
     private final CountDownLatch dequeued = new CountDownLatch(1);
     private final CountDownLatch interrupted = new CountDownLatch(1);
     private final CountDownLatch release = new CountDownLatch(1);
@@ -891,7 +743,6 @@ class QueuedCanDeviceTest {
   }
 
   private static class TestCanDevice implements CanDevice {
-
     private final List<CanFrame> writtenFrames;
     private volatile CanFrame readFrame;
     private volatile boolean closed;
@@ -944,7 +795,6 @@ class QueuedCanDeviceTest {
   }
 
   private static class TimingTestCanDevice extends TestCanDevice {
-
     private final List<Long> writeTimesNanos;
 
     TimingTestCanDevice() {
@@ -963,7 +813,6 @@ class QueuedCanDeviceTest {
   }
 
   private static final class BlockingTestCanDevice extends TestCanDevice {
-
     private final Object monitor;
     private volatile boolean writesReleased;
     private volatile int writeAttempts;
@@ -1003,7 +852,6 @@ class QueuedCanDeviceTest {
   }
 
   private static final class FailingOnceTestCanDevice extends TestCanDevice {
-
     private volatile boolean failed;
 
     @Override
@@ -1018,7 +866,6 @@ class QueuedCanDeviceTest {
   }
 
   private static final class FailingMidGroupTestCanDevice extends TestCanDevice {
-
     private final IOException failure = new IOException("Synthetic failure after the first frame");
 
     @Override
@@ -1031,7 +878,6 @@ class QueuedCanDeviceTest {
   }
 
   private static final class AlwaysFailingTestCanDevice extends TestCanDevice {
-
     private final List<Long> writeAttemptTimesNanos;
     private volatile int writeAttempts;
 

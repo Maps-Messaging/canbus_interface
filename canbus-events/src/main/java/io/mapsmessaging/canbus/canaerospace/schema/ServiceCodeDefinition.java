@@ -22,7 +22,6 @@ import lombok.Data;
 
 @Data
 public class ServiceCodeDefinition {
-
   private String name;
 
   private Integer serviceCode;
