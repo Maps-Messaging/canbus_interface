@@ -22,13 +22,16 @@ import io.mapsmessaging.canbus.j1939.n2k.compile.N2kCompiledRegistry;
 import io.mapsmessaging.canbus.j1939.n2k.compile.N2kCompiler;
 import io.mapsmessaging.canbus.j1939.n2k.model.N2kMessageDefinition;
 import io.mapsmessaging.canbus.j1939.n2k.parser.N2kXmlDialectParser;
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.xml.parsers.ParserConfigurationException;
+import org.xml.sax.SAXException;
 
 public class N2kParserFactory {
   private static final AtomicReference<N2kCompiledRegistry> registry = new AtomicReference<>();
 
-  public static N2kCompiledRegistry getN2kParser() throws Exception {
+  public static N2kCompiledRegistry getN2kParser() throws IOException, SAXException, ParserConfigurationException {
     if (registry.get() == null) {
       List<N2kMessageDefinition> messageDefinitions = N2kXmlDialectParser.parseFromClasspath();
       registry.set(N2kCompiler.compile(messageDefinitions));
@@ -39,7 +42,7 @@ public class N2kParserFactory {
   private static final AtomicReference<N2kCompiledRegistry> j1939Registry = new AtomicReference<>();
 
   /** J1939 definitions/codecs only; this does not install a transport protocol. */
-  public static N2kCompiledRegistry getJ1939Parser() throws Exception {
+  public static N2kCompiledRegistry getJ1939Parser() throws IOException, SAXException, ParserConfigurationException {
     N2kCompiledRegistry current = j1939Registry.get();
     if (current == null) {
       current = N2kCompiler.compile(N2kXmlDialectParser.parseFromClasspath("n2k/canboat-j1939.xml"));
